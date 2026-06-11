@@ -19,8 +19,8 @@ Add your NAS using **SNMPv2** or **SNMPv3**, then adjust the macro values if nee
 
 ## Dashboards preview
 **Overview:**
-<img width="1872" height="1778" alt="image" src="https://github.com/user-attachments/assets/ef8db816-6c98-4e0c-9786-915f0e83907f" />
+![Overview](./images/Overview.png)
 **Storage:**
-<img width="1872" height="1849" alt="image" src="https://github.com/user-attachments/assets/5a091e77-cf27-4f0c-bb4f-8ef2de81196e" />
+![Overview](./images/Storage.png)
 **Network:**
-<img width="1872" height="1080" alt="image" src="https://github.com/user-attachments/assets/e7be1d9c-4791-4e5d-8565-509ff03a2e55" />
+![Overview](./images/Network.png)
