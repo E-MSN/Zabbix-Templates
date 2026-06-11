@@ -12,16 +12,16 @@ Add your switch using **SNMPv2** or **SNMPv3**, then adjust the macro values if 
 > **Note:** If you are using VSF, you must set the `{$ARUBA.VSF.MEMBERS.MIN}` macro to the expected number of VSF members for the trigger to work correctly.
 ## Dashboards preview
 **Overview:**
-<img width="1872" height="1779" alt="image" src="https://github.com/user-attachments/assets/5dd0fb97-5fb9-4bc5-bc96-d87b03c82119" />
+![Overview](./images/Overview.png)
 **Port Speed:**
-<img width="1872" height="729" alt="image" src="https://github.com/user-attachments/assets/0a0c1ba3-e5bf-4daf-b69f-df1a4f4e1ec0" />
+![Port Speed](./images/Port%20Speed.png)
 **LAG (when applicable):**
-<img width="1872" height="446" alt="image" src="https://github.com/user-attachments/assets/ea57bcf5-9ef3-450d-b84c-1661490c12fc" />
+![LAG](./images/LAG.png)
 **Network Traffic:**
-<img width="1872" height="2547" alt="image" src="https://github.com/user-attachments/assets/50bd9d91-ce92-40c0-808b-11111d6451db" />
+![Network Traffic](./images/Network%20Traffic.png)
 **PoE (when applicable):**
-<img width="1872" height="3501" alt="image" src="https://github.com/user-attachments/assets/591fcdb0-79b2-4ca8-bda8-5348759a81ce" />
+![PoE](./images/PoE.png)
 **VSF (when applicable):**
-<img width="1866" height="631" alt="image" src="https://github.com/user-attachments/assets/7ecfcae1-d509-480f-8647-e39d19569318" />
+![VSF](./images/VSF.png)
 **VSX (when applicable):**
-<img width="1872" height="1190" alt="image" src="https://github.com/user-attachments/assets/4aee4cf2-c7eb-42b7-be36-7aa1dc565a41" />
+![VSX](./images/VSX.png)
