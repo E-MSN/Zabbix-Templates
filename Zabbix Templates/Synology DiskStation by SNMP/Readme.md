@@ -21,6 +21,6 @@ Add your NAS using **SNMPv2** or **SNMPv3**, then adjust the macro values if nee
 **Overview:**
 ![Overview](./images/Overview.png)
 **Storage:**
-![Overview](./images/Storage.png)
+![Storage](./images/Storage.png)
 **Network:**
-![Overview](./images/Network.png)
+![Network](./images/Network.png)
