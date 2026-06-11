@@ -22,12 +22,12 @@ Import template as usual: **Data Collection -> Templates -> Import**<br>
 Add your switch using **SNMPv2** or **SNMPv3**, then adjust the macro values if needed.
 ## Dashboards preview
 **Overview:**
-<img width="1745" height="1853" alt="image" src="https://github.com/user-attachments/assets/7d92c761-3d17-4a94-a6eb-edd7709317a1" />
+![Overview](./images/Overview.png)
 **Port Speed:**
-<img width="1745" height="800" alt="image" src="https://github.com/user-attachments/assets/e2c1c44f-8e4b-4dff-9852-891e3197acb3" />
+![Port Speed](./images/Port%20Speed.png)
 **Network Traffic:**
-<img width="1745" height="1784" alt="image" src="https://github.com/user-attachments/assets/240f1d02-62ed-4104-9073-7f8f2ce7dd9e" />
+![Network Traffic](./images/Network%20Traffic.png)
 **Network errors:**
-<img width="1745" height="1781" alt="image" src="https://github.com/user-attachments/assets/bee7c3ba-f486-4af0-a4be-a6245b24a6c4" />
+![Network errors](./images/Network%20errors.png)
 **PoE (when applicable):**
-<img width="1740" height="660" alt="image" src="https://github.com/user-attachments/assets/d2af9288-ae0b-4cf5-b17b-9e087bc941d4" />
+![PoE](./images/PoE.png)
