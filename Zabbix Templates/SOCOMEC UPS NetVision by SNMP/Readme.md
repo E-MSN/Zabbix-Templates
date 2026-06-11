@@ -12,6 +12,6 @@ Add your UPS using **SNMPv1**, **SNMPv2** or **SNMPv3**, then adjust the macro v
 
 ## Dashboards preview
 **Overview:**
-<img width="1872" height="1007" alt="image" src="https://github.com/user-attachments/assets/4775375f-3dee-4f45-a6ff-d6d4a0023c10" />
+![Overview](./images/Overview.png)
 **Metrics:**
-<img width="1872" height="1780" alt="image" src="https://github.com/user-attachments/assets/6b1aecc6-a70b-4cfa-bb83-14f12f2fc6c9" />
+![Metrics](./images/Metrics.png)
