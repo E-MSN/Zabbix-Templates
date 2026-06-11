@@ -1,0 +1,1706 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: a1d618f5770344d18bdae7c4edf296ba
+      name: Templates/Power
+  templates:
+    - uuid: 1cd45808e69d419db54ab24948e4a491
+      template: 'SOCOMEC UPS NetVision by SNMP'
+      name: 'SOCOMEC UPS NetVision by SNMP'
+      description: |
+        Template for SOCOMEC UPS equiped with NetVision v7 or v8 network cards.
+        
+        NetVision v8 compatibility notes:
+        Some NetVision v8 counters return sentinel values such as 65535, 655350, 65533 or -1 when a metric is not available.
+        These values are discarded by preprocessing before unit conversion to avoid invalid graphs.
+      vendor:
+        name: E-MSN
+        version: 7.4-10
+      groups:
+        - name: Templates/Power
+      items:
+        - uuid: d532744a53694a64b2c21eebb250719f
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          delay: '60'
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: f8002020d25c4958b5ffc3243372b9c1
+              expression: 'max(/SOCOMEC UPS NetVision by SNMP/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 6876c2cf6b764b1eb5389852e0e45458
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: 79ad013667fa42e19bdd0c982ebac1e5
+              expression: 'min(/SOCOMEC UPS NetVision by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/SOCOMEC UPS NetVision by SNMP/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'ICMP packets loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/SOCOMEC UPS NetVision by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 2098994feaf1473fb4a7d206bdfd21cf
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: c53553869f4c40098090ff1fb1f17bd6
+              expression: 'avg(/SOCOMEC UPS NetVision by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'min(/SOCOMEC UPS NetVision by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/SOCOMEC UPS NetVision by SNMP/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/SOCOMEC UPS NetVision by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 727737f4fe084b31a3abcc7438aa913e
+          name: Uptime
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.3.0
+          key: 'system.uptime[sysUpTime.0]'
+          units: uptime
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: component
+              value: system
+        - uuid: ddee7c3479354ab69327b7825ee25198
+          name: 'Alarm - Battery Temp'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.6.3.16.0
+          key: upsAlarmBatteryTemperature.0
+          history: 7d
+          description: 'Battery Temperature Alarm. (A020)'
+          tags:
+            - tag: application
+              value: alarm
+          triggers:
+            - uuid: 311503f5d4dd44dcbbeaa2d53424e408
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmBatteryTemperature.0)<>0'
+              name: '{HOSTNAME} - UPS battery temperature alarm is active'
+              priority: HIGH
+        - uuid: ba54e1c35df44debaa884dfebca9e09f
+          name: 'Alarm - Fan Fault'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.6.3.32.0
+          key: upsAlarmFansFailure.0
+          history: 7d
+          description: 'Fans failure. (A054)'
+          tags:
+            - tag: application
+              value: alarm
+          triggers:
+            - uuid: db73c9b8793e40488a59c44df7358dfb
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmFansFailure.0)<>0'
+              name: '{HOSTNAME} - Fan Fault'
+              priority: AVERAGE
+        - uuid: d5b8269c8fce4481b25db576b1503704
+          name: 'Alarm - UPS LowBattery'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.6.3.14.0
+          key: upsAlarmLowBattery.0
+          history: 7d
+          description: 'The remaining battery run-time is less than or equal to battery low threshold. (A018)'
+          tags:
+            - tag: application
+              value: alarm
+          triggers:
+            - uuid: bcb6d126180e43f6a70010080b553fbd
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmLowBattery.0)<>0'
+              name: '{HOSTNAME} - UPS low battery alarm is active'
+              priority: AVERAGE
+        - uuid: e4e4d8830bf848e0af247012ffc7e41b
+          name: 'Alarm - UPS OnBattery'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.6.3.15.0
+          key: upsAlarmOnBattery
+          history: 7d
+          description: 'The UPS is drawing power from the batteries. (A019)'
+          tags:
+            - tag: application
+              value: alarm
+          triggers:
+            - uuid: 48542207fede426aa489c977c9f7c6bd
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmOnBattery)<>0'
+              name: '{HOSTNAME} - On Battery Power'
+              priority: HIGH
+              dependencies:
+                - name: '{HOSTNAME} - No input power'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsInputFrequency.0)<{$UPS.INPUT.FREQ.MIN}'
+        - uuid: 2cc59e29b77c48ca936d150331b91fbb
+          name: 'Alarm - UPS OnBypass'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.6.3.55.0
+          key: upsAlarmOnBypass.0
+          history: 7d
+          description: |
+            Load supplied by automatic bypass.
+            Load not protected.
+          tags:
+            - tag: application
+              value: alarm
+          triggers:
+            - uuid: 0202ef22cc444c2c91921a1693491cab
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmOnBypass.0)<>0'
+              name: '{HOSTNAME} - OnBypass Mode'
+              priority: AVERAGE
+        - uuid: 3b6fc3fb02dc4e45bba1c2fe9552f4bf
+          name: 'Alarm - UPS Overload'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.6.3.2.0
+          key: upsAlarmOverload.0
+          history: 7d
+          description: 'The output load exceeds the UPS output capacity. (A001)'
+          tags:
+            - tag: application
+              value: alarm
+          triggers:
+            - uuid: 13d3b33e8a3c4f5ea5fd10bf48c8f9e6
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmOverload.0)<>0'
+              name: '{HOSTNAME} - UPS overload alarm is active'
+              priority: HIGH
+        - uuid: 9856a3447b294e77ad59d993737fc635
+          name: 'Alarm Present Quantity'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.6.1.0
+          key: upsAlarmsPresent.0
+          history: 7d
+          description: 'The present number of active alarm conditions.'
+          tags:
+            - tag: application
+              value: alarm
+          triggers:
+            - uuid: b157fdc61b3944e993c61d8e895232cb
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmsPresent.0)<>0'
+              name: '{HOSTNAME} - Active Alarms'
+              priority: HIGH
+              description: 'Check on the UPS the issue'
+              dependencies:
+                - name: '{HOSTNAME} - Ambient temperature critical'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)>{$UPS.TEMP.HIGH}'
+                - name: '{HOSTNAME} - Ambient temperature high'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)>{$UPS.TEMP.WARN}'
+                - name: '{HOSTNAME} - Ambient temperature low'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)<{$UPS.TEMP.LOW}'
+                - name: '{HOSTNAME} - Ambient temperature too low'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)<{$UPS.TEMP.CRIT.LOW}'
+                - name: '{HOSTNAME} - Battery charge critical'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsEstimatedChargeRemaining.0)<{$UPS.BATTERY.CHARGE.CRIT}'
+                - name: '{HOSTNAME} - Battery charge low'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsEstimatedChargeRemaining.0)<{$UPS.BATTERY.CHARGE.WARN}'
+                - name: '{HOSTNAME} - Battery depleted'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsBatteryStatus.0)=4'
+                - name: '{HOSTNAME} - Battery low'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsBatteryStatus.0)=3'
+                - name: '{HOSTNAME} - Battery status unknown'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsBatteryStatus.0)=1'
+                - name: '{HOSTNAME} - Fan Fault'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmFansFailure.0)<>0'
+                - name: '{HOSTNAME} - No input power'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsInputFrequency.0)<{$UPS.INPUT.FREQ.MIN}'
+                - name: '{HOSTNAME} - On Battery Power'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmOnBattery)<>0'
+                - name: '{HOSTNAME} - OnBypass Mode'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmOnBypass.0)<>0'
+                - name: '{HOSTNAME} - Output load high'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsOutputLoadRate.0,5m)>{$UPS.LOAD.HIGH}'
+                - name: '{HOSTNAME} - Output load warning'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsOutputLoadRate.0,5m)>{$UPS.LOAD.WARN}'
+                - name: '{HOSTNAME} - Output source is not inverter'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsOutputSource.0)<>{$UPS.OUTPUT.SOURCE.OK}'
+                - name: '{HOSTNAME} - UPS battery temperature alarm is active'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmBatteryTemperature.0)<>0'
+                - name: '{HOSTNAME} - UPS low battery alarm is active'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmLowBattery.0)<>0'
+                - name: '{HOSTNAME} - UPS overload alarm is active'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsAlarmOverload.0)<>0'
+        - uuid: 364be1a081ba412f902fa40a9e4b93a2
+          name: 'Ambient Temperature'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.2.7.0
+          key: upsAmbientTemperature.0
+          history: 7d
+          value_type: FLOAT
+          units: °C
+          description: |
+            The ambient temperature inside the UPS
+            A value of 0 is discarded because it usually means the temperature sensor is not present on some SOCOMEC NetVision cards.
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1 || v === 0 || v < -400 || v > 1000) {
+                      throw 'Invalid SOCOMEC temperature value: ' + value;
+                  }
+                  return value;
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: application
+              value: temperature
+          triggers:
+            - uuid: 993f2e06d1374281934cf4a0bb2123d1
+              expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)>{$UPS.TEMP.HIGH}'
+              name: '{HOSTNAME} - Ambient temperature critical'
+              priority: HIGH
+              description: 'Ambient temperature is above the high threshold.'
+            - uuid: 722324272a9a4139ae2bb95d2edfbece
+              expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)>{$UPS.TEMP.WARN}'
+              name: '{HOSTNAME} - Ambient temperature high'
+              priority: AVERAGE
+              description: 'Ambient temperature is above the warning threshold.'
+              dependencies:
+                - name: '{HOSTNAME} - Ambient temperature critical'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)>{$UPS.TEMP.HIGH}'
+            - uuid: e803c91afdbc4cc09bd94987dabc6d69
+              expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)<{$UPS.TEMP.LOW}'
+              name: '{HOSTNAME} - Ambient temperature low'
+              priority: AVERAGE
+              description: 'Ambient temperature is below the warning threshold.'
+              dependencies:
+                - name: '{HOSTNAME} - Ambient temperature too low'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)<{$UPS.TEMP.CRIT.LOW}'
+            - uuid: ad3d6061ce9f4d72bb276e42742140af
+              expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsAmbientTemperature.0,5m)<{$UPS.TEMP.CRIT.LOW}'
+              name: '{HOSTNAME} - Ambient temperature too low'
+              priority: HIGH
+              description: 'Ambient temperature is below the critical low threshold.'
+        - uuid: b26e35ebd71d413a8bed681748a6b252
+          name: 'Battery Status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.33.1.2.1.0
+          key: upsBatteryStatus.0
+          history: 7d
+          description: 'Battery status from standard UPS-MIB.'
+          valuemap:
+            name: 'UPS-MIB - BatteryStatus'
+          tags:
+            - tag: application
+              value: battery
+          triggers:
+            - uuid: b9e5777442164f53b3faa32dd85b52dd
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsBatteryStatus.0)=4'
+              name: '{HOSTNAME} - Battery depleted'
+              priority: HIGH
+            - uuid: e16021fe77e645d8b832e7d65e110637
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsBatteryStatus.0)=3'
+              name: '{HOSTNAME} - Battery low'
+              priority: AVERAGE
+            - uuid: bd7e3c9d50cb4c6fab07be055c7ce1ad
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsBatteryStatus.0)=1'
+              name: '{HOSTNAME} - Battery status unknown'
+              priority: AVERAGE
+        - uuid: 893dfbcabbae48908f5c115c8c842b61
+          name: 'Battery Temperature'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.33.1.2.7.0
+          key: upsBatteryTemperature.0
+          history: 7d
+          value_type: FLOAT
+          units: °C
+          description: |
+            Battery temperature from UPS-MIB.
+            A value of 0 is discarded because it usually means the battery temperature sensor is not present on some SOCOMEC NetVision cards.
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1 || v === 0 || v < -40 || v > 100) {
+                      throw 'Invalid SOCOMEC temperature value: ' + value;
+                  }
+                  return value;
+          tags:
+            - tag: application
+              value: battery
+            - tag: application
+              value: temperature
+        - uuid: 5edc782b24f24a489a3a2cfa3275b556
+          name: 'Battery Voltage'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.2.5.0
+          key: upsBatteryVoltage.0
+          history: 7d
+          value_type: FLOAT
+          units: V
+          description: 'Battery voltage.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC sentinel value: ' + value;
+                  }
+                  return value;
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: application
+              value: battery
+        - uuid: ca267b8b516e46949d15be554c330d1d
+          name: 'Bypass Frequency'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.5.1.0
+          key: upsBypassFrequency.0
+          history: 7d
+          value_type: FLOAT
+          units: Hz
+          description: 'Bypass frequency.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC sentinel value: ' + value;
+                  }
+                  return value;
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: application
+              value: bypass
+        - uuid: 6f9edd4fb5b546908b732064d6a66070
+          name: 'UPS nominal power'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.8.1.0
+          key: upsConfigOutputPower.0
+          delay: 1h
+          history: 7d
+          value_type: FLOAT
+          units: kVA
+          description: 'Configured UPS nominal output power.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC sentinel value: ' + value;
+                  }
+                  return value;
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: application
+              value: config
+        - uuid: e2673ff69ab6435a877f30529b39320b
+          name: 'UPS configured unit kVA'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.8.3.0
+          key: upsConfigUnitKva.0
+          delay: 1h
+          history: 7d
+          value_type: FLOAT
+          units: kVA
+          description: 'UPS configured unit capacity.'
+          tags:
+            - tag: application
+              value: config
+        - uuid: 3124a02591394c33bdd475cbc5d526f3
+          name: 'Battery Percent'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.2.4.0
+          key: upsEstimatedChargeRemaining.0
+          history: 7d
+          value_type: FLOAT
+          units: '%'
+          description: 'An estimate of the battery charge remaining expressed as a percent of full charge.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v < 0 || v > 100 || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC battery charge value: ' + value;
+                  }
+                  return value;
+          tags:
+            - tag: application
+              value: battery
+          triggers:
+            - uuid: 5fa1919fbe05491497bfe42b9769c2d7
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsEstimatedChargeRemaining.0)<{$UPS.BATTERY.CHARGE.CRIT}'
+              name: '{HOSTNAME} - Battery charge critical'
+              priority: HIGH
+            - uuid: 05726acd77b14968bf124921af5097aa
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsEstimatedChargeRemaining.0)<{$UPS.BATTERY.CHARGE.WARN}'
+              name: '{HOSTNAME} - Battery charge low'
+              priority: AVERAGE
+              dependencies:
+                - name: '{HOSTNAME} - Battery charge critical'
+                  expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsEstimatedChargeRemaining.0)<{$UPS.BATTERY.CHARGE.CRIT}'
+        - uuid: 422c697daf8a49d98b90a8ff49ac79b6
+          name: 'Battery Time Remaining'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.2.3.0
+          key: upsEstimatedMinutesRemaining.0
+          history: 7d
+          units: '!min'
+          description: 'An estimate of the time to battery charge depletion under the present load conditions. Compute when UPS is on battery power.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC sentinel value: ' + value;
+                  }
+                  return value;
+          tags:
+            - tag: application
+              value: battery
+        - uuid: 4acba6cd3bcf43ed837f704ec3c017ef
+          name: 'Firmware Version'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.33.1.1.4.0
+          key: upsfirmware.0
+          delay: 1d
+          history: 7d
+          value_type: TEXT
+          inventory_link: OS
+          tags:
+            - tag: application
+              value: information
+        - uuid: a59a7a4e5e2140beadc5e9b696601f1f
+          name: Model
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.1.1.0
+          key: upsIdentModel.0
+          delay: 1d
+          history: 7d
+          value_type: TEXT
+          inventory_link: MODEL
+          tags:
+            - tag: application
+              value: information
+        - uuid: 7ca3414dc8ff4742a729830d5cef45bb
+          name: 'Serial Number'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.1.2.0
+          key: upsIdentSerialNumber.0
+          delay: 1d
+          history: 7d
+          value_type: TEXT
+          inventory_link: SERIALNO_A
+          tags:
+            - tag: application
+              value: information
+        - uuid: 2c70a14f54d646ae9f29411c76d4ca09
+          name: 'Input Frequency'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.3.2.0
+          key: upsInputFrequency.0
+          history: 7d
+          units: Hz
+          description: 'The current input frequency to the UPS system.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC sentinel value: ' + value;
+                  }
+                  return value;
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: application
+              value: input
+          triggers:
+            - uuid: cdb41b57b2274234b75f4be0671f7171
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsInputFrequency.0)<{$UPS.INPUT.FREQ.MIN}'
+              name: '{HOSTNAME} - No input power'
+              priority: HIGH
+        - uuid: c408f4458b0c446d9b6fbac4345fa5df
+          name: 'Output active power'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.4.6.0
+          key: upsOutputActivePower.0
+          history: 7d
+          value_type: FLOAT
+          units: kW
+          description: 'Output global active power.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC sentinel value: ' + value;
+                  }
+                  return value;
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: application
+              value: output
+        - uuid: 543054ef5e944ce8831ea22dcb38d901
+          name: 'Output apparent power'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.4.5.0
+          key: upsOutputApparentPower.0
+          history: 7d
+          value_type: FLOAT
+          units: kVA
+          description: 'Output global apparent power.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC sentinel value: ' + value;
+                  }
+                  return value;
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: application
+              value: output
+        - uuid: 694c953730804a7a87128fcae26b258b
+          name: 'Output Frequency'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.4.2.0
+          key: upsOutputFrequency.0
+          history: 7d
+          units: Hz
+          description: 'The current output frequency of the UPS system.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC sentinel value: ' + value;
+                  }
+                  return value;
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: application
+              value: output
+        - uuid: 6e9d0eeb9cd848ea9e0926083dc660ae
+          name: 'Output Load'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.4.7.0
+          key: upsOutputLoadRate.0
+          history: 7d
+          value_type: FLOAT
+          units: '%'
+          description: 'Output global Load Rate.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v) || v < 0 || v > 200 || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                      throw 'Invalid SOCOMEC percentage value: ' + value;
+                  }
+                  return value;
+          tags:
+            - tag: application
+              value: output
+          triggers:
+            - uuid: 6f4b0c48b0ee4a47a1684a27abe61fa9
+              expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsOutputLoadRate.0,5m)>{$UPS.LOAD.HIGH}'
+              name: '{HOSTNAME} - Output load high'
+              priority: HIGH
+            - uuid: c82e4831dfe7428fa2562642c2b57bce
+              expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsOutputLoadRate.0,5m)>{$UPS.LOAD.WARN}'
+              name: '{HOSTNAME} - Output load warning'
+              priority: AVERAGE
+              dependencies:
+                - name: '{HOSTNAME} - Output load high'
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/upsOutputLoadRate.0,5m)>{$UPS.LOAD.HIGH}'
+        - uuid: a160fee2e3644e12be4519f2673a2515
+          name: 'Output Status'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.4.1.0
+          key: upsOutputSource.0
+          history: 7d
+          description: 'The present source of output power.'
+          valuemap:
+            name: 'Socomec - OutputSource'
+          tags:
+            - tag: application
+              value: output
+          triggers:
+            - uuid: 2b673e6c213b4eb2982a8e03928d3d82
+              expression: 'last(/SOCOMEC UPS NetVision by SNMP/upsOutputSource.0)<>{$UPS.OUTPUT.SOURCE.OK}'
+              name: '{HOSTNAME} - Output source is not inverter'
+              priority: AVERAGE
+        - uuid: fd0615a668ff452ea6712a34e84cf4d3
+          name: 'Remote control status'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.4555.1.1.7.1.8.4.0
+          key: upsRemoteControlStatus.0
+          delay: 1h
+          history: 7d
+          description: 'SOCOMEC remote control status.'
+          tags:
+            - tag: application
+              value: config
+        - uuid: 4a9c4f9e75b745f594e89ed51f801c6a
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          valuemap:
+            name: zabbix.host.available
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 6ae61227a54143b49378c734a0f1cd95
+              expression: 'max(/SOCOMEC UPS NetVision by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'SNMP is unavailable on {HOST.NAME}'
+              priority: AVERAGE
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/SOCOMEC UPS NetVision by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: 7d23e82bf6ad4b9cb4e03d38d528f190
+          name: 'Bypass phases discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#PHASE},.1.3.6.1.4.1.4555.1.1.7.1.5.3.1.1]'
+          key: socomec.bypass.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: c04da91eaae0403db2d2b470f26e622d
+              name: 'Bypass phase {#PHASE}: Current'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.5.3.1.3.{#SNMPINDEX}'
+              key: 'socomec.bypass.current[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: A
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC sentinel value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: bypass
+            - uuid: 518416dc618e49e88ddc10e277de97d1
+              name: 'Bypass phase {#PHASE}: Voltage'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.5.3.1.2.{#SNMPINDEX}'
+              key: 'socomec.bypass.voltage[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC sentinel value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: bypass
+          graph_prototypes:
+            - uuid: d0102ad6f3a24e62ae8401bf655dfe39
+              name: 'Bypass phase {#PHASE}: Voltage and current'
+              graph_items:
+                - color: 1A7C11
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.bypass.voltage[{#SNMPINDEX}]'
+                - color: 0040FF
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.bypass.current[{#SNMPINDEX}]'
+        - uuid: 6ca9a91f832e4eb6ac859ec458735ea1
+          name: 'Input phases discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#PHASE},.1.3.6.1.4.1.4555.1.1.7.1.3.3.1.1]'
+          key: socomec.input.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 14467d1fd4a14955940f6c507e966aa8
+              name: 'Input phase {#PHASE}: Current'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.3.3.1.3.{#SNMPINDEX}'
+              key: 'socomec.input.current[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: A
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC sentinel value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: input
+            - uuid: 53034a5bfac1468b9be99762a263a750
+              name: 'Input phase {#PHASE}: Voltage max'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.3.3.1.4.{#SNMPINDEX}'
+              key: 'socomec.input.voltage.max[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1 || v < 1000 || v > 3000) {
+                          throw 'Invalid SOCOMEC voltage history value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: input
+            - uuid: cbf95e4de4b441cab3d0c6dafd97b91d
+              name: 'Input phase {#PHASE}: Voltage min'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.3.3.1.5.{#SNMPINDEX}'
+              key: 'socomec.input.voltage.min[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1 || v < 1000 || v > 3000) {
+                          throw 'Invalid SOCOMEC voltage history value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: input
+            - uuid: e8f70068f1b347818ef879645a0e4466
+              name: 'Input phase {#PHASE}: Voltage'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.3.3.1.2.{#SNMPINDEX}'
+              key: 'socomec.input.voltage[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC sentinel value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: input
+          graph_prototypes:
+            - uuid: 014070fcbc754ae78e1353b699bb1510
+              name: 'Input phase {#PHASE}: Current'
+              graph_items:
+                - color: 0040FF
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.input.current[{#SNMPINDEX}]'
+            - uuid: e77d12c5cf0647e5afca75baef192a59
+              name: 'Input phase {#PHASE}: Voltage'
+              graph_items:
+                - color: 1A7C11
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.input.voltage[{#SNMPINDEX}]'
+                - color: 2774A4
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.input.voltage.max[{#SNMPINDEX}]'
+                - color: F63100
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.input.voltage.min[{#SNMPINDEX}]'
+        - uuid: f65f79146e2a40498c56ba8e7ab055ed
+          name: 'Output phases discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#PHASE},.1.3.6.1.4.1.4555.1.1.7.1.4.4.1.1]'
+          key: socomec.output.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 61da73c67bc04043a03fda56e5c5fc47
+              name: 'Output phase {#PHASE}: Active power'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.4.4.1.6.{#SNMPINDEX}'
+              key: 'socomec.output.active_power[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: kW
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC sentinel value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: output
+            - uuid: 3b217da011c54aec96af495a0c7c356c
+              name: 'Output phase {#PHASE}: Apparent power'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.4.4.1.5.{#SNMPINDEX}'
+              key: 'socomec.output.apparent_power[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: kVA
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC sentinel value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: output
+            - uuid: 6c40d9b53d3345339449c155b59b6394
+              name: 'Output phase {#PHASE}: Current'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.4.4.1.3.{#SNMPINDEX}'
+              key: 'socomec.output.current[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: A
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC sentinel value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: output
+            - uuid: d778cf9e944a4d62ada64a06741cab11
+              name: 'Output phase {#PHASE}: Load'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.4.4.1.4.{#SNMPINDEX}'
+              key: 'socomec.output.load[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: '%'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v < 0 || v > 200 || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC percentage value: ' + value;
+                      }
+                      return value;
+              tags:
+                - tag: application
+                  value: output
+              trigger_prototypes:
+                - uuid: 250e4b008419426f91e4bff1599e317f
+                  expression: 'avg(/SOCOMEC UPS NetVision by SNMP/socomec.output.load[{#SNMPINDEX}],5m)>{$UPS.LOAD.WARN}'
+                  name: '{HOSTNAME} - Output phase {#PHASE} load warning'
+                  priority: AVERAGE
+            - uuid: 33eb5be2f69a4b34b3ee57081842de36
+              name: 'Output phase {#PHASE}: Voltage'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.4555.1.1.7.1.4.4.1.2.{#SNMPINDEX}'
+              key: 'socomec.output.voltage[{#SNMPINDEX}]'
+              history: 7d
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v) || v === 65535 || v === 655350 || v === 65533 || v === -1) {
+                          throw 'Invalid SOCOMEC sentinel value: ' + value;
+                      }
+                      return value;
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: application
+                  value: output
+          graph_prototypes:
+            - uuid: 4f92f24f05aa48129623d2d3bfc9e031
+              name: 'Output phase {#PHASE}: Load'
+              graph_items:
+                - color: 1A7C11
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.output.load[{#SNMPINDEX}]'
+            - uuid: 939ea072fc60439e88731cf8cdf22e2f
+              name: 'Output phase {#PHASE}: Power'
+              graph_items:
+                - color: F63100
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.output.active_power[{#SNMPINDEX}]'
+                - color: 2774A4
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.output.apparent_power[{#SNMPINDEX}]'
+            - uuid: 149dcc2ad18940f89c5875590638c71d
+              name: 'Output phase {#PHASE}: Voltage and current'
+              graph_items:
+                - color: 1A7C11
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.output.voltage[{#SNMPINDEX}]'
+                - color: 0040FF
+                  item:
+                    host: 'SOCOMEC UPS NetVision by SNMP'
+                    key: 'socomec.output.current[{#SNMPINDEX}]'
+      tags:
+        - tag: class
+          value: power
+        - tag: target
+          value: netvision
+        - tag: target
+          value: socomec
+      macros:
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+        - macro: '{$UPS.BATTERY.CHARGE.CRIT}'
+          value: '15'
+          description: 'Battery charge critical threshold, in percent.'
+        - macro: '{$UPS.BATTERY.CHARGE.WARN}'
+          value: '30'
+          description: 'Battery charge warning threshold, in percent.'
+        - macro: '{$UPS.INPUT.FREQ.MIN}'
+          value: '45'
+          description: 'Minimum valid input frequency before considering input power lost.'
+        - macro: '{$UPS.LOAD.HIGH}'
+          value: '90'
+          description: 'UPS load high threshold, in percent.'
+        - macro: '{$UPS.LOAD.WARN}'
+          value: '80'
+          description: 'UPS load warning threshold, in percent.'
+        - macro: '{$UPS.OUTPUT.SOURCE.OK}'
+          value: '3'
+          description: 'Expected output source. SOCOMEC value 3 = onInverter.'
+        - macro: '{$UPS.TEMP.CRIT.LOW}'
+          value: '5'
+          description: 'Low temperature high-severity threshold, in Celsius.'
+        - macro: '{$UPS.TEMP.HIGH}'
+          value: '40'
+          description: 'Temperature high threshold, in Celsius.'
+        - macro: '{$UPS.TEMP.LOW}'
+          value: '10'
+          description: 'Low temperature warning threshold, in Celsius.'
+        - macro: '{$UPS.TEMP.WARN}'
+          value: '37'
+          description: 'Temperature warning threshold, in Celsius.'
+      dashboards:
+        - uuid: 6cb51766333740309045947a2a1fe669
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'UPS model'
+                  width: '36'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'UPS model'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SOCOMEC UPS NetVision by SNMP'
+                        key: upsIdentModel.0
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Firmware
+                  'y': '3'
+                  width: '36'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: Firmware
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SOCOMEC UPS NetVision by SNMP'
+                        key: upsfirmware.0
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Ambiant temp'
+                  'y': '6'
+                  width: '12'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Ambiant temp'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SOCOMEC UPS NetVision by SNMP'
+                        key: upsAmbientTemperature.0
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: honeycomb
+                  name: Alarms
+                  'y': '9'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Alarm - *'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Alarm - (.*)$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: VKWYG
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                - type: item
+                  name: 'Battery charge'
+                  x: '12'
+                  'y': '6'
+                  width: '12'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Battery charge'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SOCOMEC UPS NetVision by SNMP'
+                        key: upsEstimatedChargeRemaining.0
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Load
+                  x: '24'
+                  'y': '6'
+                  width: '12'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: Load
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SOCOMEC UPS NetVision by SNMP'
+                        key: upsOutputLoadRate.0
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Serial number'
+                  x: '36'
+                  width: '36'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'Serial number'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SOCOMEC UPS NetVision by SNMP'
+                        key: upsIdentSerialNumber.0
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Uptime
+                  x: '36'
+                  'y': '3'
+                  width: '36'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: Uptime
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SOCOMEC UPS NetVision by SNMP'
+                        key: 'system.uptime[sysUpTime.0]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Battery status'
+                  x: '36'
+                  'y': '6'
+                  width: '36'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Battery status'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'SOCOMEC UPS NetVision by SNMP'
+                        key: upsBatteryStatus.0
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 607D8B
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF8F00
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+            - name: Metrics
+              widgets:
+                - type: svggraph
+                  name: 'Battery charge'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Battery Percent'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: FNPME
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Temperatures
+                  'y': '5'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.color
+                      value: 00BFFF
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*Temperature'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: EELJW
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Voltages
+                  'y': '10'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*: Voltage'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: BZPNM
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Frequencies
+                  'y': '15'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Bypass Frequency'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'Input Frequency'
+                    - type: STRING
+                      name: ds.0.items.2
+                      value: 'Output Frequency'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: UFAQN
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Power
+                  'y': '20'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*power'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: TRZMB
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Load
+                  x: '36'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '3'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Output Load'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: BSODF
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+      valuemaps:
+        - uuid: 023b07fdf8a64b12904f79d5747aca9a
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 3cb01e9a33cb46d8b5962202685cf984
+          name: 'Socomec - OutputSource'
+          mappings:
+            - value: '1'
+              newvalue: unknown
+            - value: '2'
+              newvalue: onMaintenBypass
+            - value: '3'
+              newvalue: onInverter
+            - value: '4'
+              newvalue: normalMode
+            - value: '5'
+              newvalue: ecoMode
+            - value: '6'
+              newvalue: onBypass
+            - value: '7'
+              newvalue: standby
+            - value: '8'
+              newvalue: upsOff
+        - uuid: 0ecd458a83444e6f857669d5816b9858
+          name: 'UPS-MIB - BatteryStatus'
+          mappings:
+            - value: '1'
+              newvalue: unknown
+            - value: '2'
+              newvalue: batteryNormal
+            - value: '3'
+              newvalue: batteryLow
+            - value: '4'
+              newvalue: batteryDepleted
+        - uuid: 966645a2b98840cbbc585d00b56669ef
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
+  graphs:
+    - uuid: 8bd4ac35997d4962b58344da02975658
+      name: 'Battery Charge'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: upsEstimatedChargeRemaining.0
+    - uuid: 12d38edf72da4e7c887a15fdbbb0821f
+      name: 'Battery Voltage'
+      show_work_period: 'NO'
+      graph_items:
+        - color: 0040FF
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: upsBatteryVoltage.0
+    - uuid: 776c4cef124747669ee9af80d16b7c24
+      name: 'ICMP response time'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: icmppingsec
+    - uuid: b243397b62964593acceddb0f765a112
+      name: 'OnBattery Power'
+      yaxismax: '1'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - color: 2774A4
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: upsAlarmOnBattery
+    - uuid: 2df9cb2179f241f9a3d40be0a58bb071
+      name: 'Output Load'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - color: 1A7C11
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: upsOutputLoadRate.0
+    - uuid: a5550e58ef42486b8fe7a604d22bdf8d
+      name: 'Output Power'
+      show_work_period: 'NO'
+      graph_items:
+        - color: F63100
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: upsOutputActivePower.0
+        - color: 2774A4
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: upsOutputApparentPower.0
+    - uuid: 7575b7f99a954951a79f2d6c559ed41c
+      name: Temperatures
+      show_work_period: 'NO'
+      graph_items:
+        - color: 0040FF
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: upsAmbientTemperature.0
+        - color: F63100
+          item:
+            host: 'SOCOMEC UPS NetVision by SNMP'
+            key: upsBatteryTemperature.0

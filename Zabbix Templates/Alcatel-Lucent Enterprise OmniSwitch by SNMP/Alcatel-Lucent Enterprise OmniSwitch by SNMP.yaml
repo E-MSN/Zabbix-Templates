@@ -1,0 +1,2010 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 36bff6c29af64692839d077febfc7079
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: b1110e76dba8447f947fe58af94a7a6a
+      template: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+      name: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+      description: 'Unified SNMP template for Alcatel-Lucent Enterprise OmniSwitch devices running AOS 6.x and AOS 8.x.'
+      vendor:
+        name: E-MSN
+        version: 7.4-10
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 3ba730573f1148edbb5c7baf5426f615
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          delay: '60'
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: 4f09cbc7c5024b21b400e13f23aa0c4e
+              expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 3609a4d763584324ab4c3812aac7f571
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: fa395dc5bc79436d9312f1a54df7e7d3
+              expression: 'min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'ICMP packets loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 504984379c374dbeac7be1791a604a47
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: dadbea0cf8f64fc3bbf7a4c30ae8c57d
+              expression: 'avg(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 734a0f03dcac4fa6ac9882a6455c91d3
+          name: 'Device contact details'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.4.0
+          key: sysContact
+          delay: 5m
+          history: 7d
+          value_type: CHAR
+          description: 'SNMPv2-MIB::sysContact.0 - The textual identification of the contact person for this managed node, together with information on how to contact this person. If no contact information is known, the value is the zero-length string.'
+          inventory_link: CONTACT
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: 54ead5af9a234a2f920b2ba706fac4d7
+          name: 'Device description'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.1.0
+          key: sysDescr
+          delay: 5m
+          history: 7d
+          value_type: CHAR
+          description: 'SNMPv2-MIB::sysDescr.0 - A textual description of the entity. This value should include the full name and version identification of the system''s hardware type, software operating-system, and networking software.'
+          inventory_link: HARDWARE
+          tags:
+            - tag: component
+              value: inventory
+          triggers:
+            - uuid: 7bc880a104a3408097ad10dbade76551
+              expression: 'last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/sysDescr)<>last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/sysDescr,#2)'
+              name: '{HOST.NAME}: Device description changed'
+              priority: INFO
+              description: |
+                Detects a sysDescr change.
+                On OmniSwitch devices, this usually indicates a software, firmware, model, or system description change.
+              manual_close: 'YES'
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: inventory
+                - tag: scope
+                  value: notice
+        - uuid: 7a9ede007dac4a088adb9844a04045ac
+          name: 'Device location'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.6.0
+          key: sysLocation
+          delay: 5m
+          history: 7d
+          value_type: CHAR
+          description: 'SNMPv2-MIB::sysLocation.0 - The physical location of this node (e.g., `telephone closet, 3rd floor''). If the location is unknown, the value is the zero-length string.'
+          inventory_link: LOCATION
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: 5876a0ef02364baebbd49001bba69fef
+          name: 'Device name'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.5.0
+          key: sysName
+          delay: 5m
+          history: 7d
+          value_type: CHAR
+          description: 'SNMPv2-MIB::sysName.0 - An administratively-assigned name for this managed node. By convention, this is the node''s fully-qualified domain name. If the name is unknown, the value is the zero-length string.'
+          inventory_link: NAME
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: d1a5bcef49ed484e932e59804c8721a9
+          name: SysUptime
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.3.0
+          key: SysUptime
+          history: 7d
+          value_type: FLOAT
+          trends: 60d
+          units: uptime
+          description: 'DISMAN-EVENT-MIB::sysUpTimeInstance - Uptime of the system in TimeTicks (100 timeticks == 1 second)'
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 3c2fba0e100941679f1dc2872dc86c38
+              expression: 'last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/SysUptime)<10m'
+              name: '{HOST.NAME} has been restarted'
+              event_name: 'Alcatel AOS: {HOST.NAME} has been restarted (uptime < 10m)'
+              priority: INFO
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+        - uuid: f6b3cc1f7489497da1cb23667676c713
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          valuemap:
+            name: zabbix.host.available
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: component
+              value: system
+            - tag: scope
+              value: availability
+          triggers:
+            - uuid: 211da149146342dd881f460db5329cba
+              expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: '{HOST.NAME}: No SNMP data collection'
+              opdata: 'Current state: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: |
+                SNMP is not available for polling.
+                Please check device connectivity and SNMP settings.
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: cd737d8c410c4ab79858ed6eb15c450a
+          name: '[AOS 6] Discover ALE OmniSwitch stack/performance'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},.1.3.6.1.4.1.6486.800.1.2.1.5.1.1.2.12.1.1]'
+          key: aos6.esmSlotNumber
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: |
+            ALCATEL-IND1-PORT-MIB::esmSlotNumber.X
+            X is the slot number (element of the stack)
+          item_prototypes:
+            - uuid: 73cd264dfc9f4abea054556c5b2e9e64
+              name: '[AOS 6] CPU usage 1 hr max chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.2.1.16.1.1.2.1.1.17.{#SNMPVALUE}'
+              key: 'aos6.cpu1hrmax.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: cpu
+                - tag: scope
+                  value: performance
+            - uuid: 6056768eee9d4902a3f4efe5a2d53fba
+              name: '[AOS 6] CPU usage 1 min avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.2.1.16.1.1.2.1.1.15.{#SNMPVALUE}'
+              key: 'aos6.cpu1minavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: cpu
+                - tag: scope
+                  value: performance
+              trigger_prototypes:
+                - uuid: abc58747cec342fdb9f8bee3cd4c929d
+                  expression: 'min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.cpu1minavg.slot.[{#SNMPVALUE}],5m)>{$ALE.CPU.UTIL.MAX}'
+                  name: '[AOS 6] CPU usage on chassis {#SNMPVALUE} > {$ALE.CPU.UTIL.MAX}%'
+                  priority: WARNING
+                  description: 'CPU remains above the threshold for 5 minutes.'
+                  dependencies:
+                    - name: '{HOST.NAME}: No SNMP data collection'
+                      expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+                  tags:
+                    - tag: component
+                      value: cpu
+                    - tag: scope
+                      value: performance
+            - uuid: 912feccbd6264ee0a8e1caa1506bd130
+              name: '[AOS 6] Freespace /flash chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.1.1.3.1.1.9.1.3.{#SNMPVALUE}'
+              key: 'aos6.flashfreespace.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: Byte
+              tags:
+                - tag: component
+                  value: storage
+                - tag: scope
+                  value: capacity
+            - uuid: 25c94e2c6d074f68aa632725ed7b93f6
+              name: '[AOS 6] Memory usage 1 hr max chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.2.1.16.1.1.2.1.1.13.{#SNMPVALUE}'
+              key: 'aos6.memory1hrmax.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: memory
+                - tag: scope
+                  value: performance
+            - uuid: a78c37e8eb8041c69cee97d04aa05a49
+              name: '[AOS 6] Memory usage 1 min avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.2.1.16.1.1.2.1.1.11.{#SNMPVALUE}'
+              key: 'aos6.memory1minavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: memory
+                - tag: scope
+                  value: performance
+              trigger_prototypes:
+                - uuid: 423f79eac91e4689bb74c4804f5adb3c
+                  expression: 'min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.memory1minavg.slot.[{#SNMPVALUE}],5m)>{$ALE.MEMORY.UTIL.MAX}'
+                  name: '[AOS 6] Memory usage on chassis {#SNMPVALUE} > {$ALE.MEMORY.UTIL.MAX}%'
+                  priority: WARNING
+                  description: 'Memory remains above the threshold for 5 minutes.'
+                  dependencies:
+                    - name: '{HOST.NAME}: No SNMP data collection'
+                      expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+                  tags:
+                    - tag: component
+                      value: memory
+                    - tag: scope
+                      value: performance
+            - uuid: c1355d1e40f64f4c8e183ca0de38158a
+              name: '[AOS 6] RXTX usage 1 hr max chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.2.1.16.1.1.2.1.1.9.{#SNMPVALUE}'
+              key: 'aos6.rxtx1hrmax.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: performance
+            - uuid: 6ac4c6e8b9b843548fcac365a666632e
+              name: '[AOS 6] RXTX usage 1 min avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.2.1.16.1.1.2.1.1.7.{#SNMPVALUE}'
+              key: 'aos6.rxtx1minavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: performance
+              trigger_prototypes:
+                - uuid: 0267ba14b6d640e69335d72f397d5c65
+                  expression: 'min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.rxtx1minavg.slot.[{#SNMPVALUE}],5m)>{$ALE.RXTX.UTIL.MAX}'
+                  name: '[AOS 6] RXTX load on chassis {#SNMPVALUE} > {$ALE.RXTX.UTIL.MAX}%'
+                  priority: WARNING
+                  description: 'Internal RX/TX load remains above the threshold for 5 minutes.'
+                  dependencies:
+                    - name: '{HOST.NAME}: No SNMP data collection'
+                      expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+                  tags:
+                    - tag: component
+                      value: system
+                    - tag: scope
+                      value: performance
+          graph_prototypes:
+            - uuid: 896328890c03423c932275c3e194c0de
+              name: '[AOS 6] CPU usage slot {#SNMPVALUE}'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.cpu1minavg.slot.[{#SNMPVALUE}]'
+                - sortorder: '1'
+                  color: 00CCCC
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.cpu1hrmax.slot.[{#SNMPVALUE}]'
+            - uuid: 31d7211501ce4b7fbac413cdb5e287a4
+              name: '[AOS 6] Freespace /flash slot {#SNMPVALUE}'
+              ymin_type_1: FIXED
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 00AA00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.flashfreespace.slot.[{#SNMPVALUE}]'
+            - uuid: 5f6cde6caeb74f1288180d6dd1350bcb
+              name: '[AOS 6] Memory usage slot {#SNMPVALUE}'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.memory1minavg.slot.[{#SNMPVALUE}]'
+                - sortorder: '1'
+                  color: 00CCCC
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.memory1hrmax.slot.[{#SNMPVALUE}]'
+            - uuid: 1912b7177e53401aa848e87821aeb244
+              name: '[AOS 6] RXTX usage slot {#SNMPVALUE}'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.rxtx1minavg.slot.[{#SNMPVALUE}]'
+                - sortorder: '1'
+                  color: 00CCCC
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.rxtx1hrmax.slot.[{#SNMPVALUE}]'
+        - uuid: cae842c6e14747ce84c7b2d3098e4fa9
+          name: '[AOS 6] Discover ALE OmniSwitch PoE Slot/Port'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},.1.3.6.1.4.1.6486.800.1.2.1.27.1.1.1.1.1]'
+          key: aos6.poeSlotPortNumber
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: |
+            AlcatelIND1InLinePowerEthernet::alaPethPsePortPowerMaximum.X.Y
+            X is the slot number (element of the stack) and Y is the port number.
+          item_prototypes:
+            - uuid: b46b2932b5ba4bbfa0f578e60ec75c3a
+              name: '[AOS 6] PoE Power Actual {{#SNMPINDEX}.regsub("([0-9]+)\.([0-9]+)", \1/\2)}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.2.1.27.1.1.1.1.2.{#SNMPINDEX}'
+              key: 'aos6.poepoweractual.[{#SNMPINDEX}]'
+              delay: 30s
+              value_type: FLOAT
+              units: W
+              description: |
+                AlcatelIND1InLinePowerEthernet::alaPethPsePortPowerActual
+                This object contains the actual amount of power used by a port
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.001'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: scope
+                  value: capacity
+            - uuid: 3989b14655054024b0c6e6c5705e9575
+              name: '[AOS 6] PoE Power Maximum {{#SNMPINDEX}.regsub("([0-9]+)\.([0-9]+)", \1/\2)}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.2.1.27.1.1.1.1.1.{#SNMPINDEX}'
+              key: 'aos6.poepowermax.[{#SNMPINDEX}]'
+              delay: 30s
+              value_type: FLOAT
+              units: W
+              description: |
+                AlcatelIND1InLinePowerEthernet::alaPethPsePortPowerMaximum
+                This object controls maximum amount of power per port
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.001'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: scope
+                  value: capacity
+          trigger_prototypes:
+            - uuid: 538a08deae0d41e9b5ee5a3ca7e75d2a
+              expression: 'last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.poepoweractual.[{#SNMPINDEX}])>=last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.poepowermax.[{#SNMPINDEX}]) and last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.poepowermax.[{#SNMPINDEX}])>0'
+              name: '[AOS 6] PoE maximum reached {{#SNMPINDEX}.regsub("([0-9]+)\.([0-9]+)", \1/\2)}'
+              priority: AVERAGE
+              description: 'PoE port consumption is equal to or greater than the declared maximum power for the port.'
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: scope
+                  value: capacity
+            - uuid: d38858539deb4783bab7712e12d26b95
+              expression: 'last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.poepoweractual.[{#SNMPINDEX}])>({$ALE.POE.PORT.UTIL.MAX}/100)*last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.poepowermax.[{#SNMPINDEX}]) and last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.poepowermax.[{#SNMPINDEX}])>0'
+              name: '[AOS 6] PoE usage {{#SNMPINDEX}.regsub("([0-9]+)\.([0-9]+)", \1/\2)} > {$ALE.POE.PORT.UTIL.MAX}%'
+              priority: WARNING
+              description: 'PoE port consumption is close to the maximum allowed power.'
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: scope
+                  value: capacity
+          graph_prototypes:
+            - uuid: 7ae145c3a83045c9bbaeb758f2d737ec
+              name: '[AOS 6] PoE Power {{#SNMPINDEX}.regsub("([0-9]+)\.([0-9]+)", \1/\2)}'
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.poepoweractual.[{#SNMPINDEX}]'
+                - sortorder: '1'
+                  color: F63100
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.poepowermax.[{#SNMPINDEX}]'
+        - uuid: eaad3c8873fd4a4395538773e43bbfa0
+          name: '[AOS 6] Discover ALE OmniSwitch power supplies'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#ENTDESCR},.1.3.6.1.2.1.47.1.1.1.1.2,{#ENTCLASS},.1.3.6.1.2.1.47.1.1.1.1.5,{#ENTNAME},.1.3.6.1.2.1.47.1.1.1.1.7,{#AOS6PSUOPER},.1.3.6.1.4.1.6486.800.1.1.1.1.1.1.1.2]'
+          key: aos6.psu.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#AOS6PSUOPER}'
+                value: '^[1-8]$'
+              - macro: '{#ENTCLASS}'
+                value: ^6$
+          item_prototypes:
+            - uuid: 2286a51f00534ada94110f264d7645c8
+              name: '[AOS 6] Power supply {#ENTNAME} description'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.47.1.1.1.1.2.{#SNMPINDEX}'
+              key: 'aos6.psu.description[{#SNMPINDEX}]'
+              value_type: TEXT
+              tags:
+                - tag: component
+                  value: power
+            - uuid: 60412f4249ac4a24aaf706311367a121
+              name: '[AOS 6] Power supply {#ENTNAME} operational status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.1.1.1.1.1.1.2.{#SNMPINDEX}'
+              key: 'aos6.psu.operstatus[{#SNMPINDEX}]'
+              valuemap:
+                name: 'ALE entity operational status'
+              tags:
+                - tag: component
+                  value: power
+        - uuid: 1213749dbd784d8d996799b0e2eee2ad
+          name: '[AOS 6] Discover ALE OmniSwitch environment'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},.1.3.6.1.2.1.47.1.1.1.1.4,{#AOS6SLOT},.1.3.6.1.4.1.6486.800.1.2.1.5.1.1.2.12.1.1]'
+          key: aos6.slotindex.environment
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#AOS6SLOT}'
+                value: .+
+              - macro: '{#SNMPINDEX}'
+                value: '^([1-8])$'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: |
+            ENTITY-MIB::entPhysicalContainedIn.X gives the real entity index used by temperature OIDs.
+            {#AOS6SLOT} is discovered from an AOS 6 enterprise OID and is only used to automatically suppress this rule on non-AOS6 devices.
+          item_prototypes:
+            - uuid: 4d3bb976c02a44c2a78a5e2e4df2a297
+              name: '[AOS 6] Temperature Danger Threshold on chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.1.1.3.1.1.3.1.8.{#SNMPVALUE}'
+              key: 'aos6.temperature.danger.threshold.slot.[{#SNMPINDEX}]'
+              delay: 1h
+              history: 7d
+              trends: '0'
+              units: °C
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: performance
+            - uuid: 275ac408d25c433f8d004aa7f90e11da
+              name: '[AOS 6] Temperature on chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.1.1.3.1.1.3.1.4.{#SNMPVALUE}'
+              key: 'aos6.temperature.slot.[{#SNMPINDEX}]'
+              history: 7d
+              units: °C
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: performance
+            - uuid: 51d0fd7f729744cc9543b1e3575ac2eb
+              name: '[AOS 6] Temperature Upper Threshold on chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.800.1.1.1.3.1.1.3.1.7.{#SNMPVALUE}'
+              key: 'aos6.temperature.upper.threshold.slot.[{#SNMPINDEX}]'
+              delay: 1h
+              history: 7d
+              trends: '0'
+              units: °C
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: performance
+          trigger_prototypes:
+            - uuid: 5a3c2ed9f2a04f2187e7baf2a69be469
+              expression: |
+                last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.temperature.slot.[{#SNMPINDEX}])>
+                last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.temperature.danger.threshold.slot.[{#SNMPINDEX}])
+              name: '[AOS 6] Temperature on chassis {#SNMPINDEX} exceeds the danger threshold'
+              priority: HIGH
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: availability
+            - uuid: 90c2c20a63da4a0bb799d0e90dbdf842
+              expression: |
+                last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.temperature.slot.[{#SNMPINDEX}])>
+                last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.temperature.upper.threshold.slot.[{#SNMPINDEX}])
+              name: '[AOS 6] Temperature on chassis {#SNMPINDEX} exceeds the upper threshold'
+              priority: AVERAGE
+              dependencies:
+                - name: '[AOS 6] Temperature on chassis {#SNMPINDEX} exceeds the danger threshold'
+                  expression: |
+                    last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.temperature.slot.[{#SNMPINDEX}])>
+                    last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos6.temperature.danger.threshold.slot.[{#SNMPINDEX}])
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: availability
+          graph_prototypes:
+            - uuid: 3a06508c23664932b180ed8c793bd131
+              name: '[AOS 6] Temperature on chassis {#SNMPINDEX}'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos6.temperature.slot.[{#SNMPINDEX}]'
+        - uuid: 053943eb159f4f079c5de8b3eed0d14a
+          name: '[AOS 8] Discover ALE OmniSwitch fans'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#FANSTATUS},.1.3.6.1.4.1.6486.801.1.1.1.3.1.1.11.1.2]'
+          key: aos8.fan.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: f3444c76ab6e41fcb9289d99aa4db8a2
+              name: '[AOS 8] Fan airflow {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.1.1.3.1.1.11.1.3.{#SNMPINDEX}'
+              key: 'aos8.fan.airflow[{#SNMPINDEX}]'
+              valuemap:
+                name: 'ALE fan airflow'
+              tags:
+                - tag: component
+                  value: fan
+            - uuid: 52fa5f5f2a094556944e48946a990d10
+              name: '[AOS 8] Fan speed {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.1.1.3.1.1.11.1.4.{#SNMPINDEX}'
+              key: 'aos8.fan.speed[{#SNMPINDEX}]'
+              units: rpm
+              tags:
+                - tag: component
+                  value: fan
+            - uuid: 18d2b698d84b403784ffa03bd9188f0e
+              name: '[AOS 8] Fan status {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.1.1.3.1.1.11.1.2.{#SNMPINDEX}'
+              key: 'aos8.fan.status[{#SNMPINDEX}]'
+              valuemap:
+                name: 'ALE fan status'
+              tags:
+                - tag: component
+                  value: fan
+              trigger_prototypes:
+                - uuid: 0ae5347c5d764facb108d80027b7f831
+                  expression: 'last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.fan.status[{#SNMPINDEX}])<>2'
+                  name: '[AOS 8] Fan {#SNMPINDEX} is not running'
+        - uuid: af8b9c4c64684b65a8a4bef6c4d4f48f
+          name: '[AOS 8] Discover ALE OmniSwitch power supplies'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#ENTDESCR},.1.3.6.1.2.1.47.1.1.1.1.2,{#ENTCLASS},.1.3.6.1.2.1.47.1.1.1.1.5,{#ENTNAME},.1.3.6.1.2.1.47.1.1.1.1.7,{#AOS8PSUOPER},.1.3.6.1.4.1.6486.801.1.1.1.1.1.1.1.2]'
+          key: aos8.psu.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#AOS8PSUOPER}'
+                value: '^[1-8]$'
+              - macro: '{#ENTCLASS}'
+                value: ^6$
+          item_prototypes:
+            - uuid: 4897587a4b6946d89c5ecad360b0f5b7
+              name: '[AOS 8] Power supply {#ENTNAME} model'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.47.1.1.1.1.13.{#SNMPINDEX}'
+              key: 'aos8.psu.model[{#SNMPINDEX}]'
+              value_type: CHAR
+              tags:
+                - tag: component
+                  value: power
+            - uuid: 958c701e4c764957855b574c241fc587
+              name: '[AOS 8] Power supply {#ENTNAME} operational status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.1.1.1.1.1.1.2.{#SNMPINDEX}'
+              key: 'aos8.psu.operstatus[{#SNMPINDEX}]'
+              valuemap:
+                name: 'ALE entity operational status'
+              tags:
+                - tag: component
+                  value: power
+        - uuid: 4cf3d8bd23c544a0aec6c5de3af674cc
+          name: '[AOS 8] Discover ALE OmniSwitch environment/flash'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},.1.3.6.1.2.1.47.1.1.1.1.4,{#AOS8SLOT},.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.14]'
+          key: aos8.slotindex.environment
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#AOS8SLOT}'
+                value: .+
+              - macro: '{#SNMPINDEX}'
+                value: '^([1-8])$'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: |
+            ENTITY-MIB::entPhysicalContainedIn.X gives the real entity index used by temperature OIDs.
+            {#AOS8SLOT} is discovered from an AOS 8 enterprise OID and is only used to automatically suppress this rule on non-AOS8 devices.
+          item_prototypes:
+            - uuid: c3ae60c6132e4d90af6fcbd8478dab54
+              name: '[AOS 8] Freespace /flash chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.1.1.3.1.1.8.1.2.{#SNMPINDEX}'
+              key: 'aos8.freespace.slot.[{#SNMPINDEX}]'
+              delay: 5m
+              history: 7d
+              trends: '0'
+              units: Byte
+              tags:
+                - tag: component
+                  value: storage
+                - tag: scope
+                  value: capacity
+            - uuid: a27387c95f0242298d11374fd12091c4
+              name: '[AOS 8] Temperature Danger Threshold on chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.1.1.3.1.1.3.1.6.{#SNMPVALUE}'
+              key: 'aos8.temperature.danger.threshold.slot.[{#SNMPINDEX}]'
+              delay: 1h
+              history: 7d
+              trends: '0'
+              units: °C
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: performance
+            - uuid: 0fdb4989572a4f33bf551cc2ebf6ed1a
+              name: '[AOS 8] Temperature on chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.1.1.3.1.1.3.1.16.{#SNMPVALUE}'
+              key: 'aos8.temperature.slot.[{#SNMPINDEX}]'
+              history: 7d
+              units: °C
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: performance
+            - uuid: 92d5cfee72334ac9b189672937fa5e5a
+              name: '[AOS 8] Temperature Upper Threshold on chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.1.1.3.1.1.3.1.5.{#SNMPVALUE}'
+              key: 'aos8.temperature.upper.threshold.slot.[{#SNMPINDEX}]'
+              delay: 1h
+              history: 7d
+              trends: '0'
+              units: °C
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: performance
+          trigger_prototypes:
+            - uuid: 0639b7e456e945e9916ed6300f523625
+              expression: |
+                last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.temperature.slot.[{#SNMPINDEX}])>
+                last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.temperature.danger.threshold.slot.[{#SNMPINDEX}])
+              name: '[AOS 8] Temperature on chassis {#SNMPINDEX} exceeds the danger threshold'
+              priority: HIGH
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: availability
+            - uuid: f8d2391d019d4d38bf5e81d226557362
+              expression: |
+                last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.temperature.slot.[{#SNMPINDEX}])>
+                last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.temperature.upper.threshold.slot.[{#SNMPINDEX}])
+              name: '[AOS 8] Temperature on chassis {#SNMPINDEX} exceeds the upper threshold'
+              priority: AVERAGE
+              dependencies:
+                - name: '[AOS 8] Temperature on chassis {#SNMPINDEX} exceeds the danger threshold'
+                  expression: |
+                    last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.temperature.slot.[{#SNMPINDEX}])>
+                    last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.temperature.danger.threshold.slot.[{#SNMPINDEX}])
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: availability
+          graph_prototypes:
+            - uuid: 7f8a41a1c45e4f69b90f44e17d102654
+              name: '[AOS 8] Freespace /flash on chassis {#SNMPINDEX}'
+              ymin_type_1: FIXED
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 00AA00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.freespace.slot.[{#SNMPINDEX}]'
+            - uuid: 278726f8e67a4d7ba32bc94c659b2b3c
+              name: '[AOS 8] Temperature on chassis {#SNMPINDEX}'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.temperature.slot.[{#SNMPINDEX}]'
+        - uuid: b1ea63719f024d2a8cbef09dc5ffab27
+          name: '[AOS 8] Discover ALE OmniSwitch virtual chassis/performance'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.14]'
+          key: aos8.vchassisnbr
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#SNMPINDEX}'
+                value: '^([^0]|[1-9][0-9]*)$'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: 91b56453734d44e4984e307db98834c9
+              name: '[AOS 8] CPU usage 1 day avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.13.{#SNMPINDEX}'
+              key: 'aos8.cpu1dayavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: cpu
+                - tag: scope
+                  value: performance
+            - uuid: 2b582cfd94e04367afdaab2d77b2626c
+              name: '[AOS 8] CPU usage 1 hr avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.12.{#SNMPINDEX}'
+              key: 'aos8.cpu1hravg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: cpu
+                - tag: scope
+                  value: performance
+            - uuid: 30508b5e21af42b69af94291d95bfb8d
+              name: '[AOS 8] CPU usage 1 min avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.11.{#SNMPINDEX}'
+              key: 'aos8.cpu1minavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: cpu
+                - tag: scope
+                  value: performance
+              trigger_prototypes:
+                - uuid: 3dcaa4efb11d448e82461aa53cdfdcef
+                  expression: 'min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.cpu1minavg.slot.[{#SNMPVALUE}],5m)>{$ALE.CPU.UTIL.MAX}'
+                  name: '[AOS 8] CPU usage on chassis {#SNMPVALUE} > {$ALE.CPU.UTIL.MAX}%'
+                  priority: WARNING
+                  description: 'CPU remains above the threshold for 5 minutes.'
+                  dependencies:
+                    - name: '{HOST.NAME}: No SNMP data collection'
+                      expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+                  tags:
+                    - tag: component
+                      value: cpu
+                    - tag: scope
+                      value: performance
+            - uuid: 068dc1f481e141b09eb3ff46f68d97c4
+              name: '[AOS 8] Memory usage 1 day avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.10.{#SNMPINDEX}'
+              key: 'aos8.memory1dayavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: memory
+                - tag: scope
+                  value: performance
+            - uuid: 10e3e771179a4a32918aa48acfdf922c
+              name: '[AOS 8] Memory usage 1 hr avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.9.{#SNMPINDEX}'
+              key: 'aos8.memory1hravg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: memory
+                - tag: scope
+                  value: performance
+            - uuid: bf9cd6c701f14b33ad4d3647410f0ea7
+              name: '[AOS 8] Memory usage 1 min avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.8.{#SNMPINDEX}'
+              key: 'aos8.memory1minavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: memory
+                - tag: scope
+                  value: performance
+              trigger_prototypes:
+                - uuid: ea0601722b264467abaf4e1e2aa56d3f
+                  expression: 'min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.memory1minavg.slot.[{#SNMPVALUE}],5m)>{$ALE.MEMORY.UTIL.MAX}'
+                  name: '[AOS 8] Memory usage on chassis {#SNMPVALUE} > {$ALE.MEMORY.UTIL.MAX}%'
+                  priority: WARNING
+                  description: 'Memory remains above the threshold for 5 minutes.'
+                  dependencies:
+                    - name: '{HOST.NAME}: No SNMP data collection'
+                      expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+                  tags:
+                    - tag: component
+                      value: memory
+                    - tag: scope
+                      value: performance
+            - uuid: b5488f92475746aea1dc1d5a610ae8fb
+              name: '[AOS 8] RXTX usage 1 day avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.7.{#SNMPINDEX}'
+              key: 'aos8.rxtx1dayavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: performance
+            - uuid: e778b6cec3c5449c9dead1a7a19908d4
+              name: '[AOS 8] RXTX usage 1 hr avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.6.{#SNMPINDEX}'
+              key: 'aos8.rxtx1hravg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: performance
+            - uuid: ba7c2e5cce4e4ba79199ed775e202f5a
+              name: '[AOS 8] RXTX usage 1 min avg chassis {#SNMPVALUE}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.6486.801.1.2.1.16.1.1.1.1.1.5.{#SNMPINDEX}'
+              key: 'aos8.rxtx1minavg.slot.[{#SNMPVALUE}]'
+              delay: 60s
+              history: 7d
+              units: '%'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: performance
+              trigger_prototypes:
+                - uuid: 085c3371d8ad4db2a49770ae728ed345
+                  expression: 'min(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/aos8.rxtx1minavg.slot.[{#SNMPVALUE}],5m)>{$ALE.RXTX.UTIL.MAX}'
+                  name: '[AOS 8] RXTX load on chassis {#SNMPVALUE} > {$ALE.RXTX.UTIL.MAX}%'
+                  priority: WARNING
+                  description: 'Internal RX/TX load remains above the threshold for 5 minutes.'
+                  dependencies:
+                    - name: '{HOST.NAME}: No SNMP data collection'
+                      expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+                  tags:
+                    - tag: component
+                      value: system
+                    - tag: scope
+                      value: performance
+          graph_prototypes:
+            - uuid: 40ea0b116178416dbb1bae54a14281e9
+              name: '[AOS 8] CPU usage chassis {#SNMPVALUE}'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.cpu1minavg.slot.[{#SNMPVALUE}]'
+                - sortorder: '1'
+                  color: 00CCCC
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.cpu1hravg.slot.[{#SNMPVALUE}]'
+                - sortorder: '2'
+                  color: 00CC00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.cpu1dayavg.slot.[{#SNMPVALUE}]'
+            - uuid: 3f03672cff0d4ef6a9ca4e1f3dd375c3
+              name: '[AOS 8] Memory usage chassis {#SNMPVALUE}'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.memory1minavg.slot.[{#SNMPVALUE}]'
+                - sortorder: '1'
+                  color: 00CCCC
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.memory1hravg.slot.[{#SNMPVALUE}]'
+                - sortorder: '2'
+                  color: 00CC00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.memory1dayavg.slot.[{#SNMPVALUE}]'
+            - uuid: 1b84742f4f574575bb579ef99a35ec54
+              name: '[AOS 8] RXTX usage chassis {#SNMPVALUE}'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.rxtx1minavg.slot.[{#SNMPVALUE}]'
+                - sortorder: '1'
+                  color: 00CCCC
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.rxtx1hravg.slot.[{#SNMPVALUE}]'
+                - sortorder: '2'
+                  color: 00CC00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'aos8.rxtx1dayavg.slot.[{#SNMPVALUE}]'
+        - uuid: 97fe790320e747668bfa5ccaa5f971a7
+          name: 'Discover ALE OmniSwitch Entity common'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},.1.3.6.1.2.1.47.1.1.1.1.4]'
+          key: entity.slotindex.common
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#SNMPINDEX}'
+                value: '^([1-8])$'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: |
+            ENTITY-MIB::entPhysicalContainedIn.X
+            X is the slot number (element of the stack) and VALUE is Entity-value
+          item_prototypes:
+            - uuid: db1122bdb8734a92b06b3c1421738622
+              name: 'Device type of chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.47.1.1.1.1.13.{#SNMPINDEX}'
+              key: 'devicemodel.slot.[{#SNMPINDEX}]'
+              delay: 5m
+              history: 7d
+              value_type: TEXT
+              tags:
+                - tag: application
+                  value: system
+            - uuid: 00306cae81d24953906667d8dddd22e9
+              name: 'Device serial number of chassis {#SNMPINDEX}'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.47.1.1.1.1.11.{#SNMPINDEX}'
+              key: 'serialnumber.slot.[{#SNMPINDEX}]'
+              delay: 5m
+              history: 7d
+              value_type: TEXT
+              tags:
+                - tag: component
+                  value: inventory
+        - uuid: 7e8e9384707f4bd888dd5bc831e579d0
+          name: 'Discover Ethernet Interfaces'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#IFDESCR},.1.3.6.1.2.1.2.2.1.2,{#IFTYPE},.1.3.6.1.2.1.2.2.1.3,{#IFADMINSTATUS},.1.3.6.1.2.1.2.2.1.7,{#IFOPERSTATUS},.1.3.6.1.2.1.2.2.1.8,{#IFNAME},.1.3.6.1.2.1.31.1.1.1.1,{#IFALIAS},.1.3.6.1.2.1.31.1.1.1.18]'
+          key: net.if.discovery
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#IFNAME}'
+                value: '{$IFNAME.MATCHES}'
+              - macro: '{#IFNAME}'
+                value: '{$IFNAME.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+              - macro: '{#IFTYPE}'
+                value: '{$IFTYPE.MATCHES}'
+              - macro: '{#IFTYPE}'
+                value: '{$IFTYPE.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: |
+            IF-MIB/IF-X-MIB discovery.
+            Uses ifName/ifAlias for names, ifHCInOctets/ifHCOutOctets for 64-bit counters, and admin/oper status for alerting.
+          item_prototypes:
+            - uuid: 446b1da86f0143a4af3edfc464fc8e4a
+              name: 'Interface {#IFNAME}: Administrative status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}'
+              key: 'net.if.admin.status[ifAdminStatus.{#SNMPINDEX}]'
+              delay: 60s
+              history: 7d
+              description: 'IF-MIB::ifAdminStatus.'
+              valuemap:
+                name: 'IF-MIB ifAdminStatus'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: availability
+            - uuid: 4f2b1d49d87245aebf391d5d42f2bda8
+              name: 'Interface {#IFNAME}: Alias'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.18.{#SNMPINDEX}'
+              key: 'net.if.alias[ifAlias.{#SNMPINDEX}]'
+              delay: 5m
+              history: 7d
+              value_type: CHAR
+              description: 'IF-MIB::ifAlias.'
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: e7ffc0eda4dd4646a4bbb2bdb93e7ee6
+              name: 'Interface {#IFNAME}: Description'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.2.{#SNMPINDEX}'
+              key: 'net.if.descr[ifDescr.{#SNMPINDEX}]'
+              delay: 5m
+              history: 7d
+              value_type: CHAR
+              description: 'IF-MIB::ifDescr.'
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: 1a81f0ed08b747daad69aea8c0f919f0
+              name: 'Interface {#IFNAME}: Inbound discards'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}'
+              key: 'net.if.in.discards[ifInDiscards.{#SNMPINDEX}]'
+              delay: 60s
+              history: 7d
+              value_type: FLOAT
+              trends: 60d
+              units: dps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: 686d47ff219f4d288c6013986cd23734
+              name: 'Interface {#IFNAME}: Inbound errors'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}'
+              key: 'net.if.in.errors[ifInErrors.{#SNMPINDEX}]'
+              delay: 60s
+              history: 7d
+              value_type: FLOAT
+              trends: 60d
+              units: eps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: a63fc5f1a5f24878bafa8e6237e390ec
+              name: 'Interface {#IFNAME}: Bits received'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}'
+              key: 'net.if.in[ifHCInOctets.{#SNMPINDEX}]'
+              delay: 60s
+              history: 7d
+              value_type: FLOAT
+              trends: 60d
+              units: bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: 80ba301256894d9fb493586cd69b2bc6
+              name: 'Interface {#IFNAME}: Outbound discards'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}'
+              key: 'net.if.out.discards[ifOutDiscards.{#SNMPINDEX}]'
+              delay: 60s
+              history: 7d
+              value_type: FLOAT
+              trends: 60d
+              units: dps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: e08a6934d55f4cd6ac1ce286c87b0347
+              name: 'Interface {#IFNAME}: Outbound errors'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}'
+              key: 'net.if.out.errors[ifOutErrors.{#SNMPINDEX}]'
+              delay: 60s
+              history: 7d
+              value_type: FLOAT
+              trends: 60d
+              units: eps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: 1079152867354555b7bf3d07dff039eb
+              name: 'Interface {#IFNAME}: Bits sent'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}'
+              key: 'net.if.out[ifHCOutOctets.{#SNMPINDEX}]'
+              delay: 60s
+              history: 7d
+              value_type: FLOAT
+              trends: 60d
+              units: bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: 52af808aba3f499fb672c186f4774568
+              name: 'Interface {#IFNAME}: Speed'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.15.{#SNMPINDEX}'
+              key: 'net.if.speed[ifHighSpeed.{#SNMPINDEX}]'
+              delay: 5m
+              history: 7d
+              trends: 60d
+              units: bps
+              description: 'IF-MIB::ifHighSpeed in Mbit/s, converted to bit/s.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '1000000'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: capacity
+              trigger_prototypes:
+                - uuid: 3c4a6f1714064664bfbcff287dee05e8
+                  expression: 'change(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])<>0 and last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])>0'
+                  name: 'Interface {#IFNAME}: speed changed'
+                  status: DISABLED
+                  discover: NO_DISCOVER
+                  priority: INFO
+                  description: |
+                    The reported interface speed has changed.
+                    Disabled by default.
+                  dependencies:
+                    - name: '{HOST.NAME}: No SNMP data collection'
+                      expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+                  tags:
+                    - tag: component
+                      value: interface
+                    - tag: scope
+                      value: notice
+            - uuid: 5fc94a1bb9e44f4085bafad8fb182df4
+              name: 'Interface {#IFNAME}: Operational status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}'
+              key: 'net.if.status[ifOperStatus.{#SNMPINDEX}]'
+              delay: 60s
+              history: 7d
+              description: 'IF-MIB::ifOperStatus.'
+              valuemap:
+                name: 'IF-MIB ifOperStatus'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: availability
+          trigger_prototypes:
+            - uuid: 827a121f6150497182e7577aa3bb7ba1
+              expression: 'avg(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.in.discards[ifInDiscards.{#SNMPINDEX}],5m)>{$IF.DISCARDS.WARN:"{#IFNAME}"} or avg(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.out.discards[ifOutDiscards.{#SNMPINDEX}],5m)>{$IF.DISCARDS.WARN:"{#IFNAME}"}'
+              name: 'Interface {#IFNAME}: discards detected'
+              priority: WARNING
+              description: 'Interface discards detected over 5 minutes.'
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: e38cb555a76b4b7daa43d7071798cfd5
+              expression: 'avg(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.in.errors[ifInErrors.{#SNMPINDEX}],5m)>{$IF.ERRORS.WARN:"{#IFNAME}"} or avg(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.out.errors[ifOutErrors.{#SNMPINDEX}],5m)>{$IF.ERRORS.WARN:"{#IFNAME}"}'
+              name: 'Interface {#IFNAME}: errors detected'
+              priority: WARNING
+              description: 'Interface errors detected over 5 minutes.'
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: 8e2c74008ce1412aaa1439bda365eb32
+              expression: '(avg(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.in[ifHCInOctets.{#SNMPINDEX}],5m)>({$IF.UTIL.MAX:"{#IFNAME}"}/100)*last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}]) or avg(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.out[ifHCOutOctets.{#SNMPINDEX}],5m)>({$IF.UTIL.MAX:"{#IFNAME}"}/100)*last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])) and last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])>0'
+              name: 'Interface {#IFNAME}: high bandwidth usage > {$IF.UTIL.MAX}%'
+              priority: WARNING
+              description: '5min average utilization is above the configured threshold.'
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: performance
+            - uuid: 57c100904191426aaa49d41b278a0d74
+              expression: 'last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=2 and last(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/net.if.admin.status[ifAdminStatus.{#SNMPINDEX}])=1'
+              name: 'Interface {#IFNAME} is down'
+              status: DISABLED
+              discover: NO_DISCOVER
+              priority: WARNING
+              description: |
+                Interface is administratively up but operationally down.
+                Disabled by default.
+              dependencies:
+                - name: '{HOST.NAME}: No SNMP data collection'
+                  expression: 'max(/Alcatel-Lucent Enterprise OmniSwitch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: scope
+                  value: availability
+          graph_prototypes:
+            - uuid: 54c07c964e2d4a84aa455649f23e2f73
+              name: 'Interface {#IFNAME}: errors/discards'
+              ymin_type_1: FIXED
+              graph_items:
+                - color: F63100
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'net.if.in.errors[ifInErrors.{#SNMPINDEX}]'
+                - sortorder: '1'
+                  color: FF8000
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'net.if.out.errors[ifOutErrors.{#SNMPINDEX}]'
+                - sortorder: '2'
+                  color: 2774A4
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'net.if.in.discards[ifInDiscards.{#SNMPINDEX}]'
+                - sortorder: '3'
+                  color: 6C59DC
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'net.if.out.discards[ifOutDiscards.{#SNMPINDEX}]'
+            - uuid: dd3a07fd1f024d31a8b4f890e1c6e7c8
+              name: 'Interface {#IFNAME}: traffic'
+              ymin_type_1: FIXED
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 00AA00
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'net.if.in[ifHCInOctets.{#SNMPINDEX}]'
+                - sortorder: '1'
+                  drawtype: GRADIENT_LINE
+                  color: 3333FF
+                  item:
+                    host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                    key: 'net.if.out[ifHCOutOctets.{#SNMPINDEX}]'
+      tags:
+        - tag: class
+          value: network
+        - tag: target
+          value: alcatel
+        - tag: target
+          value: omniswitch
+      macros:
+        - macro: '{$ALE.CPU.UTIL.MAX}'
+          value: '80'
+          description: 'Maximum CPU threshold in percent.'
+        - macro: '{$ALE.MEMORY.UTIL.MAX}'
+          value: '80'
+          description: 'Maximum memory threshold in percent.'
+        - macro: '{$ALE.POE.PORT.UTIL.MAX}'
+          value: '90'
+          description: 'Per-port PoE utilization threshold in percent.'
+        - macro: '{$ALE.RXTX.UTIL.MAX}'
+          value: '80'
+          description: 'Maximum internal RX/TX threshold in percent.'
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+        - macro: '{$IF.DISCARDS.WARN}'
+          value: '1'
+          description: 'Interface discard threshold per second.'
+        - macro: '{$IF.ERRORS.WARN}'
+          value: '1'
+          description: 'Interface error threshold per second.'
+        - macro: '{$IF.UTIL.MAX}'
+          value: '90'
+          description: 'Interface utilization threshold in percent.'
+        - macro: '{$IFNAME.MATCHES}'
+          value: '.*'
+          description: 'Regex of interfaces to discover.'
+        - macro: '{$IFNAME.NOT_MATCHES}'
+          value: ^$
+          description: 'Regex of interfaces to exclude.'
+        - macro: '{$IFTYPE.MATCHES}'
+          value: '.*'
+          description: 'Regex of IF-MIB interface types to discover.'
+        - macro: '{$IFTYPE.NOT_MATCHES}'
+          value: ^$
+          description: 'Regex of IF-MIB interface types to exclude.'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+      dashboards:
+        - uuid: 1f0dac237f4447839d7586ccff7d7f54
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'Device name'
+                  width: '31'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                        key: sysName
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                - type: item
+                  'y': '3'
+                  width: '72'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                        key: sysDescr
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                - type: honeycomb
+                  name: 'Device type'
+                  'y': '5'
+                  width: '72'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Device type*'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("Device type of chassis ([0-9]+)", "Device \1")}'
+                    - type: STRING
+                      name: reference
+                      value: WEBLK
+                - type: honeycomb
+                  name: 'Device SN'
+                  'y': '8'
+                  width: '72'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Device serial number*'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("Device serial number of chassis ([0-9]+)", "Device \1")}'
+                    - type: STRING
+                      name: reference
+                      value: IGRZT
+                - type: svggraph
+                  name: 'CPU usage'
+                  'y': '11'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*CPU usage 1 min avg*'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_static_units
+                      value: '%'
+                    - type: INTEGER
+                      name: lefty_units
+                      value: '1'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: NRPEF
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Memory usage'
+                  'y': '16'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*Memory usage 1 min avg chassis*'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: JVGDK
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Temperature
+                  'y': '21'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*Temperature on chassis*'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_static_units
+                      value: °C
+                    - type: INTEGER
+                      name: lefty_units
+                      value: '1'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: BOSPX
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: Uptime
+                  x: '31'
+                  width: '29'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                        key: SysUptime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                - type: item
+                  name: Availability
+                  x: '60'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+            - name: 'Port Speed'
+              widgets:
+                - type: honeycomb
+                  width: '72'
+                  height: '11'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Interface *: Speed'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(Interface [^:]+): Speed$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: GQMDI
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF4000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '10000000'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF681E
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '100000000'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1000000000'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 0040FF
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '10000000000'
+            - name: 'Network Traffic'
+              widgets:
+                - type: svggraph
+                  name: 'Network Global traffic RX'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Interface *: Bits received'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: MVFYU
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: graphprototype
+                  name: 'Interface traffic'
+                  'y': '5'
+                  width: '72'
+                  height: '20'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                        name: 'Interface {#IFNAME}: traffic'
+                    - type: STRING
+                      name: reference
+                      value: REUKO
+                    - type: INTEGER
+                      name: rows
+                      value: '4'
+                - type: svggraph
+                  name: 'Network Global traffic TX'
+                  x: '36'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Interface *: Bits sent'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: VHHEH
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+            - name: 'Network errors'
+              widgets:
+                - type: svggraph
+                  name: 'Interface Global errors'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Interface *: * errors'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: NMYKY
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: graphprototype
+                  name: 'Interface traffic'
+                  'y': '5'
+                  width: '72'
+                  height: '20'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+                        name: 'Interface {#IFNAME}: errors/discards'
+                    - type: STRING
+                      name: reference
+                      value: QRYST
+                    - type: INTEGER
+                      name: rows
+                      value: '4'
+                - type: svggraph
+                  name: 'Interface Global discards'
+                  x: '36'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Interface *: * discards'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: GFXFQ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+            - name: PoE
+              widgets:
+                - type: svggraph
+                  name: 'PoE power'
+                  width: '72'
+                  height: '9'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*PoE Power Actual*'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: VFMEP
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+      valuemaps:
+        - uuid: 7c76dfd690fc4dfea4ddb1514c1bdfce
+          name: 'ALE entity operational status'
+          mappings:
+            - value: '1'
+              newvalue: up
+            - value: '2'
+              newvalue: down
+            - value: '3'
+              newvalue: testing
+            - value: '4'
+              newvalue: unknown
+            - value: '5'
+              newvalue: secondary
+            - value: '6'
+              newvalue: notPresent
+            - value: '7'
+              newvalue: unpowered
+            - value: '8'
+              newvalue: master
+        - uuid: 9391c2595b8049c59a986a3d4f02801b
+          name: 'ALE fan airflow'
+          mappings:
+            - value: '0'
+              newvalue: frontToRear
+            - value: '1'
+              newvalue: rearToFront
+            - value: '2'
+              newvalue: notApplicable
+        - uuid: 679f225fed664257aef963d1bbe7db60
+          name: 'ALE fan status'
+          mappings:
+            - value: '0'
+              newvalue: noStatus
+            - value: '1'
+              newvalue: notRunning
+            - value: '2'
+              newvalue: running
+        - uuid: 11170b4097ac4b13b4f8872a6b11a78b
+          name: 'IF-MIB ifAdminStatus'
+          mappings:
+            - value: '1'
+              newvalue: up
+            - value: '2'
+              newvalue: down
+            - value: '3'
+              newvalue: testing
+        - uuid: 5cc827bb89284f0782890e5100d64e38
+          name: 'IF-MIB ifOperStatus'
+          mappings:
+            - value: '1'
+              newvalue: up
+            - value: '2'
+              newvalue: down
+            - value: '3'
+              newvalue: testing
+            - value: '4'
+              newvalue: unknown
+            - value: '5'
+              newvalue: dormant
+            - value: '6'
+              newvalue: notPresent
+            - value: '7'
+              newvalue: lowerLayerDown
+        - uuid: 68a5754b296b4e1dbac3038c798168ba
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: ad8edc8de52b4c3e96383afc0595ebc1
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
+  graphs:
+    - uuid: caea74c7ea85422081aff29da05ce104
+      name: 'ICMP response time'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Alcatel-Lucent Enterprise OmniSwitch by SNMP'
+            key: icmppingsec

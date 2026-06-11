@@ -1,0 +1,2289 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: e960332b3f6c46a1956486d4f3f99fce
+      name: 'Templates/Server hardware'
+  templates:
+    - uuid: f6b37fe301bd4652aaf432652a3d542e
+      template: 'Lenovo XCC by SNMP'
+      name: 'Lenovo XCC by SNMP'
+      description: |
+        SNMP template for monitoring Lenovo ThinkSystem servers through Lenovo XClarity Controller (XCC).
+        
+        Based on LENOVO-XCC-MIB
+      vendor:
+        name: E-MSN
+        version: 7.4-10
+      groups:
+        - name: 'Templates/Server hardware'
+      items:
+        - uuid: b5fabf38926142d4a4b4aa8f1c4c3ace
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          delay: '60'
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: application
+              value: status
+          triggers:
+            - uuid: 23f3437afe974b50ac28513ca29628e7
+              expression: 'max(/Lenovo XCC by SNMP/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 79ff1fbd38744200967ff965c4dd7f23
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: application
+              value: status
+          triggers:
+            - uuid: 407097cd70cb422395ce40c3359c07f8
+              expression: 'min(/Lenovo XCC by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Lenovo XCC by SNMP/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'ICMP packets loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Lenovo XCC by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 5e43a068595144368c542bdef706e3ae
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: application
+              value: status
+          triggers:
+            - uuid: a39ba40a0e334ccd985a72ecb5889dd7
+              expression: 'avg(/Lenovo XCC by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'min(/Lenovo XCC by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Lenovo XCC by SNMP/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Lenovo XCC by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: d3e45caaa57c4534901d8cbdfc5a49a5
+          name: 'Power: total available'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.1.10.1.9.0
+          key: 'power.available[fuelGaugeTotalPowerAvailable.0]'
+          delay: 5m
+          history: 30d
+          units: W
+          tags:
+            - tag: application
+              value: power
+        - uuid: 205d7995e300492aa8b38fbdbdacf789
+          name: 'Power: CPU consumption'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.1.10.1.11.0
+          key: 'power.consumption.cpu[fuelGaugePowerConsumptionCpu.0]'
+          delay: 5m
+          history: 30d
+          units: W
+          tags:
+            - tag: application
+              value: power
+        - uuid: 12f41b2230e645b2b8a03bd2b3b6be57
+          name: 'Power: memory consumption'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.1.10.1.12.0
+          key: 'power.consumption.memory[fuelGaugePowerConsumptionMemory.0]'
+          delay: 5m
+          history: 30d
+          units: W
+          tags:
+            - tag: application
+              value: power
+        - uuid: dba888d3b287453a83c65299f1371556
+          name: 'Power: other consumption'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.1.10.1.13.0
+          key: 'power.consumption.other[fuelGaugePowerConsumptionOther.0]'
+          delay: 5m
+          history: 30d
+          units: W
+          tags:
+            - tag: application
+              value: power
+        - uuid: e85f51120b4b41298cc48ef7aeab74d4
+          name: 'Power: system maximum'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.1.10.1.7.0
+          key: 'power.maximum[fuelGaugeSystemMaxPower.0]'
+          delay: 5m
+          history: 30d
+          units: W
+          description: 'System maximum power reported by Lenovo XCC.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v)) {
+                      throw 'Value is not numeric: ' + value;
+                  }
+                  
+                  // 65535 W is used by some Lenovo XCC models as an invalid/sentinel value.
+                  if (v == 65535 || v < 0) {
+                      throw 'Invalid/sentinel system maximum power: ' + value;
+                  }
+                  
+                  return v;
+          tags:
+            - tag: application
+              value: power
+        - uuid: 5bec6ee1d3f846d8b3e260b4a6047750
+          name: 'Power: remaining'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.1.10.1.8.0
+          key: 'power.remaining[fuelGaugePowerRemaining.0]'
+          delay: 5m
+          history: 30d
+          units: W
+          description: 'Power remaining reported by Lenovo XCC.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var v = Number(value);
+                  if (isNaN(v)) {
+                      throw 'Value is not numeric: ' + value;
+                  }
+                  if (v < 0) {
+                      throw 'Invalid negative power remaining: ' + value;
+                  }
+                  return v;
+          tags:
+            - tag: application
+              value: power
+        - uuid: b47901c8b3184d1ebce17f516ca3c377
+          name: 'Power: current spare capacity'
+          type: CALCULATED
+          key: power.spare.current
+          delay: 5m
+          history: 30d
+          value_type: FLOAT
+          units: W
+          params: 'last(//power.available[fuelGaugeTotalPowerAvailable.0])-last(//power.total.inuse[fuelGaugeTotalPowerInUse.0])'
+          description: 'Calculated current spare power capacity: total available power minus current total power usage.'
+          tags:
+            - tag: application
+              value: power
+        - uuid: d9c601d362624b929c2b8d38206490cf
+          name: 'Power: total in use'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.1.10.1.10.0
+          key: 'power.total.inuse[fuelGaugeTotalPowerInUse.0]'
+          delay: 5m
+          history: 30d
+          units: W
+          tags:
+            - tag: application
+              value: power
+        - uuid: 5d57f1021f8348c8a77abec5074ee566
+          name: 'Serial number'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.19046.11.1.1.5.2.1.3.0
+          key: serialNumber
+          delay: 1h
+          history: 7d
+          value_type: TEXT
+          tags:
+            - tag: application
+              value: inventory
+        - uuid: ffa474a0bbf14e1c81305c1e1bf4679f
+          name: 'SNMP traps (fallback)'
+          type: SNMP_TRAP
+          key: snmptrap.fallback
+          history: 2w
+          value_type: LOG
+          description: 'Item is used to collect all SNMP traps unmatched by other snmptrap items'
+          logtimefmt: 'hh:mm:sszyyyy/MM/dd'
+          tags:
+            - tag: application
+              value: general
+        - uuid: da8b98114ffb4ec7b5655bd195576b5f
+          name: 'System contact details'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.4.0
+          key: 'system.contact[sysContact.0]'
+          delay: 1h
+          history: 2w
+          value_type: CHAR
+          description: |
+            MIB: SNMPv2-MIB
+            The textual identification of the contact person for this managed node, together with information on how to contact this person.  If no contact information is known, the value is the zero-length string.
+          inventory_link: CONTACT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: application
+              value: general
+        - uuid: 44e4808ce52b450180f9f0c0f6cf0482
+          name: 'System description'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.1.0
+          key: 'system.descr[sysDescr.0]'
+          delay: 1h
+          history: 2w
+          value_type: CHAR
+          description: |
+            MIB: SNMPv2-MIB
+            A textual description of the entity. This value should
+            include the full name and version identification of the system's hardware type, software operating-system, and
+            networking software.
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: application
+              value: general
+        - uuid: be87a7bff97b40359558dcb482bbf237
+          name: 'System location'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.6.0
+          key: 'system.location[sysLocation.0]'
+          delay: 1h
+          history: 2w
+          value_type: CHAR
+          description: |
+            MIB: SNMPv2-MIB
+            The physical location of this node (e.g., `telephone closet, 3rd floor').  If the location is unknown, the value is the zero-length string.
+          inventory_link: LOCATION
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: application
+              value: general
+        - uuid: f90e0d74af2a4cbfafcd6b06d627d36c
+          name: 'System name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.5.0
+          key: system.name
+          delay: 1h
+          history: 2w
+          value_type: CHAR
+          description: |
+            MIB: SNMPv2-MIB
+            An administratively-assigned name for this managed node.By convention, this is the node's fully-qualified domain name.  If the name is unknown, the value is the zero-length string.
+          inventory_link: NAME
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: application
+              value: general
+          triggers:
+            - uuid: 6ddf8a92587640eda7ac1c09de1fe8ed
+              expression: 'last(/Lenovo XCC by SNMP/system.name,#1)<>last(/Lenovo XCC by SNMP/system.name,#2) and length(last(/Lenovo XCC by SNMP/system.name))>0'
+              name: 'Generic by SNMP: System name has changed'
+              event_name: 'Generic by SNMP: System name has changed (new name: {ITEM.VALUE})'
+              priority: INFO
+              description: 'The name of the system has changed. Acknowledge to close the problem manually.'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
+                - tag: scope
+                  value: security
+        - uuid: 8ae4b826b64740c38d0f68a8888a56f5
+          name: 'System object ID'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.2.0
+          key: 'system.objectid[sysObjectID.0]'
+          delay: 15m
+          history: 2w
+          value_type: CHAR
+          description: |
+            MIB: SNMPv2-MIB
+            The vendor's authoritative identification of the network management subsystem contained in the entity.  This value is allocated within the SMI enterprises subtree (1.3.6.1.4.1) and provides an easy and unambiguous means for determining`what kind of box' is being managed.  For example, if vendor`Flintstones, Inc.' was assigned the subtree1.3.6.1.4.1.4242, it could assign the identifier 1.3.6.1.4.1.4242.1.1 to its `Fred Router'.
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: application
+              value: general
+        - uuid: e955a2b32f1248cdb5af9d3398ed4498
+          name: Uptime
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.3.0
+          key: 'system.uptime[sysUpTime.0]'
+          delay: 30s
+          history: 2w
+          trends: 0d
+          units: uptime
+          description: |
+            MIB: SNMPv2-MIB
+            The time (in hundredths of a second) since the network management portion of the system was last re-initialized.
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: application
+              value: status
+          triggers:
+            - uuid: 19aff0cc23b4452c9f99b3fb9aa55206
+              expression: 'last(/Lenovo XCC by SNMP/system.uptime[sysUpTime.0])>0 and last(/Lenovo XCC by SNMP/system.uptime[sysUpTime.0])<10m'
+              name: 'XCC has been restarted'
+              opdata: 'Uptime: {ITEM.LASTVALUE1}'
+              priority: INFO
+              tags:
+                - tag: scope
+                  value: notice
+        - uuid: 0aac92873e0a42a1b3f898bf7c113f83
+          name: 'System type'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.19046.11.1.1.5.2.1.5.0
+          key: systemType
+          delay: 1h
+          history: 7d
+          value_type: TEXT
+          tags:
+            - tag: application
+              value: inventory
+        - uuid: 7c5539375df1484b920e3108f32894fb
+          name: 'System power status'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.5.1.1.0
+          key: XCCcurrentSysPowerStatus
+          delay: '300'
+          history: 7d
+          valuemap:
+            name: 'LENOVO-XCC-MIB::currentSysPowerStatus'
+          tags:
+            - tag: application
+              value: general
+        - uuid: 6d0c2630c82f47e9b65a9bb96beb6cba
+          name: 'Power-on hours'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.5.1.2.0
+          key: XCCpowerOnHours
+          delay: 1h
+          history: 7d
+          units: h
+          tags:
+            - tag: application
+              value: general
+        - uuid: d2e835bedec4477e9e4b9d4ed7c631bd
+          name: 'Restart count'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.5.1.3.0
+          key: XCCrestartCount
+          delay: '3600'
+          history: 7d
+          tags:
+            - tag: application
+              value: general
+        - uuid: 14e06e2ae1a84a1cb7667d508b83a3db
+          name: 'System health status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.19046.11.1.1.4.1.0
+          key: XCCsystemHealthStat
+          history: 7d
+          description: 'Overall server health status reported by Lenovo XCC.'
+          valuemap:
+            name: 'LENOVO-XCC-MIB::systemHealthStat'
+          tags:
+            - tag: application
+              value: general
+          triggers:
+            - uuid: 9a810a608f3747dda9e1c578e3676e9c
+              expression: 'last(/Lenovo XCC by SNMP/XCCsystemHealthStat)={$HEALTH_CRIT_STATUS}'
+              name: 'System health is critical on {HOST.NAME}'
+              priority: HIGH
+              description: 'XCC reports a critical system health state. Last value: {ITEM.LASTVALUE1}.'
+            - uuid: ed36323ef34243ddbf662aa179c79f57
+              expression: 'last(/Lenovo XCC by SNMP/XCCsystemHealthStat)={$HEALTH_WARN_STATUS}'
+              name: 'System health is non-critical on {HOST.NAME}'
+              priority: WARNING
+              description: 'XCC reports a non-critical system health state. Last value: {ITEM.LASTVALUE1}.'
+            - uuid: 5601b9c3e2914ca0a313cb8dff775b80
+              expression: 'last(/Lenovo XCC by SNMP/XCCsystemHealthStat)={$HEALTH_DISASTER_STATUS}'
+              name: 'System health is non-recoverable on {HOST.NAME}'
+              priority: DISASTER
+              description: 'XCC reports a non-recoverable system health state. Last value: {ITEM.LASTVALUE1}.'
+        - uuid: 6887c423b4034f82a9519d0bcbcd56a5
+          name: 'System state'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.19046.11.1.5.1.4.0
+          key: XCCsystemState
+          delay: '300'
+          history: 7d
+          valuemap:
+            name: 'LENOVO-XCC-MIB::systemState'
+          tags:
+            - tag: application
+              value: general
+        - uuid: 9651136e8c6f4502b60a05d5fb0c3c2a
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          valuemap:
+            name: zabbix.host.available
+          tags:
+            - tag: application
+              value: status
+          triggers:
+            - uuid: 984668b084c34da68a16136aec98c0ea
+              expression: 'max(/Lenovo XCC by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'Generic by SNMP: No SNMP data collection'
+              opdata: 'Current state: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Lenovo XCC by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: ae8573e8f40540daba48c7f5cedaa473
+          name: 'CPU DTS Thermal Margin Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#TEMP_DESCR},.1.3.6.1.4.1.19046.11.1.1.1.2.1.2]'
+          key: cpu.dts.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#TEMP_DESCR}'
+                value: '(?i)^CPU\s*[0-9]+\s*DTS$'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discover CPU DTS sensors and convert their raw offset to a positive thermal margin to TjMAX. These items are used for CPU thermal alerting.'
+          item_prototypes:
+            - uuid: dcaa0374a2e444bcb16dc67a664768f3
+              name: '{#TEMP_DESCR}: Thermal margin to TjMAX'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.1.2.1.3.{#SNMPINDEX}'
+              key: 'sensor.cpu.dts.margin[tempReading.{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: °C
+              description: 'Positive CPU thermal margin to TjMAX calculated from the raw DTS value.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var raw = String(value).trim();
+                      var match = raw.match(/-?[0-9]+(?:\.[0-9]+)?/);
+                      if (!match) {
+                          throw 'DTS value is not numeric: ' + value;
+                      }
+                      var v = Number(match[0]);
+                      if (!isFinite(v)) {
+                          throw 'DTS value is not finite: ' + value;
+                      }
+                      return -v;
+              tags:
+                - tag: application
+                  value: temperature
+                - tag: component
+                  value: 'cpu dts'
+              trigger_prototypes:
+                - uuid: 0d10913071b7409b9e9eb6741c95e958
+                  expression: 'last(/Lenovo XCC by SNMP/sensor.cpu.dts.margin[tempReading.{#SNMPINDEX}])<={$CPU_DTS_MARGIN_DISASTER}'
+                  name: '{#TEMP_DESCR}: CPU DTS thermal limit reached'
+                  priority: DISASTER
+                  description: 'CPU DTS thermal margin has reached 0 °C or below. The CPU is at or beyond its thermal limit. Last margin: {ITEM.LASTVALUE1}.'
+                - uuid: 22ac05338e204af0b6f8c53e3d45be7d
+                  expression: 'max(/Lenovo XCC by SNMP/sensor.cpu.dts.margin[tempReading.{#SNMPINDEX}],3m)<={$CPU_DTS_MARGIN_HIGH}'
+                  name: '{#TEMP_DESCR}: CPU DTS thermal margin is critically low'
+                  priority: HIGH
+                  description: 'CPU DTS thermal margin has remained at or below {$CPU_DTS_MARGIN_HIGH} °C. Last margin: {ITEM.LASTVALUE1}.'
+                  dependencies:
+                    - name: '{#TEMP_DESCR}: CPU DTS thermal limit reached'
+                      expression: 'last(/Lenovo XCC by SNMP/sensor.cpu.dts.margin[tempReading.{#SNMPINDEX}])<={$CPU_DTS_MARGIN_DISASTER}'
+                - uuid: 4b1f48fe12fb420ca391a66eaf2878e3
+                  expression: 'max(/Lenovo XCC by SNMP/sensor.cpu.dts.margin[tempReading.{#SNMPINDEX}],5m)<={$CPU_DTS_MARGIN_AVG}'
+                  name: '{#TEMP_DESCR}: CPU DTS thermal margin is low'
+                  priority: AVERAGE
+                  description: 'CPU DTS thermal margin has remained at or below {$CPU_DTS_MARGIN_AVG} °C. Last margin: {ITEM.LASTVALUE1}.'
+                  dependencies:
+                    - name: '{#TEMP_DESCR}: CPU DTS thermal limit reached'
+                      expression: 'last(/Lenovo XCC by SNMP/sensor.cpu.dts.margin[tempReading.{#SNMPINDEX}])<={$CPU_DTS_MARGIN_DISASTER}'
+                    - name: '{#TEMP_DESCR}: CPU DTS thermal margin is critically low'
+                      expression: 'max(/Lenovo XCC by SNMP/sensor.cpu.dts.margin[tempReading.{#SNMPINDEX}],3m)<={$CPU_DTS_MARGIN_HIGH}'
+          graph_prototypes:
+            - uuid: bd3bf688f6894305b4e6cdaa7e0e39a7
+              name: '{#TEMP_DESCR}: Thermal margin to TjMAX'
+              graph_items:
+                - calc_fnc: ALL
+                  item:
+                    host: 'Lenovo XCC by SNMP'
+                    key: 'sensor.cpu.dts.margin[tempReading.{#SNMPINDEX}]'
+        - uuid: 599e1daa5a704e6c8a4effa3cb661ef2
+          name: 'CPU Temperature Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#TEMP_DESCR},.1.3.6.1.4.1.19046.11.1.1.1.2.1.2]'
+          key: cpu.temperature.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#TEMP_DESCR}'
+                value: '(?i)^CPU\s*[0-9]+\s*Temp$'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discover CPU absolute temperature sensors.'
+          item_prototypes:
+            - uuid: 4508fb7d2709451d99d7e5653dc6ad40
+              name: '{#TEMP_DESCR}: Temperature'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.1.2.1.3.{#SNMPINDEX}'
+              key: 'sensor.cpu.temp.value[tempReading.{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: °C
+              description: 'CPU absolute temperature reported by XCC.'
+              preprocessing:
+                - type: REGEX
+                  parameters:
+                    - '(-?[0-9]+(?:\.[0-9]+)?)'
+                    - \1
+                  error_handler: DISCARD_VALUE
+              tags:
+                - tag: application
+                  value: temperature
+                - tag: component
+                  value: cpu
+          graph_prototypes:
+            - uuid: 5262f9c428d14ee98bfa3b280e06c75c
+              name: '{#TEMP_DESCR}: Temperature'
+              graph_items:
+                - calc_fnc: ALL
+                  item:
+                    host: 'Lenovo XCC by SNMP'
+                    key: 'sensor.cpu.temp.value[tempReading.{#SNMPINDEX}]'
+        - uuid: deb7be803558465d84d5db9740078720
+          name: 'FAN Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#FANDESCR},.1.3.6.1.4.1.19046.11.1.1.3.2.1.2]'
+          key: fan.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discovering fans from LENOVO-XCC-MIB::fanDescr'
+          item_prototypes:
+            - uuid: 401d6ad494e8456a9555327edade81c4
+              name: '{#FANDESCR}: Fan speed, %'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.19046.11.1.1.3.2.1.3.{#SNMPINDEX}'
+              key: 'sensor.fan.speed.percentage[fanSpeed.{#SNMPINDEX}]'
+              history: 30d
+              units: '%'
+              description: |
+                LENOVO-XCC-MIB
+                Fan  speed expressed in percent(%) of maximum RPM.
+              preprocessing:
+                - type: REGEX
+                  parameters:
+                    - '(\d{1,3}) *%( of maximum)?'
+                    - \1
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '0'
+              tags:
+                - tag: application
+                  value: fans
+            - uuid: f2cb6b5304c84b15a8599a1f825679bd
+              name: '{#FANDESCR}: Fan status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.19046.11.1.1.3.2.1.10.{#SNMPINDEX}'
+              key: 'sensor.fan.status[fanHealthStatus.{#SNMPINDEX}]'
+              history: 2w
+              value_type: CHAR
+              description: |
+                LENOVO-XCC-MIB
+                A description of the fan measurement channel.
+              tags:
+                - tag: application
+                  value: fans
+              trigger_prototypes:
+                - uuid: 6b0136a0093544109c2ad5fba2990fea
+                  expression: 'find(/Lenovo XCC by SNMP/sensor.fan.status[fanHealthStatus.{#SNMPINDEX}],#2,"regexp","^({$FAN_OK_STATUS})$")=0'
+                  name: '{#FANDESCR}: Fan is not in normal state'
+                  priority: INFO
+                  description: 'Last value: {ITEM.LASTVALUE1}. Please check the fan unit.'
+          graph_prototypes:
+            - uuid: c0bc3a5ae1fe4002b103acf8c2d5ec9d
+              name: '{#FANDESCR} Speed in %'
+              graph_items:
+                - calc_fnc: ALL
+                  item:
+                    host: 'Lenovo XCC by SNMP'
+                    key: 'sensor.fan.speed.percentage[fanSpeed.{#SNMPINDEX}]'
+        - uuid: 4f7f7e490edb49938cd7128231e369c2
+          name: 'Network Port Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#NET_PORT_NAME},.1.3.6.1.4.1.19046.11.1.1.14.4.1.2,{#NET_PORT_NUMBER},.1.3.6.1.4.1.19046.11.1.1.14.4.1.3,{#NET_CONNECTOR},.1.3.6.1.4.1.19046.11.1.1.14.4.1.4,{#NET_MAC},.1.3.6.1.4.1.19046.11.1.1.14.4.1.5,{#NET_NOMINAL_SPEED},.1.3.6.1.4.1.19046.11.1.1.14.4.1.12]'
+          key: network.ports.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 68132d913229423fbf305e26d8bdb8b9
+              name: '{#NET_PORT_NAME}: Raw Link speed'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.14.4.1.21.{#SNMPINDEX}'
+              key: 'physical.net.speed.raw[portSpeed.{#SNMPINDEX}]'
+              value_type: CHAR
+              tags:
+                - tag: component
+                  value: network
+            - uuid: c58a50fa47e5415ca440d752c0ae5564
+              name: '{#NET_PORT_NAME}: Link speed'
+              type: DEPENDENT
+              key: 'physical.net.speed[portSpeed.{#SNMPINDEX}]'
+              trends: '0'
+              units: bps
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = String(value).trim();
+                      if (v === '') {
+                          throw 'Empty speed value';
+                      }
+                      if (/^(N\/A|NA|Unknown|Unsupported|NONSUPPORT)$/i.test(v)) {
+                          throw 'Unsupported speed value: ' + value;
+                      }
+                      v = v.replace(',', '.');
+                      v = v.replace(/\s+/g, '');
+                      var m = v.match(/^([0-9]+(?:\.[0-9]+)?)([KMGT]?)(?:bps|bit\/s)?$/i);
+                      if (!m) {
+                          throw 'Unsupported speed format: ' + value;
+                      }
+                      var n = Number(m[1]);
+                      var unit = String(m[2]).toUpperCase();
+                      if (isNaN(n)) {
+                          throw 'Speed is not numeric: ' + value;
+                      }
+                      var factor = 1;
+                      if (unit === 'K') {
+                          factor = 1000;
+                      } else if (unit === 'M') {
+                          factor = 1000000;
+                      } else if (unit === 'G') {
+                          factor = 1000000000;
+                      } else if (unit === 'T') {
+                          factor = 1000000000000;
+                      }
+                      return Math.round(n * factor);
+              master_item:
+                key: 'physical.net.speed.raw[portSpeed.{#SNMPINDEX}]'
+              tags:
+                - tag: component
+                  value: network
+            - uuid: c11f3b8e153a47abac6aeec8d4ac81c9
+              name: '{#NET_PORT_NAME}: Link status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.14.4.1.20.{#SNMPINDEX}'
+              key: 'physical.net.status[portStatus.{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = String(value).trim().toUpperCase();
+                      if (v === 'UP') {
+                          return 'Up';
+                      }
+                      return 'Down';
+              tags:
+                - tag: component
+                  value: network
+        - uuid: 83431e28b2fc49d6ba43e5ac135a08bb
+          name: 'Physical Disk Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SNMPVALUE},.1.3.6.1.4.1.19046.11.1.1.12.2.1.1,{#DISKDESCR},.1.3.6.1.4.1.19046.11.1.1.12.2.1.2]'
+          key: physicalDisk.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'LENOVO-XCC-MIB:diskIndex'
+          item_prototypes:
+            - uuid: 692b956e818e421286b5faba52e04e46
+              name: '{#SNMPINDEX}: Physical disk part number'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.19046.11.1.1.12.2.1.2.{#SNMPINDEX}'
+              key: 'system.hw.physicaldisk.part_number[diskFruName.{#SNMPINDEX}]'
+              delay: 1h
+              history: 2w
+              value_type: CHAR
+              description: |
+                LENOVO-XCC-MIB
+                disk module FRU name.
+              tags:
+                - tag: application
+                  value: 'physical disks'
+            - uuid: 4501bcfa73284f15811fbdcacab3406b
+              name: '{#DISKDESCR}: Physical disk status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.19046.11.1.1.12.2.1.3.{#SNMPINDEX}'
+              key: 'system.hw.physicaldisk.status[diskHealthStatus.{#SNMPINDEX}]'
+              delay: 3m
+              history: 30d
+              value_type: CHAR
+              description: |
+                LENOVO-XCC-MIB
+                A description of the disk module status.
+              tags:
+                - tag: application
+                  value: 'physical disks'
+              trigger_prototypes:
+                - uuid: 8372498f2e214619b8c70d2039d9fbc0
+                  expression: 'find(/Lenovo XCC by SNMP/system.hw.physicaldisk.status[diskHealthStatus.{#SNMPINDEX}],#2,"regexp","^({$DISK_OK_STATUS})$")=0'
+                  name: '{#DISKDESCR}: Physical disk is not in OK state'
+                  priority: WARNING
+                  description: 'Last value: {ITEM.LASTVALUE1}. Please check physical disk for warnings or errors.'
+        - uuid: 25e01bcb3c754e28b63da9dc9308714d
+          name: 'PSU Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#PSU_DESCR},.1.3.6.1.4.1.19046.11.1.1.11.2.1.2]'
+          key: psu.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'LENOVO-XCC-MIB::powerFruName'
+          item_prototypes:
+            - uuid: f4a9c1a611a74ea59e518020b0759d6f
+              name: '{#PSU_DESCR}: Power supply status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.19046.11.1.1.11.2.1.6.{#SNMPINDEX}'
+              key: 'sensor.psu.status[powerHealthStatus.{#SNMPINDEX}]'
+              delay: 3m
+              history: 2w
+              value_type: CHAR
+              description: |
+                LENOVO-XCC-MIB
+                A description of the power module status.
+              tags:
+                - tag: application
+                  value: 'power supply'
+              trigger_prototypes:
+                - uuid: cd19dcc058d042d6b5a95663bec14b19
+                  expression: 'find(/Lenovo XCC by SNMP/sensor.psu.status[powerHealthStatus.{#SNMPINDEX}],#2,"regexp","^({$PSU_OK_STATUS})$")=0'
+                  name: '{#PSU_DESCR}: Power supply is not in normal state'
+                  priority: INFO
+                  description: 'Last value: {ITEM.LASTVALUE1}. Please check the power supply unit for errors.'
+        - uuid: 5d5ea28ccd5a4f2abf110e6456806207
+          name: 'RAID Battery Backup Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#RAID_CTRL_NAME},.1.3.6.1.4.1.19046.11.1.1.13.1.2.1.2,{#RAID_BBU_INSTALLED},.1.3.6.1.4.1.19046.11.1.1.13.1.2.1.5]'
+          key: raid.battery.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#RAID_BBU_INSTALLED}'
+                value: ^1$
+          description: 'Discovers RAID battery backup status only when raidCtrlBatBCK reports an installed backup module.'
+          item_prototypes:
+            - uuid: 411c7a14c0ca4fc1b326a06b473cd16f
+              name: '{#RAID_CTRL_NAME}: Battery backup status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.2.1.24.{#SNMPINDEX}'
+              key: 'raid.controller.battery.status[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+              trigger_prototypes:
+                - uuid: 8623de7e3a1548989bfd1d3def2f0927
+                  expression: 'find(/Lenovo XCC by SNMP/raid.controller.battery.status[{#SNMPINDEX}],#2,"regexp","^({$RAID_BATTERY_OK_STATUS})$")=0'
+                  name: '{#RAID_CTRL_NAME}: RAID battery backup is not in normal state'
+                  priority: WARNING
+                  description: 'Last value: {ITEM.LASTVALUE1}.'
+        - uuid: ed7b529630c645b09b6ba802297c775d
+          name: 'RAID Cache Module Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#RAID_CTRL_NAME},.1.3.6.1.4.1.19046.11.1.1.13.1.2.1.2,{#RAID_CACHE_STATUS},.1.3.6.1.4.1.19046.11.1.1.13.1.2.1.13]'
+          key: raid.cache.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#RAID_CACHE_STATUS}'
+                value: '(?i)^(?!(unknown|n/a)$).+'
+          description: 'Discovers RAID cache module status only when the controller returns a meaningful status value.'
+          item_prototypes:
+            - uuid: 8ab2e66ae09844879fb2e9e646747eb9
+              name: '{#RAID_CTRL_NAME}: Cache module status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.2.1.13.{#SNMPINDEX}'
+              key: 'raid.controller.cache.status[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+              trigger_prototypes:
+                - uuid: 5cc74d91cba948b3929b64b04c6e669d
+                  expression: 'find(/Lenovo XCC by SNMP/raid.controller.cache.status[{#SNMPINDEX}],#2,"regexp","^({$RAID_CACHE_OK_STATUS})$")=0'
+                  name: '{#RAID_CTRL_NAME}: RAID cache module is not in normal state'
+                  priority: WARNING
+                  description: 'Last value: {ITEM.LASTVALUE1}.'
+        - uuid: edb4264fd84d4d95ae5ad1744ac1c36d
+          name: 'RAID Controller Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#RAID_CTRL_NAME},.1.3.6.1.4.1.19046.11.1.1.13.1.2.1.2]'
+          key: raid.controller.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discovering RAID controllers from LENOVO-XCC-MIB::raidControllerTable.'
+          item_prototypes:
+            - uuid: 44e03b6ccbfe492a931f7f1d36ab81c5
+              name: '{#RAID_CTRL_NAME}: Firmware package version'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.2.1.4.{#SNMPINDEX}'
+              key: 'raid.controller.firmware.package.version[{#SNMPINDEX}]'
+              delay: 1h
+              history: 90d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+              trigger_prototypes:
+                - uuid: d7d247a03d7f4f7091848aee18392ee3
+                  expression: 'change(/Lenovo XCC by SNMP/raid.controller.firmware.package.version[{#SNMPINDEX}])<>0'
+                  name: '{#RAID_CTRL_NAME}: RAID controller firmware version changed'
+                  priority: INFO
+                  description: 'RAID controller firmware version changed. Last value: {ITEM.LASTVALUE1}.'
+        - uuid: 8ceb3fd180ed4a5f93e4c9c745898f61
+          name: 'RAID Drive Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#RAID_DRIVE_NAME},.1.3.6.1.4.1.19046.11.1.1.13.1.3.1.2]'
+          key: raid.drive.discovery
+          delay: 1h
+          lifetime_type: DELETE_IMMEDIATELY
+          description: 'Discovering RAID drives from LENOVO-XCC-MIB::raidDriveTable.'
+          item_prototypes:
+            - uuid: 4b88441fcc6c46d7abdc4c974fb83f8d
+              name: '{#RAID_DRIVE_NAME}: Health status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.3.1.11.{#SNMPINDEX}'
+              key: 'raid.drive.health.status[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+              trigger_prototypes:
+                - uuid: e5452b1a6beb449bbcb3cf9c2277f170
+                  expression: 'find(/Lenovo XCC by SNMP/raid.drive.health.status[{#SNMPINDEX}],#2,"regexp","^({$RAID_DRIVE_OK_STATUS})$")=0'
+                  name: '{#RAID_DRIVE_NAME}: RAID drive health is not OK'
+                  priority: WARNING
+                  description: 'Last value: {ITEM.LASTVALUE1}.'
+            - uuid: 6764d99c2b17444495ddaffc0917df39
+              name: '{#RAID_DRIVE_NAME}: Media error count'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.3.1.22.{#SNMPINDEX}'
+              key: 'raid.drive.media.errors[{#SNMPINDEX}]'
+              delay: 15m
+              history: 90d
+              tags:
+                - tag: application
+                  value: raid
+            - uuid: 9e1aad38c1224cf0a1a75df25c6cb7cd
+              name: '{#RAID_DRIVE_NAME}: Other error count'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.3.1.23.{#SNMPINDEX}'
+              key: 'raid.drive.other.errors[{#SNMPINDEX}]'
+              delay: 15m
+              history: 90d
+              tags:
+                - tag: application
+                  value: raid
+            - uuid: cba384ed89c74d1eadac99f78b9687af
+              name: '{#RAID_DRIVE_NAME}: Predicted failure count'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.3.1.24.{#SNMPINDEX}'
+              key: 'raid.drive.predicted.failures[{#SNMPINDEX}]'
+              delay: 15m
+              history: 90d
+              tags:
+                - tag: application
+                  value: raid
+              trigger_prototypes:
+                - uuid: 77a062e61f4c42e48231b3df4dc089ee
+                  expression: 'last(/Lenovo XCC by SNMP/raid.drive.predicted.failures[{#SNMPINDEX}])>0'
+                  name: '{#RAID_DRIVE_NAME}: RAID drive has predicted failures'
+                  priority: HIGH
+                  description: 'Predicted failure count: {ITEM.LASTVALUE1}.'
+            - uuid: 02e6c378d77548a38513ebd0619d07a6
+              name: '{#RAID_DRIVE_NAME}: Remaining life'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.3.1.25.{#SNMPINDEX}'
+              key: 'raid.drive.remaining.life[{#SNMPINDEX}]'
+              delay: 1h
+              history: 90d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+            - uuid: a1445b2631f6433abb17671c9df104f7
+              name: '{#RAID_DRIVE_NAME}: State'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.3.1.4.{#SNMPINDEX}'
+              key: 'raid.drive.state[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+              trigger_prototypes:
+                - uuid: 3f46084583364e99a84fe9554ec1935c
+                  expression: 'find(/Lenovo XCC by SNMP/raid.drive.state[{#SNMPINDEX}],#2,"regexp","^({$RAID_DRIVE_STATE_OK_STATUS})$")=0'
+                  name: '{#RAID_DRIVE_NAME}: RAID drive state is not OK'
+                  priority: WARNING
+                  description: 'Last value: {ITEM.LASTVALUE1}.'
+            - uuid: 2a44769bb5b94ae5972e122b1610005c
+              name: '{#RAID_DRIVE_NAME}: Temperature'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.3.1.10.{#SNMPINDEX}'
+              key: 'raid.drive.temperature[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              value_type: FLOAT
+              units: °C
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = String(value).trim();
+                      if (v === '') {
+                          return null;
+                      }
+                      v = v.replace(',', '.');
+                      var m = v.match(/-?[0-9]+(?:\.[0-9]+)?/);
+                      if (!m) {
+                          return null;
+                      }
+                      var n = Number(m[0]);
+                      if (isNaN(n)) {
+                          return null;
+                      }
+                      if (n === 255 || n < 1 || n > 150) {
+                          return null;
+                      }
+                      return n;
+              tags:
+                - tag: application
+                  value: raid
+          graph_prototypes:
+            - uuid: 2ad875b2c795421686f56b4fc593325e
+              name: '{#RAID_DRIVE_NAME}: Temperature'
+              graph_items:
+                - calc_fnc: ALL
+                  item:
+                    host: 'Lenovo XCC by SNMP'
+                    key: 'raid.drive.temperature[{#SNMPINDEX}]'
+        - uuid: 142c796919f945e590a514d13d476c23
+          name: 'RAID Volume Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#RAID_VOLUME_NAME},.1.3.6.1.4.1.19046.11.1.1.13.1.7.1.2]'
+          key: raid.volume.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discovering RAID volumes from LENOVO-XCC-MIB::raidVolumeTable.'
+          item_prototypes:
+            - uuid: 885099437a6a4bc3b10c01c2950a4304
+              name: '{#RAID_VOLUME_NAME}: Capacity'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.7.1.5.{#SNMPINDEX}'
+              key: 'raid.volume.capacity[{#SNMPINDEX}]'
+              delay: 1h
+              history: 90d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+            - uuid: 9319eb97b09b4424b1029f3ef89e5926
+              name: '{#RAID_VOLUME_NAME}: Controller'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.7.1.3.{#SNMPINDEX}'
+              key: 'raid.volume.controller[{#SNMPINDEX}]'
+              delay: 1h
+              history: 90d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+            - uuid: 5b298e8073124222abda9245908f2b8f
+              name: '{#RAID_VOLUME_NAME}: Status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.13.1.7.1.4.{#SNMPINDEX}'
+              key: 'raid.volume.status[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: raid
+              trigger_prototypes:
+                - uuid: 7fbe2c1f9e2847d293e637b7bde603df
+                  expression: 'find(/Lenovo XCC by SNMP/raid.volume.status[{#SNMPINDEX}],#2,"regexp","^({$RAID_VOLUME_OK_STATUS})$")=0'
+                  name: '{#RAID_VOLUME_NAME}: RAID volume is not OK'
+                  priority: WARNING
+                  description: 'Last value: {ITEM.LASTVALUE1}.'
+        - uuid: 7c50c5fb94bf478f8bcadf7bf98c264e
+          name: 'System Health Summary Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#HEALTH_SUMMARY_DESC},.1.3.6.1.4.1.19046.11.1.1.4.2.1.3,{#HEALTH_SUMMARY_SEVERITY},.1.3.6.1.4.1.19046.11.1.1.4.2.1.2]'
+          key: system.health.summary.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discovering detailed health summary entries from LENOVO-XCC-MIB::systemHealthSummaryTable.'
+          item_prototypes:
+            - uuid: 54311683bafe4f72a7fcb9efa52ac849
+              name: '{#HEALTH_SUMMARY_DESC}: Health summary description'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.4.2.1.3.{#SNMPINDEX}'
+              key: 'system.health.summary.description[{#SNMPINDEX}]'
+              history: 30d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: 'health summary'
+            - uuid: 71ff1602aca94db48509ec54f200f1a9
+              name: '{#HEALTH_SUMMARY_DESC}: Health summary severity'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.4.2.1.2.{#SNMPINDEX}'
+              key: 'system.health.summary.severity[{#SNMPINDEX}]'
+              history: 30d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: 'health summary'
+              trigger_prototypes:
+                - uuid: 8f150ce3cb4145faa5f056a86e24127c
+                  expression: 'find(/Lenovo XCC by SNMP/system.health.summary.severity[{#SNMPINDEX}],#2,"regexp","^({$HEALTH_SUMMARY_OK_STATUS})$")=0'
+                  name: '{#HEALTH_SUMMARY_DESC}: Health summary is not normal'
+                  priority: WARNING
+                  description: 'Severity: {ITEM.LASTVALUE1}.'
+        - uuid: d406ac7e58dd4d79bcf4daeb89ee72aa
+          name: 'Temperature Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#TEMP_DESCR},.1.3.6.1.4.1.19046.11.1.1.1.2.1.2]'
+          key: temperature.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#TEMP_DESCR}'
+                value: '(?i)^(?!.*DTS)(?!CPU\s*[0-9]+\s*Temp$).*$'
+          lifetime_type: DELETE_IMMEDIATELY
+          description: 'Discover non-CPU, non-DTS temperature sensors from LENOVO-XCC-MIB::tempDescr.'
+          item_prototypes:
+            - uuid: 0e5fe80103d04fd189451aa4eef7f0a2
+              name: '{#TEMP_DESCR}: Effective critical high limit'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.1.2.1.6.{#SNMPINDEX}'
+              key: 'sensor.temp.limit[tempCritLimitHigh.{#SNMPINDEX}]'
+              delay: 10m
+              history: 30d
+              value_type: FLOAT
+              units: °C
+              description: 'Effective critical high temperature limit stored as data. The XCC-reported limit is kept only when it is plausible. N/A, missing, zero, 255 and out-of-range values are replaced directly by fallback macros based on the sensor name. CPU sensors are excluded from this item and monitored through DTS margin instead.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      function macroNumber(value, def) {
+                          var n = Number(value);
+                          if (!isFinite(n) || n <= 0) {
+                              return def;
+                          }
+                          return n;
+                      }
+                      var descr = String('{#TEMP_DESCR}').trim();
+                      var fallback = macroNumber('{$TEMP_CRIT}', 90);
+                      if (/^Ambient Temp$/i.test(descr)) {
+                          fallback = macroNumber('{$TEMP_CRIT_AMBIENT}', 47);
+                      }
+                      else if (/^Exhaust Temp$/i.test(descr)) {
+                          fallback = macroNumber('{$TEMP_CRIT_EXHAUST}', 70);
+                      }
+                      else if (/^PCH Temp$/i.test(descr)) {
+                          fallback = macroNumber('{$TEMP_CRIT_PCH}', 100);
+                      }
+                      else if (/^OCP Temp$/i.test(descr)) {
+                          fallback = macroNumber('{$TEMP_CRIT_OCP}', 90);
+                      }
+                      else if (/^DIMM\s*\d+\s+Temp$/i.test(descr)) {
+                          fallback = macroNumber('{$TEMP_CRIT_DIMM}', 87);
+                      }
+                      var minValid = macroNumber('{$TEMP_CRIT_VALID_MIN}', 30);
+                      var maxValid = macroNumber('{$TEMP_CRIT_VALID_MAX}', 150);
+                      if (maxValid <= minValid)  {
+                          maxValid = 150;
+                      }
+                      var raw = String(value).trim();
+                      var match = raw.match(/-?[0-9]+(?:\ .[0-9]+)?/);
+                       if (!match) {
+                          return fallback;
+                      }
+                      var v = Number(match[0]);
+                      if (!isFinite(v) || v < minValid || v > maxValid) {
+                          return fallback;
+                      }
+                      return v;
+              tags:
+                - tag: application
+                  value: temperature
+            - uuid: 67044436462347f1964f76a479d2b50f
+              name: '{#TEMP_DESCR}: Temperature'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.1.2.1.3.{#SNMPINDEX}'
+              key: 'sensor.temp.value[tempReading.{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: °C
+              preprocessing:
+                - type: REGEX
+                  parameters:
+                    - '(-?[0-9]+(?:\.[0-9]+)?)'
+                    - \1
+                  error_handler: DISCARD_VALUE
+              tags:
+                - tag: application
+                  value: temperature
+          trigger_prototypes:
+            - uuid: 73d378857456428487ed54fce88cbfb2
+              expression: 'last(/Lenovo XCC by SNMP/sensor.temp.limit[tempCritLimitHigh.{#SNMPINDEX}])>0 and last(/Lenovo XCC by SNMP/sensor.temp.value[tempReading.{#SNMPINDEX}])>last(/Lenovo XCC by SNMP/sensor.temp.limit[tempCritLimitHigh.{#SNMPINDEX}])'
+              name: '{#TEMP_DESCR}: Temperature is above effective critical high limit'
+              priority: HIGH
+        - uuid: 78bdcf38345a4de78577e1073c9cfa7b
+          name: 'Voltage Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#VOLTDESCR},.1.3.6.1.4.1.19046.11.1.1.2.2.1.2]'
+          key: voltage.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discovering voltage sensors from LENOVO-XCC-MIB::voltDescr.'
+          item_prototypes:
+            - uuid: 4c25bbb64b964e93a94a09f20f84e95b
+              name: '{#VOLTDESCR}: Status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.2.2.1.11.{#SNMPINDEX}'
+              key: 'voltage.status[{#SNMPINDEX}]'
+              delay: 3m
+              history: 2w
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: voltage
+              trigger_prototypes:
+                - uuid: 26a3c418931242b988887b6299918147
+                  expression: 'find(/Lenovo XCC by SNMP/voltage.status[{#SNMPINDEX}],#2,"regexp","^({$VOLTAGE_OK_STATUS})$")=0'
+                  name: '{#VOLTDESCR}: Voltage is not in normal state'
+                  priority: WARNING
+                  description: 'Last value: {ITEM.LASTVALUE1}.'
+            - uuid: af9d9c7739354db4acf9202e28cfaad6
+              name: '{#VOLTDESCR}: Voltage'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.2.2.1.3.{#SNMPINDEX}'
+              key: 'voltage[{#SNMPINDEX}]'
+              delay: 3m
+              history: 2w
+              value_type: FLOAT
+              units: V
+              description: 'Voltage reading from Lenovo XCC. Values are kept in volts when already decimal volts; clearly millivolt-like values (absolute value >= 100) are divided by 1000.'
+              preprocessing:
+                - type: REGEX
+                  parameters:
+                    - '(-?[0-9]+(?:\.[0-9]+)?)'
+                    - \1
+                  error_handler: DISCARD_VALUE
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = Number(value);
+                      if (isNaN(v)) {
+                          throw 'Value is not numeric: ' + value;
+                      }
+                      if (Math.abs(v) >= 100) {
+                          return v / 1000;
+                      }
+                      return v;
+              tags:
+                - tag: application
+                  value: voltage
+          graph_prototypes:
+            - uuid: 51e393928b414eca8b095d29c7f2f829
+              name: '{#VOLTDESCR}: Voltage'
+              graph_items:
+                - calc_fnc: ALL
+                  item:
+                    host: 'Lenovo XCC by SNMP'
+                    key: 'voltage[{#SNMPINDEX}]'
+        - uuid: 74ba9b821bf74cf592622cc10c7e2b93
+          name: 'XCC Firmware Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#XCC_VPD_TYPE},.1.3.6.1.4.1.19046.11.1.1.5.1.1.2]'
+          key: xcc.firmware.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discovering XCC firmware/VPD entries from LENOVO-XCC-MIB::xccVpdTable.'
+          item_prototypes:
+            - uuid: 53804f0bb9fd4bc78bbb16dc74a5da21
+              name: '{#XCC_VPD_TYPE}: Firmware release date'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.5.1.1.4.{#SNMPINDEX}'
+              key: 'xcc.firmware.release_date[{#SNMPINDEX}]'
+              delay: 1h
+              history: 90d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: firmware
+            - uuid: ed9b7026617c4f628a5de875abb14c5a
+              name: '{#XCC_VPD_TYPE}: Firmware version'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.19046.11.1.1.5.1.1.3.{#SNMPINDEX}'
+              key: 'xcc.firmware.version[{#SNMPINDEX}]'
+              delay: 1h
+              history: 90d
+              value_type: CHAR
+              tags:
+                - tag: application
+                  value: firmware
+              trigger_prototypes:
+                - uuid: 93ab7ab1fc2847db8b997071ae15b3d5
+                  expression: 'change(/Lenovo XCC by SNMP/xcc.firmware.version[{#SNMPINDEX}])<>0'
+                  name: '{#XCC_VPD_TYPE}: Firmware version changed'
+                  priority: INFO
+                  description: 'Firmware version changed. Last value: {ITEM.LASTVALUE1}.'
+                  manual_close: 'YES'
+      tags:
+        - tag: class
+          value: hardware
+        - tag: target
+          value: lenovo
+        - tag: target
+          value: xcc
+      macros:
+        - macro: '{$CPU_DTS_MARGIN_AVG}'
+          value: '15'
+          description: 'CPU DTS thermal margin threshold for Average severity. The item stores a positive remaining margin to TjMAX in °C.'
+        - macro: '{$CPU_DTS_MARGIN_DISASTER}'
+          value: '0'
+          description: 'CPU DTS thermal margin threshold for Disaster severity. 0 °C means the CPU thermal limit is reached.'
+        - macro: '{$CPU_DTS_MARGIN_HIGH}'
+          value: '5'
+          description: 'CPU DTS thermal margin threshold for High severity. The item stores a positive remaining margin to TjMAX in °C.'
+        - macro: '{$DISK_OK_STATUS}'
+          value: Normal|OK
+        - macro: '{$FAN_OK_STATUS}'
+          value: Normal|Unknown
+        - macro: '{$HEALTH_CRIT_STATUS}'
+          value: '2'
+        - macro: '{$HEALTH_DISASTER_STATUS}'
+          value: '0'
+        - macro: '{$HEALTH_SUMMARY_OK_STATUS}'
+          value: Normal|Informational|Info|OK
+        - macro: '{$HEALTH_WARN_STATUS}'
+          value: '4'
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+        - macro: '{$PSU_OK_STATUS}'
+          value: Normal|OK
+        - macro: '{$RAID_BATTERY_OK_STATUS}'
+          value: Normal|OK|Optimal|Operational
+        - macro: '{$RAID_CACHE_OK_STATUS}'
+          value: 'Normal|OK|Optimal|Not Installed|Not Present'
+        - macro: '{$RAID_DRIVE_OK_STATUS}'
+          value: Normal|OK|Optimal|Online
+        - macro: '{$RAID_DRIVE_STATE_OK_STATUS}'
+          value: 'Online|Optimal|Normal|OK|Ready|JBOD|Unconfigured Good|Global Hot Spare|Dedicated Hot Spare'
+        - macro: '{$RAID_VOLUME_OK_STATUS}'
+          value: Online|Optimal|Normal|OK
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+        - macro: '{$TEMP_CRIT}'
+          value: '90'
+          description: 'Default fallback critical high temperature limit used when XCC does not expose a valid sensor limit.'
+        - macro: '{$TEMP_CRIT_AMBIENT}'
+          value: '47'
+          description: 'Fallback critical high temperature limit for Ambient Temp when XCC reports N/A, 0, 255 or another invalid value.'
+        - macro: '{$TEMP_CRIT_DIMM}'
+          value: '87'
+          description: 'Fallback critical high temperature limit for DIMM temperature sensors when XCC reports N/A, 0, 255 or another invalid value.'
+        - macro: '{$TEMP_CRIT_EXHAUST}'
+          value: '70'
+          description: 'Fallback critical high temperature limit for Exhaust Temp when XCC reports N/A, 0, 255 or another invalid value.'
+        - macro: '{$TEMP_CRIT_OCP}'
+          value: '90'
+          description: 'Fallback critical high temperature limit for OCP Temp when XCC reports N/A, 0, 255 or another invalid value.'
+        - macro: '{$TEMP_CRIT_PCH}'
+          value: '100'
+          description: 'Fallback critical high temperature limit for PCH Temp when XCC reports N/A, 0, 255 or another invalid value.'
+        - macro: '{$TEMP_CRIT_VALID_MAX}'
+          value: '150'
+          description: 'Maximum plausible critical high temperature limit. XCC values above this threshold, including 255, are treated as invalid and replaced by fallback macros.'
+        - macro: '{$TEMP_CRIT_VALID_MIN}'
+          value: '30'
+          description: 'Minimum plausible critical high temperature limit. XCC values below this threshold are treated as invalid and replaced by fallback macros.'
+        - macro: '{$VOLTAGE_OK_STATUS}'
+          value: Normal|OK
+      dashboards:
+        - uuid: 112fd11b469542a7b72f63e469822938
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'System type'
+                  width: '28'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'System type'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: systemType
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'System name'
+                  'y': '3'
+                  width: '28'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'System name'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: system.name
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: topitems
+                  name: Firmwares
+                  'y': '6'
+                  width: '36'
+                  height: '9'
+                  fields:
+                    - type: INTEGER
+                      name: columns.0.display_value_as
+                      value: '2'
+                    - type: STRING
+                      name: columns.0.items.0
+                      value: '*Firmware*'
+                    - type: INTEGER
+                      name: host_ordering_limit
+                      value: '50'
+                    - type: INTEGER
+                      name: item_ordering_limit
+                      value: '50'
+                    - type: INTEGER
+                      name: item_ordering_order_by
+                      value: '2'
+                    - type: INTEGER
+                      name: layout
+                      value: '1'
+                    - type: INTEGER
+                      name: show_column_header
+                      value: '0'
+                - type: honeycomb
+                  name: 'Disks status'
+                  'y': '15'
+                  width: '36'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Physical disk status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Physical disk status$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: NWVGB
+                - type: honeycomb
+                  name: 'Fan status'
+                  'y': '18'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Fan status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Fan status$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: BCZWQ
+                - type: honeycomb
+                  name: Temperatures
+                  'y': '23'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Temperature'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Temperature$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: WJIAM
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                - type: item
+                  name: 'Serial number'
+                  x: '28'
+                  width: '27'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'Serial number'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: serialNumber
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'XCC Uptime'
+                  x: '28'
+                  'y': '3'
+                  width: '27'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'XCC Uptime'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: 'system.uptime[sysUpTime.0]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: honeycomb
+                  name: 'CMOS battery status'
+                  x: '36'
+                  'y': '6'
+                  width: '19'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'CMOS Battery: Status'
+                    - type: STRING
+                      name: primary_label
+                      value: 'CMOS Battery'
+                    - type: STRING
+                      name: reference
+                      value: FWWBS
+                - type: honeycomb
+                  name: 'Power supply status'
+                  x: '36'
+                  'y': '9'
+                  width: '36'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Power supply status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Power supply status$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: TELIQ
+                - type: honeycomb
+                  name: 'Voltages status'
+                  x: '36'
+                  'y': '12'
+                  width: '36'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'SysBrd *V: Status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Status$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: TJAVE
+                - type: honeycomb
+                  name: 'RAID status'
+                  x: '36'
+                  'y': '15'
+                  width: '36'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*: Status'
+                    - type: INTEGER
+                      name: item_tags.0.operator
+                      value: '0'
+                    - type: STRING
+                      name: item_tags.0.tag
+                      value: application
+                    - type: STRING
+                      name: item_tags.0.value
+                      value: raid
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.+):\s*Status$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: YZKJQ
+                - type: item
+                  name: Availability
+                  x: '55'
+                  width: '17'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: Availability
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'Global Health Status'
+                  x: '55'
+                  'y': '3'
+                  width: '17'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Global Health Status'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: XCCsystemHealthStat
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF6F00
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '255'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'Power status'
+                  x: '55'
+                  'y': '6'
+                  width: '17'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'System power status'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: XCCcurrentSysPowerStatus
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF6F00
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '255'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+            - name: Network
+              widgets:
+                - type: honeycomb
+                  name: 'Network link'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*: Link status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*)\s+[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}.*$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: ZRBAE
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                - type: honeycomb
+                  name: 'Network speed'
+                  'y': '6'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*: Link speed'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*)\s+[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}.*$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: ZCDXV
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF4000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '10000000'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF681E
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '100000000'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1000000000'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 0040FF
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '10000000000'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '16000000000'
+            - name: Temperatures
+              widgets:
+                - type: svggraph
+                  name: Temperatures
+                  width: '72'
+                  height: '11'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*Temperature'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: SZVXA
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'CPU DTS (Thermal margin)'
+                  'y': '11'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '2'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*DTS: Thermal margin to TjMAX'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '4'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: QIYBN
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Fan speed'
+                  'y': '17'
+                  width: '72'
+                  height: '9'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*: Fan speed, %'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: MMMFW
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+            - name: Power
+              widgets:
+                - type: svggraph
+                  width: '72'
+                  height: '8'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '2'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Power:*'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: FZFOZ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'CPU consumption'
+                  'y': '8'
+                  width: '18'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: angle
+                      value: '270'
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: empty_color
+                      value: 4CAF50
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: 'power.consumption.cpu[fuelGaugePowerConsumptionCpu.0]'
+                    - type: STRING
+                      name: max
+                      value: '350'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: needle_color
+                      value: B71C1C
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: show.3
+                      value: '5'
+                    - type: STRING
+                      name: units
+                      value: W
+                    - type: STRING
+                      name: value_arc_color
+                      value: 0D47A1
+                - type: gauge
+                  name: 'Memory consumption'
+                  x: '18'
+                  'y': '8'
+                  width: '18'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: angle
+                      value: '270'
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: empty_color
+                      value: 4CAF50
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: 'power.consumption.memory[fuelGaugePowerConsumptionMemory.0]'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: needle_color
+                      value: B71C1C
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: show.3
+                      value: '5'
+                    - type: STRING
+                      name: units
+                      value: W
+                    - type: STRING
+                      name: value_arc_color
+                      value: 0D47A1
+                - type: gauge
+                  name: 'Other consumption'
+                  x: '36'
+                  'y': '8'
+                  width: '18'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: angle
+                      value: '270'
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: empty_color
+                      value: 4CAF50
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: 'power.consumption.other[fuelGaugePowerConsumptionOther.0]'
+                    - type: STRING
+                      name: max
+                      value: '200'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: needle_color
+                      value: B71C1C
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: show.3
+                      value: '5'
+                    - type: STRING
+                      name: units
+                      value: W
+                    - type: STRING
+                      name: value_arc_color
+                      value: 0D47A1
+                - type: gauge
+                  name: 'Total in use'
+                  x: '54'
+                  'y': '8'
+                  width: '18'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: angle
+                      value: '270'
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: empty_color
+                      value: 4CAF50
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Lenovo XCC by SNMP'
+                        key: 'power.total.inuse[fuelGaugeTotalPowerInUse.0]'
+                    - type: STRING
+                      name: max
+                      value: '500'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: needle_color
+                      value: B71C1C
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: show.3
+                      value: '5'
+                    - type: STRING
+                      name: units
+                      value: W
+                    - type: STRING
+                      name: value_arc_color
+                      value: 0D47A1
+      valuemaps:
+        - uuid: 195309bd046b408b9696000f27ed500b
+          name: 'LENOVO-XCC-MIB::currentSysPowerStatus'
+          mappings:
+            - value: '0'
+              newvalue: 'Powered off'
+            - value: '1'
+              newvalue: 'Sleep S3'
+            - value: '255'
+              newvalue: 'Powered on'
+        - uuid: 5fefe6ddcb8b43c2bab2c986a7dcfa8f
+          name: 'LENOVO-XCC-MIB::systemHealthStat'
+          mappings:
+            - value: '0'
+              newvalue: 'Non Recoverable'
+            - value: '2'
+              newvalue: Critical
+            - value: '4'
+              newvalue: 'Non Critical'
+            - value: '255'
+              newvalue: Normal
+        - uuid: b828b29a1c6c4c808b883cbb4ab5afd7
+          name: 'LENOVO-XCC-MIB::systemState'
+          mappings:
+            - value: '0'
+              newvalue: 'Power off or unknown'
+            - value: '1'
+              newvalue: 'Power on or starting UEFI'
+            - value: '2'
+              newvalue: 'In UEFI'
+            - value: '3'
+              newvalue: 'UEFI error detected'
+            - value: '4'
+              newvalue: 'Booting OS or unsupported OS'
+            - value: '5'
+              newvalue: 'OS booted'
+            - value: '6'
+              newvalue: 'Suspend to RAM'
+            - value: '7'
+              newvalue: 'In setup'
+            - value: '8'
+              newvalue: 'LXPM maintenance mode'
+            - value: '9'
+              newvalue: 'Memory test'
+        - uuid: eace45c00f2b41ec856c76058985d379
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 9c8fc1cd91274d1ba85f144a17bb460d
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
+  graphs:
+    - uuid: a018422c446f4152acbbab00fe9beed9
+      name: 'ICMP response time'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Lenovo XCC by SNMP'
+            key: icmppingsec
+    - uuid: e1a8eb56157246f1b034b99ebd03e44c
+      name: 'Power budget'
+      graph_items:
+        - color: 00A0B0
+          calc_fnc: ALL
+          item:
+            host: 'Lenovo XCC by SNMP'
+            key: 'power.available[fuelGaugeTotalPowerAvailable.0]'
+        - color: FFB300
+          calc_fnc: ALL
+          item:
+            host: 'Lenovo XCC by SNMP'
+            key: 'power.total.inuse[fuelGaugeTotalPowerInUse.0]'
+        - color: 7CB342
+          calc_fnc: ALL
+          item:
+            host: 'Lenovo XCC by SNMP'
+            key: power.spare.current
+    - uuid: 628d6bb7ce59492f8659fbf7ce54bb01
+      name: 'Power consumption'
+      graph_items:
+        - color: 00A0B0
+          calc_fnc: ALL
+          item:
+            host: 'Lenovo XCC by SNMP'
+            key: 'power.total.inuse[fuelGaugeTotalPowerInUse.0]'
+        - color: 3B82F6
+          calc_fnc: ALL
+          item:
+            host: 'Lenovo XCC by SNMP'
+            key: 'power.consumption.cpu[fuelGaugePowerConsumptionCpu.0]'
+        - color: FFB300
+          calc_fnc: ALL
+          item:
+            host: 'Lenovo XCC by SNMP'
+            key: 'power.consumption.memory[fuelGaugePowerConsumptionMemory.0]'
+        - color: 7CB342
+          calc_fnc: ALL
+          item:
+            host: 'Lenovo XCC by SNMP'
+            key: 'power.consumption.other[fuelGaugePowerConsumptionOther.0]'
