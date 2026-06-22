@@ -1,0 +1,2577 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 5e177452ac0d49d587dba98c4649bcec
+      name: 'Templates/NAS & SAN'
+  templates:
+    - uuid: 2dfda7019a464f74b73754a6b40ef133
+      template: 'QNAP QTS by SNMP'
+      name: 'QNAP QTS by SNMP'
+      description: |
+        Template QNAP QTS by SNMP.
+        
+        MIBs used:
+        SNMPv2-MIB
+        IF-MIB
+        ENTITY-MIB
+        HOST-RESOURCES-MIB
+        QNAP NAS-MIB
+        
+        Main QNAP NAS-MIB OIDs use the 1.3.6.1.4.1.24681 macro.
+        Default value is 1.3.6.1.4.1.24681.
+      vendor:
+        name: E-MSN
+        version: 7.4-10
+      groups:
+        - name: 'Templates/NAS & SAN'
+      items:
+        - uuid: 8a74e6258bca469ea92b25b369343717
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          delay: '60'
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: 1c74d30ab82047c69386f0811e065137
+              expression: 'max(/QNAP QTS by SNMP/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 4e717a8235954ecc9ab70d87dcbef1f9
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: 2fa73689b4c04da1872463688a2243df
+              expression: 'min(/QNAP QTS by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/QNAP QTS by SNMP/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'ICMP packets loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/QNAP QTS by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: bc56eacbd67b4b95b43ac03fecc79c94
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: c78b83044e184c1792649d46429bd3e8
+              expression: 'avg(/QNAP QTS by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'min(/QNAP QTS by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/QNAP QTS by SNMP/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/QNAP QTS by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 4fac94bd68204cd3b83ebac332a7843a
+          name: 'CPU Temperature'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.4.2.0
+          key: qnap.system.cpu.temperature
+          units: °C
+          description: 'CPU temperature from QNAP Storage Manager CPU table.'
+          tags:
+            - tag: Application
+              value: CPU
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Health'
+          triggers:
+            - uuid: fb41f02106644b3f8da53d86fb16ec23
+              expression: 'avg(/QNAP QTS by SNMP/qnap.system.cpu.temperature,#4)>{$CPU.TEMP.HIGH}'
+              name: 'CPU temperature is critical on {HOST.NAME}'
+              opdata: 'CPU temp: {ITEM.LASTVALUE1}'
+              priority: HIGH
+              tags:
+                - tag: scope
+                  value: temperature
+            - uuid: ff1d64a13f3c4c7883f53d97760e43c1
+              expression: 'avg(/QNAP QTS by SNMP/qnap.system.cpu.temperature,#4)>{$CPU.TEMP.AVG}'
+              name: 'CPU temperature is high on {HOST.NAME}'
+              opdata: 'CPU temp: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              dependencies:
+                - name: 'CPU temperature is critical on {HOST.NAME}'
+                  expression: 'avg(/QNAP QTS by SNMP/qnap.system.cpu.temperature,#4)>{$CPU.TEMP.HIGH}'
+              tags:
+                - tag: scope
+                  value: temperature
+        - uuid: ac190952dd094d5988f143b776c9ab22
+          name: 'CPU Usage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.24681.1.3.1.0
+          key: qnap.system.cpu.usage
+          units: '%'
+          description: 'QNAP SystemCPU-UsageEX.'
+          tags:
+            - tag: Application
+              value: CPU
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Health'
+          triggers:
+            - uuid: e6e2a80ef49a4debb0d2f272ff7c0931
+              expression: 'avg(/QNAP QTS by SNMP/qnap.system.cpu.usage,5m)>{$CPU_UTIL_AVG}'
+              name: 'CPU usage is high on {HOST.NAME}'
+              opdata: 'CPU: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: performance
+            - uuid: c6c372a35d0045b09d8d1f86cfea4170
+              expression: 'avg(/QNAP QTS by SNMP/qnap.system.cpu.usage,5m)>{$CPU_UTIL_HIGH}'
+              name: 'CPU usage is too high on {HOST.NAME}'
+              opdata: 'CPU: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 555411d2e17c4739b0e18e3c646da4bb
+          name: 'System Description'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.1.0
+          key: qnap.system.descr
+          value_type: TEXT
+          description: 'SNMP system description.'
+          tags:
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Information'
+          triggers:
+            - uuid: ef636833028d4b13a2d02356e9ecfee8
+              expression: '(last(/QNAP QTS by SNMP/qnap.system.descr,#1)<>last(/QNAP QTS by SNMP/qnap.system.descr,#2))>0'
+              name: 'System description has changed on {HOST.NAME}'
+              priority: INFO
+              description: 'The SNMP system description changed. This can indicate a firmware or system update.'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
+        - uuid: eed197a9f7e74681b3a67f9267b7ff7d
+          name: 'Entity Description'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.47.1.1.1.1.2.1
+          key: qnap.system.entity.descr
+          delay: 1h
+          value_type: TEXT
+          inventory_link: HARDWARE
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return String(value).trim();'
+          tags:
+            - tag: Application
+              value: System
+        - uuid: 4a5baa30c264478a961845eaf3ada8b7
+          name: 'Entity Model'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.47.1.1.1.1.13.1
+          key: qnap.system.entity.model
+          delay: 1h
+          value_type: TEXT
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return String(value).trim();'
+          tags:
+            - tag: Application
+              value: System
+        - uuid: deb1e7c72cad43ea804c0d0c6cf3f0d7
+          name: 'Entity Name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.47.1.1.1.1.7.1
+          key: qnap.system.entity.name
+          delay: 1h
+          value_type: TEXT
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return String(value).trim();'
+          tags:
+            - tag: Application
+              value: System
+        - uuid: 72c04c015d974d6fb47334ee549930df
+          name: 'QTS version'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.47.1.1.1.1.9.1
+          key: qnap.system.firmware
+          delay: 1h
+          value_type: TEXT
+          inventory_link: SOFTWARE
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return String(value).trim();'
+          tags:
+            - tag: Application
+              value: System
+          triggers:
+            - uuid: d7a84ec24f3342359cca8054bf0cfe61
+              expression: '(last(/QNAP QTS by SNMP/qnap.system.firmware,#1)<>last(/QNAP QTS by SNMP/qnap.system.firmware,#2))>0'
+              name: 'QTS on {HOST.NAME} has been updated'
+              priority: INFO
+              description: 'Version of QTS has changed. Acknowledge to close the problem manually.'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
+                - tag: scope
+                  value: security
+        - uuid: 1389acf13db147dd82f5455222566876
+          name: 'Hardware version'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.47.1.1.1.1.8.1
+          key: qnap.system.hardware.version
+          delay: 1h
+          value_type: TEXT
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return String(value).trim();'
+          tags:
+            - tag: Application
+              value: System
+        - uuid: e330d7792acf40ad9d4f4b8b3e495538
+          name: 'Host Name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.24681.1.3.13.0
+          key: qnap.system.hostname
+          value_type: TEXT
+          description: 'QNAP hostname.'
+          tags:
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Information'
+        - uuid: 9addff7b22bd422c9160ecca62cb0e57
+          name: Manufacturer
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.47.1.1.1.1.12.1
+          key: qnap.system.manufacturer
+          delay: 1h
+          value_type: TEXT
+          inventory_link: VENDOR
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return String(value).trim();'
+          tags:
+            - tag: Application
+              value: System
+        - uuid: 91e0366d560f45f79a05c615fcf24abd
+          name: 'Free Physical Memory'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.24681.1.3.3.0
+          key: qnap.system.memory.free
+          units: B
+          description: 'QNAP SystemFreeMemEX in bytes.'
+          tags:
+            - tag: Application
+              value: Memory
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Health'
+        - uuid: 809f75a505684c53b1d9b5c8bbcb4dec
+          name: 'Total Physical Memory'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.24681.1.3.2.0
+          key: qnap.system.memory.total
+          units: B
+          description: 'QNAP SystemTotalMemEX in bytes.'
+          tags:
+            - tag: Application
+              value: Memory
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Health'
+        - uuid: 97faa0ea9698461a901c9ca7a7444ae3
+          name: 'Used Physical Memory'
+          type: CALCULATED
+          key: qnap.system.memory.used
+          units: B
+          params: last(//qnap.system.memory.total)-last(//qnap.system.memory.free)
+          description: 'Calculated used memory.'
+          tags:
+            - tag: Application
+              value: Memory
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Health'
+        - uuid: b86dfe942d594807891e784dff4a02ed
+          name: 'Memory Utilization'
+          type: CALCULATED
+          key: qnap.system.memory.util
+          value_type: FLOAT
+          units: '%'
+          params: 'last(//qnap.system.memory.used)/last(//qnap.system.memory.total)*100'
+          description: 'Calculated memory utilization.'
+          tags:
+            - tag: Application
+              value: Memory
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Health'
+          triggers:
+            - uuid: 09733c56eadd43cebf292e651c52ca97
+              expression: 'avg(/QNAP QTS by SNMP/qnap.system.memory.util,5m)>{$MEMORY.UTIL.WARN}'
+              name: 'Memory utilization is high on {HOST.NAME}'
+              opdata: 'Memory: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 44faf0b9b6024d8db89e047d67e65d9f
+          name: 'Model Name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.24681.1.3.12.0
+          key: qnap.system.model
+          value_type: TEXT
+          description: 'QNAP model name.'
+          inventory_link: MODEL
+          tags:
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Information'
+        - uuid: 17c505ccd0cb4d1ba05c2078ab60cf7c
+          name: 'System Name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.5.0
+          key: qnap.system.name
+          value_type: TEXT
+          description: 'SNMP system name.'
+          tags:
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Information'
+        - uuid: 119e25c90d974424a9194dd562024bee
+          name: 'Serial number'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.47.1.1.1.1.11.1
+          key: qnap.system.serial
+          delay: 1h
+          value_type: TEXT
+          inventory_link: SERIALNO_A
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return String(value).trim();'
+          tags:
+            - tag: Application
+              value: System
+        - uuid: ad459af16fca47d287ccddcfe8d0e532
+          name: 'Software version'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.47.1.1.1.1.10.1
+          key: qnap.system.software.version
+          delay: 1h
+          value_type: TEXT
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'return String(value).trim();'
+          tags:
+            - tag: Application
+              value: System
+        - uuid: 5b3c4002ff2f42679c462b7a3a5982a3
+          name: 'System Temperature'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.24681.1.4.1.1.1.1.1.2.1.7.1
+          key: qnap.system.temperature
+          units: °C
+          description: 'System temperature from QNAP Storage Manager system table.'
+          tags:
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: 'System Health'
+          triggers:
+            - uuid: e6842e061cfc4aa29f41167cec13466b
+              expression: 'avg(/QNAP QTS by SNMP/qnap.system.temperature,#4)>{$SYSTEM.TEMP.HIGH}'
+              name: 'System temperature is critical on {HOST.NAME}'
+              opdata: 'System temp: {ITEM.LASTVALUE1}'
+              priority: HIGH
+              tags:
+                - tag: scope
+                  value: temperature
+            - uuid: b7818b0e84ad47b6aeddf54e48096038
+              expression: 'avg(/QNAP QTS by SNMP/qnap.system.temperature,#4)>{$SYSTEM.TEMP.AVG}'
+              name: 'System temperature is high on {HOST.NAME}'
+              opdata: 'System temp: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              dependencies:
+                - name: 'System temperature is critical on {HOST.NAME}'
+                  expression: 'avg(/QNAP QTS by SNMP/qnap.system.temperature,#4)>{$SYSTEM.TEMP.HIGH}'
+              tags:
+                - tag: scope
+                  value: temperature
+        - uuid: c1bcf8c79a464f08a0d5f78ab2b0d7bb
+          name: Uptime
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.24681.1.3.4.0
+          key: qnap.system.uptime
+          units: uptime
+          description: 'QNAP system uptime in seconds after TimeTicks conversion.'
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: Application
+              value: 'QNAP System'
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: becfbfe1a619474b885b331fdd8671a8
+              expression: 'last(/QNAP QTS by SNMP/qnap.system.uptime)<10m'
+              name: '{HOST.NAME} has been restarted'
+              priority: INFO
+              description: 'System uptime is below 10 minutes.'
+              tags:
+                - tag: scope
+                  value: notice
+        - uuid: d5ccd094b1e74df5bb5f4817bed632e9
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          valuemap:
+            name: zabbix.host.available
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 9000e31215a64df79dfd4156db812d3f
+              expression: 'max(/QNAP QTS by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'SNMP is unavailable on {HOST.NAME}'
+              priority: AVERAGE
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/QNAP QTS by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: e2974e176692403b940e2942ff13403f
+          name: 'QNAP Network Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#IFALIAS},1.3.6.1.2.1.31.1.1.1.18,{#IFNAME},1.3.6.1.2.1.31.1.1.1.1,{#IFDESCR},1.3.6.1.2.1.2.2.1.2,{#IFTYPE},1.3.6.1.2.1.2.2.1.3,{#IFADMINSTATUS},1.3.6.1.2.1.2.2.1.7,{#IFOPERSTATUS},1.3.6.1.2.1.2.2.1.8,{#IFHIGHSPEED},1.3.6.1.2.1.31.1.1.1.15]'
+          key: ifMIB.ifMIBObjects.ifXTable.ifXEntry
+          delay: 1h
+          filter:
+            evaltype: FORMULA
+            formula: 'A or (B and (C or D))'
+            conditions:
+              - macro: '{#IFNAME}'
+                value: '^eth[0-9]+$'
+                formulaid: A
+              - macro: '{#IFNAME}'
+                value: '^bond[0-9]+$'
+                formulaid: B
+              - macro: '{#IFHIGHSPEED}'
+                value: '^[1-9][0-9]*$'
+                formulaid: C
+              - macro: '{#IFADMINSTATUS}'
+                value: ^1$
+                formulaid: D
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Discovers physical QNAP interfaces.'
+          item_prototypes:
+            - uuid: 5fb0e27ad4c64d1d817edc59472adffe
+              name: 'Interface {#IFNAME}: Inbound discards'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}'
+              key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifInDiscards.[{#IFNAME}]'
+              value_type: FLOAT
+              units: discards/s
+              description: 'The rate of inbound packets discarded even though no errors were detected.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: Application
+                  value: Network
+                - tag: Interface
+                  value: '[{#IFNAME}]'
+            - uuid: 1667478a8d9947539a83b1ab54fac06f
+              name: 'Interface {#IFNAME}: Inbound errors'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}'
+              key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifInErrors.[{#IFNAME}]'
+              value_type: FLOAT
+              units: errors/s
+              description: 'The rate of inbound packets that could not be delivered due to errors.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: Application
+                  value: Network
+                - tag: Interface
+                  value: '[{#IFNAME}]'
+            - uuid: ef031d5309ce4ad69a597c2838f30b82
+              name: 'Interface {#IFNAME}: Operational status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}'
+              key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifOperStatus.[{#IFNAME}]'
+              description: 'The current operational state of the network interface.'
+              valuemap:
+                name: 'IF-MIB::ifOperStatus'
+              tags:
+                - tag: Application
+                  value: Network
+                - tag: Interface
+                  value: '[{#IFNAME}]'
+            - uuid: 9f65cfe0fc904ceba528280e31946b1b
+              name: 'Interface {#IFNAME}: Outbound discards'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}'
+              key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifOutDiscards.[{#IFNAME}]'
+              value_type: FLOAT
+              units: discards/s
+              description: 'The rate of outbound packets discarded even though no errors were detected.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: Application
+                  value: Network
+                - tag: Interface
+                  value: '[{#IFNAME}]'
+            - uuid: a1c77ec6254c4fabad38fb95fb9e9850
+              name: 'Interface {#IFNAME}: Outbound errors'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}'
+              key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifOutErrors.[{#IFNAME}]'
+              value_type: FLOAT
+              units: errors/s
+              description: 'The rate of outbound packets that could not be transmitted due to errors.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: Application
+                  value: Network
+                - tag: Interface
+                  value: '[{#IFNAME}]'
+            - uuid: fae9c63de4644dff8f8fe40987341f32
+              name: 'Interface {#IFNAME}: Incoming traffic'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}'
+              key: 'ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifHCInOctets.[{#IFNAME}]'
+              value_type: FLOAT
+              units: bps
+              description: 'The total number of octets received on the interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Application
+                  value: Network
+                - tag: Interface
+                  value: '[{#IFNAME}]'
+            - uuid: e6e3703bf2b04251ad76d44ffc251fc3
+              name: 'Interface {#IFNAME}: Outgoing traffic'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}'
+              key: 'ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifHCOutOctets.[{#IFNAME}]'
+              value_type: FLOAT
+              units: bps
+              description: 'The total number of octets transmitted out of the interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Application
+                  value: Network
+                - tag: Interface
+                  value: '[{#IFNAME}]'
+            - uuid: a7d3ed2847f94a648d2452725bd0b1b5
+              name: 'Interface {#IFNAME}: Speed'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.15.{#SNMPINDEX}'
+              key: 'ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifHighSpeed.[{#IFNAME}]'
+              units: bps
+              description: 'The current interface speed.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '1000000'
+              tags:
+                - tag: Application
+                  value: Network
+                - tag: Interface
+                  value: '[{#IFNAME}]'
+          graph_prototypes:
+            - uuid: 57ebbde2382f496c8a8be5a5c9d389f5
+              name: 'Interface {#IFNAME}: Network traffic'
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 199C0D
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifHCInOctets.[{#IFNAME}]'
+                - sortorder: '1'
+                  drawtype: BOLD_LINE
+                  color: F63100
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifHCOutOctets.[{#IFNAME}]'
+                - sortorder: '2'
+                  color: 00611C
+                  yaxisside: RIGHT
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifInErrors.[{#IFNAME}]'
+                - sortorder: '3'
+                  color: F7941D
+                  yaxisside: RIGHT
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifOutErrors.[{#IFNAME}]'
+                - sortorder: '4'
+                  color: FC6EA3
+                  yaxisside: RIGHT
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifInDiscards.[{#IFNAME}]'
+                - sortorder: '5'
+                  color: 6C59DC
+                  yaxisside: RIGHT
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'ifMIB.ifMIBObjects.ifTable.ifEntry.ifOutDiscards.[{#IFNAME}]'
+        - uuid: 1780905d23fe4574b0803b6178257671
+          name: 'QNAP CPU Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_CPU_LOAD},1.3.6.1.2.1.25.3.3.1.2]'
+          key: qnap.cpu.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 3cf95d4150a641ff9661308e3d385330
+              name: 'CPU {#QNAP_CPU_NUM}: Description'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.25.3.2.1.3.{#SNMPINDEX}'
+              key: 'qnap.cpu.description[{#SNMPINDEX}]'
+              delay: 1h
+              value_type: CHAR
+              tags:
+                - tag: Application
+                  value: CPU
+            - uuid: 1bd22c5d38444d71a6f7f45bab42b2c3
+              name: 'CPU {#QNAP_CPU_NUM}: Load'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.25.3.3.1.2.{#SNMPINDEX}'
+              key: 'qnap.cpu.load[{#SNMPINDEX}]'
+              units: '%'
+              tags:
+                - tag: Application
+                  value: CPU
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var rows = JSON.parse(value);
+                  for (var i = 0; i < rows.length; i++) {
+                      rows[i]["{#QNAP_CPU_NUM}"] = String(i + 1);
+                  }
+                  return JSON.stringify(rows);
+        - uuid: ffde620cd8f14207ab0c80524daffdc2
+          name: 'QNAP Disk Performance Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_DISKIO_INDEX},1.3.6.1.4.1.24681.1.4.1.11.5.6.2.1.1,{#QNAP_DISKIO_ID},1.3.6.1.4.1.24681.1.4.1.11.5.6.2.1.2]'
+          key: qnap.disk.performance.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: a124d281d4244c2fa042ebe020307520
+              name: 'Disk I/O {#QNAP_DISKIO_ID}: IOPS'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.11.5.6.2.1.3.{#SNMPINDEX}'
+              key: 'qnap.disk.iops[{#QNAP_DISKIO_INDEX}]'
+              units: iops
+              tags:
+                - tag: Application
+                  value: Disks
+            - uuid: cd9350885d38428a97f666a8f3834f46
+              name: 'Disk I/O {#QNAP_DISKIO_ID}: Latency'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.11.5.6.2.1.4.{#SNMPINDEX}'
+              key: 'qnap.disk.latency[{#QNAP_DISKIO_INDEX}]'
+              units: ms
+              tags:
+                - tag: Application
+                  value: Disks
+          graph_prototypes:
+            - uuid: 5bc86c8d14634ae0a17af25f481d243b
+              name: 'Disk I/O {#QNAP_DISKIO_ID}: Latency'
+              show_work_period: 'NO'
+              show_triggers: 'NO'
+              graph_items:
+                - drawtype: BOLD_LINE
+                  color: C62828
+                  calc_fnc: ALL
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.disk.latency[{#QNAP_DISKIO_INDEX}]'
+            - uuid: c706055a0f564b46a07f8bff6825be75
+              name: 'Disk I/O {#QNAP_DISKIO_ID}: Performance'
+              show_work_period: 'NO'
+              show_triggers: 'NO'
+              graph_items:
+                - drawtype: BOLD_LINE
+                  color: 2E7D32
+                  calc_fnc: ALL
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.disk.iops[{#QNAP_DISKIO_INDEX}]'
+        - uuid: d0c0daaae1c545b997e0bc58537eba6f
+          name: 'QNAP External Disk Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_DISK_INDEX},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.1,{#QNAP_DISK_SLOT},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.2,{#QNAP_DISK_LOCATION},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.3,{#QNAP_DISK_HEALTH_TEXT},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.4,{#QNAP_DISK_MODEL},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.8]'
+          key: qnap.external.disk.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#QNAP_DISK_LOCATION}'
+                value: '^[1-9][0-9]*$'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Uses QNAP Storage Manager disk information.'
+          item_prototypes:
+            - uuid: 19a113d949644b919de8c1d7dde7173d
+              name: 'External disk {#QNAP_DISK_MODEL}: Capacity'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.9.{#SNMPINDEX}'
+              key: 'qnap.external.disk.capacity[{#QNAP_DISK_INDEX}]'
+              delay: 15m
+              units: B
+              tags:
+                - tag: Application
+                  value: Disks
+            - uuid: f796563e4a88481e9cf9edad613db5bf
+              name: 'External disk {#QNAP_DISK_MODEL}: Location'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.3.{#SNMPINDEX}'
+              key: 'qnap.external.disk.location[{#QNAP_DISK_INDEX}]'
+              delay: 15m
+              tags:
+                - tag: Application
+                  value: Disks
+            - uuid: 69100911025842cd87be15970c1bfa2a
+              name: 'External disk {#QNAP_DISK_MODEL}: Model'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.8.{#SNMPINDEX}'
+              key: 'qnap.external.disk.model[{#QNAP_DISK_INDEX}]'
+              delay: 15m
+              value_type: TEXT
+              tags:
+                - tag: Application
+                  value: Disks
+            - uuid: 56da16720cb84043ad60dc9c7707be7b
+              name: 'External disk {#QNAP_DISK_MODEL}: Slot'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.2.{#SNMPINDEX}'
+              key: 'qnap.external.disk.slot[{#QNAP_DISK_INDEX}]'
+              delay: 15m
+              tags:
+                - tag: Application
+                  value: Disks
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var rows = JSON.parse(value);
+                  var out = [];
+                  for (var i = 0; i < rows.length; i++) {
+                      var r = rows[i];
+                      var hasDiskIndex = Object.prototype.hasOwnProperty.call(r, "{#QNAP_DISK_INDEX}") && String(r["{#QNAP_DISK_INDEX}"]).trim() !== "";
+                      var hasLocation = Object.prototype.hasOwnProperty.call(r, "{#QNAP_DISK_LOCATION}") && String(r["{#QNAP_DISK_LOCATION}"]).trim() !== "";
+                      var hasModel = Object.prototype.hasOwnProperty.call(r, "{#QNAP_DISK_MODEL}") && String(r["{#QNAP_DISK_MODEL}"]).trim() !== "";
+                      var hasHealth =  Object.prototype.hasOwnProperty.call(r, "{#QNAP_DISK_HEALTH_TEXT}") && String(r["{#QNAP_DISK_HEALTH_TEXT}"]).trim() !== "";
+                      if (!hasDiskIndex) {
+                          continue;
+                      }
+                      if (!hasLocation && !hasModel && !hasHealth) {
+                          continue;
+                      }
+                      if (!hasLocation) {
+                          r["{#QNAP_DISK_LOCATION}"] = "0";
+                      }
+                      out.push(r);
+                  }
+                  return JSON.stringify(out);
+        - uuid: 017b8fc741a2410488dd5efb0f4f543e
+          name: 'QNAP Fan Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_FAN_INDEX},1.3.6.1.4.1.24681.1.4.1.1.1.1.2.2.1.1]'
+          key: qnap.fan.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: 45cad11874004394aec73870e48618c1
+              name: 'Fan {#QNAP_FAN_INDEX}: Name'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.3.15.1.2.{#SNMPINDEX}'
+              key: 'qnap.fan.name[{#QNAP_FAN_INDEX}]'
+              delay: 15m
+              value_type: TEXT
+              tags:
+                - tag: Application
+                  value: Fans
+                - tag: Application
+                  value: 'QNAP Hardware'
+            - uuid: 0fd1ca018f18488b8c6331e4407da5cc
+              name: 'Fan {#QNAP_FAN_INDEX}: Speed'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.2.2.1.5.{#SNMPINDEX}'
+              key: 'qnap.fan.speed[{#QNAP_FAN_INDEX}]'
+              units: rpm
+              description: 'System fan speed in RPM.'
+              tags:
+                - tag: Application
+                  value: Fan
+                - tag: Fan
+                  value: '{#QNAP_FAN_INDEX}'
+            - uuid: 9cb9e185618846e2a6c7eb4ea784e0ac
+              name: 'Fan {#QNAP_FAN_INDEX}: Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.2.2.1.4.{#SNMPINDEX}'
+              key: 'qnap.fan.status[{#QNAP_FAN_INDEX}]'
+              valuemap:
+                name: 'Alarm state'
+              tags:
+                - tag: Application
+                  value: Fans
+                - tag: Application
+                  value: 'QNAP Hardware'
+                - tag: Application
+                  value: 'System Health'
+              trigger_prototypes:
+                - uuid: ef0dba6839424a28a95e808394b98e8b
+                  expression: 'last(/QNAP QTS by SNMP/qnap.fan.status[{#QNAP_FAN_INDEX}])=1'
+                  name: 'Fan {#QNAP_FAN_INDEX}: status reports alarm'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  tags:
+                    - tag: scope
+                      value: hardware
+          graph_prototypes:
+            - uuid: 555a9cfc2f1b4ec684053b508fa13c72
+              name: 'Fan {#QNAP_FAN_INDEX}: Speed'
+              graph_items:
+                - color: 199C0D
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.fan.speed[{#QNAP_FAN_INDEX}]'
+        - uuid: 590e4001cc984f48a3727723ae588f40
+          name: 'QNAP HOST-RESOURCES Memory Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#HR_STORAGE_INDEX},1.3.6.1.2.1.25.2.3.1.1,{#HR_STORAGE_TYPE},1.3.6.1.2.1.25.2.3.1.2,{#HR_STORAGE_DESCR},1.3.6.1.2.1.25.2.3.1.3,{#HR_STORAGE_ALLOC},1.3.6.1.2.1.25.2.3.1.4]'
+          key: qnap.hr.memory.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#HR_STORAGE_DESCR}'
+                value: '^(Physical memory|Virtual memory|Memory buffers|Cached memory|Shared memory|Swap space|Available memory)$'
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: 884a37aed1c848159c6cf819c77a575e
+              name: 'Memory {#HR_STORAGE_DESCR}: Allocation unit'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.25.2.3.1.4.{#SNMPINDEX}'
+              key: 'qnap.hr.memory.alloc_unit[{#HR_STORAGE_INDEX}]'
+              delay: 1h
+              units: B
+              tags:
+                - tag: Application
+                  value: Memory
+            - uuid: e66a73bb170541abbc464eb3642ed885
+              name: 'Memory {#HR_STORAGE_DESCR}: Size'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.25.2.3.1.5.{#SNMPINDEX}'
+              key: 'qnap.hr.memory.size[{#HR_STORAGE_INDEX}]'
+              units: B
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '{#HR_STORAGE_ALLOC}'
+              tags:
+                - tag: Application
+                  value: Memory
+            - uuid: ffa16304f70c41e9a75b5a641aeb40fb
+              name: 'Memory {#HR_STORAGE_DESCR}: Used'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.25.2.3.1.6.{#SNMPINDEX}'
+              key: 'qnap.hr.memory.used[{#HR_STORAGE_INDEX}]'
+              units: B
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '{#HR_STORAGE_ALLOC}'
+              tags:
+                - tag: Application
+                  value: Memory
+            - uuid: 683362df30c84eb0ab04643902d408e8
+              name: 'Memory {#HR_STORAGE_DESCR}: Used percent'
+              type: CALCULATED
+              key: 'qnap.hr.memory.used_pct[{#HR_STORAGE_INDEX}]'
+              value_type: FLOAT
+              units: '%'
+              params: 'last(//qnap.hr.memory.used[{#HR_STORAGE_INDEX}])/last(//qnap.hr.memory.size[{#HR_STORAGE_INDEX}])*100'
+              tags:
+                - tag: Application
+                  value: Memory
+          graph_prototypes:
+            - uuid: 9db848ad26be4d52bc40f00846733a44
+              name: 'Memory {#HR_STORAGE_DESCR}: Usage'
+              show_work_period: 'NO'
+              show_triggers: 'NO'
+              graph_items:
+                - color: '969696'
+                  calc_fnc: LAST
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.hr.memory.size[{#HR_STORAGE_INDEX}]'
+                - sortorder: '1'
+                  color: 2E7D32
+                  calc_fnc: LAST
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.hr.memory.used[{#HR_STORAGE_INDEX}]'
+        - uuid: 2fcacc6a893b4e22a1d1a9b799d3878e
+          name: 'QNAP Internal Disk Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_DISK_INDEX},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.1,{#QNAP_DISK_SLOT},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.2,{#QNAP_HD_DESCR},1.3.6.1.4.1.24681.1.3.11.1.2,{#QNAP_DISK_LOCATION},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.3,{#QNAP_DISK_HEALTH_TEXT},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.4,{#QNAP_DISK_MODEL},1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.8]'
+          key: qnap.internal.disk.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#QNAP_DISK_LOCATION}'
+                value: ^0$
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Uses QNAP Storage Manager disk information.'
+          item_prototypes:
+            - uuid: 6950fc1678894b96b9f42076620499cd
+              name: '{#QNAP_HD_DESCR}: Capacity'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.9.{#SNMPINDEX}'
+              key: 'qnap.internal.disk.capacity[{#QNAP_DISK_INDEX}]'
+              delay: 1h
+              units: B
+              tags:
+                - tag: Application
+                  value: Disks
+            - uuid: fbffb613fed449d780391636e7ccde16
+              name: '{#QNAP_HD_DESCR}: Health'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.4.{#SNMPINDEX}'
+              key: 'qnap.internal.disk.health[{#QNAP_DISK_INDEX}]'
+              delay: 15m
+              valuemap:
+                name: 'QNAP Disk Health State'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var v = String(value).trim().toLowerCase();
+                      if (v === "good") { return 0; }
+                      if (v === "" || v === "--" || v === "unknown") { return 1; }
+                      return 2;
+              tags:
+                - tag: Application
+                  value: Disks
+              trigger_prototypes:
+                - uuid: 07e8d72c22224f7fad366180b7112e10
+                  expression: 'last(/QNAP QTS by SNMP/qnap.internal.disk.health[{#QNAP_DISK_INDEX}])=2'
+                  name: '{#QNAP_HD_DESCR}: health is abnormal'
+                  opdata: 'Health: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  tags:
+                    - tag: scope
+                      value: storage
+            - uuid: 2a0577c884b74424b5fc0f5452275122
+              name: '{#QNAP_HD_DESCR}: Location'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.3.{#SNMPINDEX}'
+              key: 'qnap.internal.disk.location[{#QNAP_DISK_INDEX}]'
+              delay: 1h
+              tags:
+                - tag: Application
+                  value: Disks
+            - uuid: 8de6b9a87acf4ee7b957307f85801a73
+              name: '{#QNAP_HD_DESCR}: Model'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.8.{#SNMPINDEX}'
+              key: 'qnap.internal.disk.model[{#QNAP_DISK_INDEX}]'
+              delay: 1h
+              value_type: TEXT
+              tags:
+                - tag: Application
+                  value: Disks
+            - uuid: 61b339062f1446aeb85d99d2c33ea9eb
+              name: '{#QNAP_HD_DESCR}: QNAP disk status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.3.11.1.4.{#SNMPINDEX}'
+              key: 'qnap.internal.disk.qnap_status[{#QNAP_DISK_INDEX}]'
+              delay: 15m
+              value_type: FLOAT
+              valuemap:
+                name: 'QNAP-NAS-MIB::hdStatus'
+              tags:
+                - tag: Application
+                  value: Disks
+              trigger_prototypes:
+                - uuid: 04c6b4e4153b4c43b4936028a3c14935
+                  expression: 'last(/QNAP QTS by SNMP/qnap.internal.disk.qnap_status[{#QNAP_DISK_INDEX}])=-6'
+                  name: '{#QNAP_HD_DESCR}: Disk status is Invalid'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  tags:
+                    - tag: scope
+                      value: storage
+                - uuid: fa236dc7e96e41d4873bf1658dad18e4
+                  expression: 'last(/QNAP QTS by SNMP/qnap.internal.disk.qnap_status[{#QNAP_DISK_INDEX}])=-9'
+                  name: '{#QNAP_HD_DESCR}: Disk status reports R/W error'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  tags:
+                    - tag: scope
+                      value: storage
+            - uuid: ea6df1984c1c43b4a7a6d394ca4a5418
+              name: '{#QNAP_HD_DESCR}: Slot'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.2.{#SNMPINDEX}'
+              key: 'qnap.internal.disk.slot[{#QNAP_DISK_INDEX}]'
+              delay: 1h
+              tags:
+                - tag: Application
+                  value: Disks
+            - uuid: 6b38dc17160e4fad91468142a49c8b16
+              name: '{#QNAP_HD_DESCR}: Temperature'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.1.5.2.1.6.{#SNMPINDEX}'
+              key: 'qnap.internal.disk.temperature[{#QNAP_DISK_INDEX}]'
+              units: °C
+              tags:
+                - tag: Application
+                  value: Disks
+              trigger_prototypes:
+                - uuid: 8bc4b9a36ad24b7fb228f1d490c99663
+                  expression: 'avg(/QNAP QTS by SNMP/qnap.internal.disk.temperature[{#QNAP_DISK_INDEX}],#4)>{$DISK.TEMP.HIGH}'
+                  name: '{#QNAP_HD_DESCR}: temperature is critical'
+                  opdata: 'Temperature: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  tags:
+                    - tag: scope
+                      value: temperature
+                - uuid: e1870dfc7c1e49be999db1a63562b621
+                  expression: 'avg(/QNAP QTS by SNMP/qnap.internal.disk.temperature[{#QNAP_DISK_INDEX}],#4)>{$DISK.TEMP.WARN}'
+                  name: '{#QNAP_HD_DESCR}: temperature is high'
+                  opdata: 'Temperature: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  dependencies:
+                    - name: '{#QNAP_HD_DESCR}: temperature is too high'
+                      expression: 'avg(/QNAP QTS by SNMP/qnap.internal.disk.temperature[{#QNAP_DISK_INDEX}],#4)>{$DISK.TEMP.AVG}'
+                  tags:
+                    - tag: scope
+                      value: temperature
+                - uuid: 666bd9bd66e84032ba5c68ac5c8ec924
+                  expression: 'avg(/QNAP QTS by SNMP/qnap.internal.disk.temperature[{#QNAP_DISK_INDEX}],#4)>{$DISK.TEMP.AVG}'
+                  name: '{#QNAP_HD_DESCR}: temperature is too high'
+                  opdata: 'Temperature: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  dependencies:
+                    - name: '{#QNAP_HD_DESCR}: temperature is critical'
+                      expression: 'avg(/QNAP QTS by SNMP/qnap.internal.disk.temperature[{#QNAP_DISK_INDEX}],#4)>{$DISK.TEMP.HIGH}'
+                  tags:
+                    - tag: scope
+                      value: temperature
+          graph_prototypes:
+            - uuid: 5e1ddc6785704f048f5f970a67b21795
+              name: 'Disk {#QNAP_HD_DESCR}: Temperature'
+              show_work_period: 'NO'
+              show_triggers: 'NO'
+              graph_items:
+                - drawtype: BOLD_LINE
+                  color: C62828
+                  calc_fnc: ALL
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.internal.disk.temperature[{#QNAP_DISK_INDEX}]'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var rows = JSON.parse(value);
+                  var out = [];
+                  for (var i = 0; i < rows.length; i++) {
+                      var r = rows[i];
+                      var hasDiskIndex = Object.prototype.hasOwnProperty.call(r, "{#QNAP_DISK_INDEX}") && String(r["{#QNAP_DISK_INDEX}"]).trim() !== "";
+                      var hasLocation = Object.prototype.hasOwnProperty.call(r, "{#QNAP_DISK_LOCATION}") && String(r["{#QNAP_DISK_LOCATION}"]).trim() !== "";
+                      var hasModel = Object.prototype.hasOwnProperty.call(r, "{#QNAP_DISK_MODEL}") && String(r["{#QNAP_DISK_MODEL}"]).trim() !== "";
+                      var hasHealth =  Object.prototype.hasOwnProperty.call(r, "{#QNAP_DISK_HEALTH_TEXT}") && String(r["{#QNAP_DISK_HEALTH_TEXT}"]).trim() !== "";
+                      if (!hasDiskIndex) {
+                          continue;
+                      }
+                      if (!hasLocation && !hasModel && !hasHealth) {
+                          continue;
+                      }
+                      if (!hasLocation) {
+                          r["{#QNAP_DISK_LOCATION}"] = "0";
+                      }
+                      out.push(r);
+                  }
+                  return JSON.stringify(out);
+        - uuid: db888cf721ce4878a56907b8ac095570
+          name: 'QNAP iSCSI LUN Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_LUN_INDEX},1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.1,{#QNAP_LUN_NAME},1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.6]'
+          key: qnap.lun.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: 4b60602b69a24d2c8d56df8230a9cca8
+              name: 'iSCSI LUN{#QNAP_LUN_INDEX} ({#QNAP_LUN_NAME}): Backup status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.7.{#SNMPINDEX}'
+              key: 'qnap.lun.backup_status[{#QNAP_LUN_INDEX}]'
+              delay: 5m
+              description: 'iSCSI LUN backup status enumeration as returned by QNAP.'
+              tags:
+                - tag: Application
+                  value: iSCSI
+                - tag: LUN
+                  value: '{#QNAP_LUN_NAME}'
+            - uuid: 19b9a1b9b66448f7b0cf93b3facc56c2
+              name: 'iSCSI LUN{#QNAP_LUN_INDEX} ({#QNAP_LUN_NAME}): Capacity'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.3.{#SNMPINDEX}'
+              key: 'qnap.lun.capacity[{#QNAP_LUN_INDEX}]'
+              delay: 1h
+              units: B
+              description: 'iSCSI LUN capacity in bytes.'
+              tags:
+                - tag: Application
+                  value: iSCSI
+                - tag: LUN
+                  value: '{#QNAP_LUN_NAME}'
+            - uuid: 410af715f7704f85ad860402e14379d2
+              name: 'iSCSI LUN{#QNAP_LUN_INDEX} ({#QNAP_LUN_NAME}): Is mapped'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.8.{#SNMPINDEX}'
+              key: 'qnap.lun.is_mapped[{#QNAP_LUN_INDEX}]'
+              delay: 5m
+              description: 'iSCSI LUN mapping state enumeration as returned by QNAP.'
+              valuemap:
+                name: 'QNAP LUN Status'
+              tags:
+                - tag: Application
+                  value: iSCSI
+                - tag: LUN
+                  value: '{#QNAP_LUN_NAME}'
+            - uuid: eadb12d505044b1bb8de4fa7cedeaa3e
+              name: 'iSCSI LUN{#QNAP_LUN_INDEX} ({#QNAP_LUN_NAME}): Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.5.{#SNMPINDEX}'
+              key: 'qnap.lun.status[{#QNAP_LUN_INDEX}]'
+              delay: 5m
+              value_type: TEXT
+              description: 'iSCSI LUN status.'
+              tags:
+                - tag: Application
+                  value: iSCSI
+                - tag: LUN
+                  value: '{#QNAP_LUN_NAME}'
+              trigger_prototypes:
+                - uuid: 6252460f62d3403fab0ee445611b9b56
+                  expression: 'find(/QNAP QTS by SNMP/qnap.lun.status[{#QNAP_LUN_INDEX}],#1,"regexp","(?i)(error|fail|failed|degrad|inactive|warning|abnormal)")=1'
+                  name: 'iSCSI LUN {#QNAP_LUN_NAME}: status reports an issue'
+                  priority: AVERAGE
+            - uuid: 09c59a537d1f4de89eb5194a33219e2a
+              name: 'iSCSI LUN{#QNAP_LUN_INDEX} ({#QNAP_LUN_NAME}): Used percent'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.2.1.10.2.1.4.{#SNMPINDEX}'
+              key: 'qnap.lun.used_pct[{#QNAP_LUN_INDEX}]'
+              units: '%'
+              description: 'iSCSI LUN used percentage.'
+              tags:
+                - tag: Application
+                  value: iSCSI
+                - tag: LUN
+                  value: '{#QNAP_LUN_NAME}'
+        - uuid: 84f6abb24b41416fb3de775a95437e30
+          name: 'QNAP Pool Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_POOL_INDEX},1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.1,{#QNAP_POOL_ID},1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.2]'
+          key: qnap.pool.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 6f915036ae24418fbbe860cf26ee3d01
+              name: 'Pool {#QNAP_POOL_ID}: Capacity'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.3.{#SNMPINDEX}'
+              key: 'qnap.pool.capacity[{#QNAP_POOL_INDEX}]'
+              units: B
+              tags:
+                - tag: Application
+                  value: Pools
+                - tag: Application
+                  value: 'QNAP Storage'
+            - uuid: 67a6214c63e44840a0b1db01b1fe3fff
+              name: 'Pool {#QNAP_POOL_ID}: Free size'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.4.{#SNMPINDEX}'
+              key: 'qnap.pool.free[{#QNAP_POOL_INDEX}]'
+              units: B
+              tags:
+                - tag: Application
+                  value: Pools
+                - tag: Application
+                  value: 'QNAP Storage'
+            - uuid: 91a5bacafdfb4463ba5935ab34349e2e
+              name: 'Pool {#QNAP_POOL_ID}: Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.2.2.1.5.{#SNMPINDEX}'
+              key: 'qnap.pool.status[{#QNAP_POOL_INDEX}]'
+              delay: 5m
+              valuemap:
+                name: 'QNAP Pool Status'
+              tags:
+                - tag: Application
+                  value: Pools
+                - tag: Application
+                  value: 'QNAP Storage'
+                - tag: Application
+                  value: 'System Health'
+              trigger_prototypes:
+                - uuid: 016c1427f4dc4310b5d9012baadc57c6
+                  expression: 'last(/QNAP QTS by SNMP/qnap.pool.status[{#QNAP_POOL_INDEX}])<>0'
+                  name: 'Pool {#QNAP_POOL_ID}: status reports an issue'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  tags:
+                    - tag: scope
+                      value: storage
+            - uuid: d276fe0403074160a68e231b94193145
+              name: 'Pool {#QNAP_POOL_ID}: Used size'
+              type: CALCULATED
+              key: 'qnap.pool.used[{#QNAP_POOL_INDEX}]'
+              units: B
+              params: 'last(//qnap.pool.capacity[{#QNAP_POOL_INDEX}])-last(//qnap.pool.free[{#QNAP_POOL_INDEX}])'
+              tags:
+                - tag: Application
+                  value: Pools
+                - tag: Application
+                  value: 'QNAP Storage'
+            - uuid: b78d903b94b5444a806285bdf2581716
+              name: 'Pool {#QNAP_POOL_ID}: Used percent'
+              type: CALCULATED
+              key: 'qnap.pool.used_pct[{#QNAP_POOL_INDEX}]'
+              value_type: FLOAT
+              units: '%'
+              params: 'last(//qnap.pool.used[{#QNAP_POOL_INDEX}])/last(//qnap.pool.capacity[{#QNAP_POOL_INDEX}])*100'
+              tags:
+                - tag: Application
+                  value: Pools
+                - tag: Application
+                  value: 'QNAP Storage'
+              trigger_prototypes:
+                - uuid: 752d326f7987425f80e04b07ac2b2e25
+                  expression: 'last(/QNAP QTS by SNMP/qnap.pool.used_pct[{#QNAP_POOL_INDEX}])>{$DISK_UTIL_HIGH}'
+                  name: 'Pool {#QNAP_POOL_ID}: disk space is critical'
+                  opdata: 'Used: {ITEM.LASTVALUE1}'
+                  status: DISABLED
+                  discover: NO_DISCOVER
+                  priority: AVERAGE
+                  tags:
+                    - tag: scope
+                      value: capacity
+                - uuid: 081bcc5ab55946cdacea8083dcc1e9df
+                  expression: 'last(/QNAP QTS by SNMP/qnap.pool.used_pct[{#QNAP_POOL_INDEX}])>{$DISK_UTIL_WARN}'
+                  name: 'Pool {#QNAP_POOL_ID}: disk space is low'
+                  opdata: 'Used: {ITEM.LASTVALUE1}'
+                  status: DISABLED
+                  discover: NO_DISCOVER
+                  priority: WARNING
+                  dependencies:
+                    - name: 'Pool {#QNAP_POOL_ID}: disk space is critical'
+                      expression: 'last(/QNAP QTS by SNMP/qnap.pool.used_pct[{#QNAP_POOL_INDEX}])>{$DISK_UTIL_HIGH}'
+                  tags:
+                    - tag: scope
+                      value: capacity
+          graph_prototypes:
+            - uuid: 5b1b6d9d37ba4901a7f7d00123e5659f
+              name: 'Pool {#QNAP_POOL_ID}: Space usage'
+              graph_items:
+                - drawtype: BOLD_LINE
+                  color: '969696'
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.pool.capacity[{#QNAP_POOL_INDEX}]'
+                - sortorder: '1'
+                  drawtype: FILLED_REGION
+                  color: 2E7D32
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.pool.used[{#QNAP_POOL_INDEX}]'
+        - uuid: 27a15044a4f94b93bc6b501184c31dfe
+          name: 'QNAP RAID Group Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_RAID_INDEX},1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.1,{#QNAP_RAID_ID},1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.2,{#QNAP_RAID_STATUS},1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.5,{#QNAP_RAID_LEVEL},1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.7]'
+          key: qnap.raid.discovery
+          delay: 1h
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: 212c40c291ff463791e4482104b86dfa
+              name: 'RAID {#QNAP_RAID_ID}: Capacity'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.3.{#SNMPINDEX}'
+              key: 'qnap.raid.capacity[{#QNAP_RAID_INDEX}]'
+              delay: 1h
+              units: B
+              description: 'RAID group capacity in bytes.'
+              tags:
+                - tag: Application
+                  value: RAID
+                - tag: RAID
+                  value: '{#QNAP_RAID_ID}'
+            - uuid: 298eb6644f984ff6aeded0b2e8681696
+              name: 'RAID {#QNAP_RAID_ID}: Free size'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.4.{#SNMPINDEX}'
+              key: 'qnap.raid.free[{#QNAP_RAID_INDEX}]'
+              units: B
+              description: 'RAID group free size in bytes.'
+              tags:
+                - tag: Application
+                  value: RAID
+                - tag: RAID
+                  value: '{#QNAP_RAID_ID}'
+            - uuid: dcb321feea7a4df9ba453b3a1a0420ff
+              name: 'RAID {#QNAP_RAID_ID}: Hot spare'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.55062.1.10.5.1.6.{#SNMPINDEX}'
+              key: 'qnap.raid.hotspare[{#QNAP_RAID_INDEX}]'
+              delay: 1h
+              description: 'RAID hotspare present.'
+              tags:
+                - tag: Application
+                  value: RAID
+                - tag: RAID
+                  value: '{#QNAP_RAID_ID}'
+            - uuid: 0e101f943ddc43a4a0093c5df4b394e4
+              name: 'RAID {#QNAP_RAID_ID}: Level'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.7.{#SNMPINDEX}'
+              key: 'qnap.raid.level[{#QNAP_RAID_INDEX}]'
+              delay: 1h
+              value_type: TEXT
+              description: 'RAID level.'
+              tags:
+                - tag: Application
+                  value: RAID
+                - tag: RAID
+                  value: '{#QNAP_RAID_ID}'
+            - uuid: 0324293c1c7a494d9bbc665328242c3c
+              name: 'RAID {#QNAP_RAID_ID}: RAID Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.1.2.1.5.{#SNMPINDEX}'
+              key: 'qnap.raid.status[{#QNAP_RAID_INDEX}]'
+              delay: 5m
+              value_type: TEXT
+              description: 'RAID group status.'
+              tags:
+                - tag: Application
+                  value: RAID
+                - tag: RAID
+                  value: '{#QNAP_RAID_ID}'
+              trigger_prototypes:
+                - uuid: b146a1f1be9b4ae49f0c485ff3893d38
+                  expression: 'find(/QNAP QTS by SNMP/qnap.raid.status[{#QNAP_RAID_INDEX}],#1,"regexp","(?i)(error|fail|failed|degrad|rebuild|recover|warning|abnormal)")=1'
+                  name: 'RAID {#QNAP_RAID_ID}: status reports an issue'
+                  priority: HIGH
+        - uuid: 1eea52ba838d4e13b453a18af9bcc845
+          name: 'QNAP Volume Discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#QNAP_VOL_INDEX},1.3.6.1.4.1.24681.1.4.1.1.1.2.3.2.1.1,{#QNAP_VOL_ID},1.3.6.1.4.1.24681.1.4.1.1.1.2.3.2.1.2,{#QNAP_VOL_NAME},1.3.6.1.4.1.24681.1.4.1.1.1.2.3.2.1.8]'
+          key: qnap.volume.discovery
+          delay: 1h
+          filter:
+            conditions:
+              - macro: '{#QNAP_VOL_INDEX}'
+                value: .+
+          lifetime: 30d
+          enabled_lifetime_type: DISABLE_NEVER
+          description: 'Uses QNAP Storage Manager volume table.'
+          item_prototypes:
+            - uuid: af72e21e14d44b6485463034258c662a
+              name: 'Volume {#QNAP_VOL_INDEX} ({#QNAP_VOL_NAME}): Free size'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.3.2.1.4.{#SNMPINDEX}'
+              key: 'qnap.volume.free[{#QNAP_VOL_INDEX}]'
+              units: B
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '1024'
+              tags:
+                - tag: Application
+                  value: Volumes
+            - uuid: e4d910f0739d47b6b9e3f1486cf93069
+              name: 'Volume {#QNAP_VOL_INDEX} ({#QNAP_VOL_NAME}): ID'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.3.2.1.2.{#SNMPINDEX}'
+              key: 'qnap.volume.id[{#QNAP_VOL_INDEX}]'
+              delay: 1h
+              tags:
+                - tag: Application
+                  value: Volumes
+            - uuid: 5d1d344b4cfa4ac992181508e17d2f81
+              name: 'Volume {#QNAP_VOL_INDEX} ({#QNAP_VOL_NAME}): Name'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.3.2.1.8.{#SNMPINDEX}'
+              key: 'qnap.volume.name[{#QNAP_VOL_INDEX}]'
+              delay: 1h
+              value_type: TEXT
+              tags:
+                - tag: Application
+                  value: Volumes
+            - uuid: 988ab8520b454e5db0b1cfdf9519aec2
+              name: 'Volume {#QNAP_VOL_INDEX} ({#QNAP_VOL_NAME}): Status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.3.2.1.5.{#SNMPINDEX}'
+              key: 'qnap.volume.status[{#QNAP_VOL_INDEX}]'
+              delay: 5m
+              value_type: TEXT
+              tags:
+                - tag: Application
+                  value: Volumes
+              trigger_prototypes:
+                - uuid: 7fd467df4dbb4371908b1323aa1a06e4
+                  expression: 'find(/QNAP QTS by SNMP/qnap.volume.status[{#QNAP_VOL_INDEX}],#1,"regexp","(?i)(error|fail|failed|degrad|unmount|inactive|warning|abnormal)")=1'
+                  name: 'Volume {#QNAP_VOL_INDEX}: status reports an issue'
+                  priority: AVERAGE
+                  tags:
+                    - tag: scope
+                      value: storage
+            - uuid: 2ffb89df352945abbd2b572132e66e8d
+              name: 'Volume {#QNAP_VOL_INDEX} ({#QNAP_VOL_NAME}): Total size'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.24681.1.4.1.1.1.2.3.2.1.3.{#SNMPINDEX}'
+              key: 'qnap.volume.total[{#QNAP_VOL_INDEX}]'
+              units: B
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '1024'
+              tags:
+                - tag: Application
+                  value: Volumes
+            - uuid: 0a7ac433b4d84c848cf33acfbf56d94a
+              name: 'Volume {#QNAP_VOL_INDEX} ({#QNAP_VOL_NAME}): Used size'
+              type: CALCULATED
+              key: 'qnap.volume.used[{#QNAP_VOL_INDEX}]'
+              units: B
+              params: 'last(//qnap.volume.total[{#QNAP_VOL_INDEX}])-last(//qnap.volume.free[{#QNAP_VOL_INDEX}])'
+              tags:
+                - tag: Application
+                  value: Volumes
+            - uuid: d6d34292d7304341ab0c5d9e7d09e22b
+              name: 'Volume {#QNAP_VOL_INDEX} ({#QNAP_VOL_NAME}): Used percent'
+              type: CALCULATED
+              key: 'qnap.volume.used_pct[{#QNAP_VOL_INDEX}]'
+              value_type: FLOAT
+              units: '%'
+              params: 'last(//qnap.volume.used[{#QNAP_VOL_INDEX}])/last(//qnap.volume.total[{#QNAP_VOL_INDEX}])*100'
+              tags:
+                - tag: Application
+                  value: Volumes
+              trigger_prototypes:
+                - uuid: ddfc527334dc42edaa38b1440f4da1da
+                  expression: 'last(/QNAP QTS by SNMP/qnap.volume.used_pct[{#QNAP_VOL_INDEX}])>{$DISK_UTIL_HIGH}'
+                  name: 'Volume {#QNAP_VOL_INDEX}: disk space is critical'
+                  opdata: 'Used: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  tags:
+                    - tag: scope
+                      value: capacity
+                - uuid: e09c0432265043548961c126a859596e
+                  expression: 'last(/QNAP QTS by SNMP/qnap.volume.used_pct[{#QNAP_VOL_INDEX}])>{$DISK_UTIL_WARN}'
+                  name: 'Volume {#QNAP_VOL_INDEX}: disk space is low'
+                  opdata: 'Used: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  dependencies:
+                    - name: 'Volume {#QNAP_VOL_INDEX}: disk space is critical'
+                      expression: 'last(/QNAP QTS by SNMP/qnap.volume.used_pct[{#QNAP_VOL_INDEX}])>{$DISK_UTIL_HIGH}'
+                  tags:
+                    - tag: scope
+                      value: capacity
+          graph_prototypes:
+            - uuid: bae5c01772e94ab49c3b406568bae311
+              name: 'Volume {#QNAP_VOL_INDEX}: Space usage'
+              show_work_period: 'NO'
+              show_triggers: 'NO'
+              graph_items:
+                - color: '969696'
+                  calc_fnc: LAST
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.volume.total[{#QNAP_VOL_INDEX}]'
+                - sortorder: '1'
+                  color: 2E7D32
+                  calc_fnc: LAST
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.volume.used[{#QNAP_VOL_INDEX}]'
+                - sortorder: '2'
+                  color: 2774A4
+                  calc_fnc: LAST
+                  item:
+                    host: 'QNAP QTS by SNMP'
+                    key: 'qnap.volume.free[{#QNAP_VOL_INDEX}]'
+      tags:
+        - tag: class
+          value: storage
+        - tag: target
+          value: qnap
+        - tag: target
+          value: qts
+      macros:
+        - macro: '{$CPU.TEMP.AVG}'
+          value: '75'
+        - macro: '{$CPU.TEMP.HIGH}'
+          value: '85'
+        - macro: '{$CPU_UTIL_AVG}'
+          value: '80'
+        - macro: '{$CPU_UTIL_HIGH}'
+          value: '90'
+        - macro: '{$DISK.TEMP.AVG}'
+          value: '55'
+        - macro: '{$DISK.TEMP.HIGH}'
+          value: '60'
+        - macro: '{$DISK.TEMP.WARN}'
+          value: '50'
+        - macro: '{$DISK_UTIL_HIGH}'
+          value: '90'
+        - macro: '{$DISK_UTIL_WARN}'
+          value: '80'
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+        - macro: '{$MEMORY.UTIL.WARN}'
+          value: '90'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+        - macro: '{$SNMP_AUTHPASS}'
+          type: SECRET_TEXT
+        - macro: '{$SNMP_PORT}'
+          value: '161'
+        - macro: '{$SNMP_PRIVPASS}'
+          type: SECRET_TEXT
+        - macro: '{$SNMP_USERNAME}'
+        - macro: '{$SYSTEM.TEMP.AVG}'
+          value: '55'
+        - macro: '{$SYSTEM.TEMP.HIGH}'
+          value: '65'
+      dashboards:
+        - uuid: cc64632a9be64650b69c2056dc1bd01b
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'System Name'
+                  width: '36'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'System Name'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'QNAP QTS by SNMP'
+                        key: qnap.system.name
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Uptime
+                  'y': '3'
+                  width: '36'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: Uptime
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'QNAP QTS by SNMP'
+                        key: qnap.system.uptime
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: honeycomb
+                  name: 'SMART Status'
+                  'y': '6'
+                  width: '72'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*: Health'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^([^:]+):.*$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: QNSMT
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                - type: honeycomb
+                  name: 'RAID Status'
+                  'y': '9'
+                  width: '36'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'RAID *: RAID Status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^RAID (.*): RAID Status$", "RAID \1")}'
+                    - type: STRING
+                      name: reference
+                      value: QNRAI
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                - type: honeycomb
+                  name: 'CPU Temperature'
+                  'y': '12'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'CPU Temperature'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^([^:]+)(:\s*|\s+)[Tt]emperature$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: MDYEA
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF7043
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '75'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '85'
+                - type: svggraph
+                  name: Temperatures
+                  'y': '15'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*Temperature'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_static_units
+                      value: °C
+                    - type: INTEGER
+                      name: lefty_units
+                      value: '1'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: QNGTP
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Fan Speed'
+                  'y': '20'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Fan *: Speed'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_min
+                      value: '0'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: VPKEM
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Storage Utilization'
+                  'y': '25'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Volume *: Used percent'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'Pool *: Used percent'
+                    - type: STRING
+                      name: ds.0.items.2
+                      value: 'iSCSI LUN *: Used percent'
+                    - type: STRING
+                      name: ds.0.items.3
+                      value: 'External volume *: Used percent'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_max
+                      value: '100'
+                    - type: STRING
+                      name: lefty_min
+                      value: '0'
+                    - type: STRING
+                      name: lefty_static_units
+                      value: '%'
+                    - type: INTEGER
+                      name: lefty_units
+                      value: '1'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: QNGST
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'CPU Utilization'
+                  'y': '30'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF5722
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'CPU Usage'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.1.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.1.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'CPU *: Load'
+                    - type: INTEGER
+                      name: ds.1.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_max
+                      value: '100'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: QNGSY
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: honeycomb
+                  name: 'System Temperature'
+                  x: '12'
+                  'y': '12'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'System Temperature'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^([^:]+)(:\s*|\s+)[Tt]emperature$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: JMPIR
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF7043
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '55'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '65'
+                - type: honeycomb
+                  name: 'HDD Temperature'
+                  x: '24'
+                  'y': '12'
+                  width: '48'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'HDD*: Temperature'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^([^:]+)(:\s*|\s+)[Tt]emperature$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: QNTMP
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '50'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF7043
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '55'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '60'
+                - type: item
+                  name: Model
+                  x: '36'
+                  width: '24'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: Model
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'QNAP QTS by SNMP'
+                        key: qnap.system.model
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Serial Number'
+                  x: '36'
+                  'y': '3'
+                  width: '24'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'Serial Number'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'QNAP QTS by SNMP'
+                        key: qnap.system.serial
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: honeycomb
+                  name: 'FAN Status'
+                  x: '36'
+                  'y': '9'
+                  width: '36'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Fan *: Status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Fan ([^:]+): Status$", "Fan \1")}'
+                    - type: STRING
+                      name: reference
+                      value: QNFAN
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                - type: svggraph
+                  name: 'Memory Utilization'
+                  x: '36'
+                  'y': '30'
+                  width: '36'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Memory Utilization'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_max
+                      value: '100'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: PCJFQ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: Availability
+                  x: '60'
+                  width: '12'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: Availability
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'QNAP QTS by SNMP'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'QTS version'
+                  x: '60'
+                  'y': '3'
+                  width: '12'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'QTS version'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'QNAP QTS by SNMP'
+                        key: qnap.system.firmware
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+            - name: Storage
+              widgets:
+                - type: honeycomb
+                  name: 'Disk Status'
+                  width: '72'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*: QNAP disk status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^([^:]+):.*$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: TXDUO
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '-9'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '-6'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '-5'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 90A4AE
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '-4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '0'
+                - type: svggraph
+                  name: 'Disk IOPS'
+                  'y': '3'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Disk I/O *: IOPS'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: RXEVH
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Disk Latency'
+                  'y': '8'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '11'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Disk I/O *: Latency'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: NLAYW
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+            - name: Network
+              widgets:
+                - type: honeycomb
+                  name: 'Port Speed'
+                  width: '72'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Interface *: Speed'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Interface ([^:]+): Speed$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: QNPOS
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF4000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '10000000'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF681E
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '100000000'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1000000000'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 0040FF
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '10000000000'
+                - type: graphprototype
+                  'y': '3'
+                  width: '72'
+                  height: '12'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'QNAP QTS by SNMP'
+                        name: 'Interface {#IFNAME}: Network traffic'
+                    - type: STRING
+                      name: reference
+                      value: QNNET
+                    - type: INTEGER
+                      name: rows
+                      value: '2'
+      valuemaps:
+        - uuid: e6bb4c44929e4a72b5082a87c51b10ae
+          name: 'Alarm state'
+          mappings:
+            - value: '0'
+              newvalue: Ok
+            - value: '1'
+              newvalue: Alarm
+        - uuid: 1d835d81b90745d19c20102544e4611b
+          name: 'IF-MIB::ifOperStatus'
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+            - value: '4'
+              newvalue: Unknown
+            - value: '5'
+              newvalue: Dormant
+            - value: '6'
+              newvalue: 'Not present'
+            - value: '7'
+              newvalue: 'Lower layer down'
+        - uuid: b785920998844916abdc18c123582129
+          name: 'QNAP-NAS-MIB::hdStatus'
+          mappings:
+            - value: '0'
+              newvalue: Ready
+            - value: '-4'
+              newvalue: Unknown
+            - value: '-5'
+              newvalue: 'No disk'
+            - value: '-6'
+              newvalue: Invalid
+            - value: '-9'
+              newvalue: 'R/W error'
+        - uuid: 4d3b75f46c3446168d5a0895292111e9
+          name: 'QNAP Disk Health State'
+          mappings:
+            - value: '0'
+              newvalue: Good
+            - value: '1'
+              newvalue: Unknown
+            - value: '2'
+              newvalue: Abnormal
+        - uuid: a63f73236bc849ce8371b39a0cb09f75
+          name: 'QNAP LUN Status'
+          mappings:
+            - value: '0'
+              newvalue: Disconnected
+            - value: '1'
+              newvalue: Connected
+        - uuid: 4312fe05cb7344928705131ae007ef51
+          name: 'QNAP Pool Status'
+          mappings:
+            - value: '0'
+              newvalue: Ready
+            - value: '-1'
+              newvalue: Warning
+            - value: '-2'
+              newvalue: 'Not ready'
+            - value: '-3'
+              newvalue: Error
+        - uuid: 8735166af33044c1b9a01a4922041702
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: d9562e8c830a40d9981ed65f8ecd7fc1
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
+  graphs:
+    - uuid: b1596a79dcac4159ae912eb1f38bff72
+      name: 'CPU Temperature'
+      graph_items:
+        - drawtype: FILLED_REGION
+          color: 2774A4
+          calc_fnc: ALL
+          item:
+            host: 'QNAP QTS by SNMP'
+            key: qnap.system.cpu.temperature
+    - uuid: 6aac5cbf4e8942f8bcdc1d68f08ae394
+      name: 'CPU Usage'
+      yaxismax: '0'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'QNAP QTS by SNMP'
+            key: qnap.system.cpu.usage
+    - uuid: d722c914da7b494cb2df01b7b032597f
+      name: 'ICMP response time'
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'QNAP QTS by SNMP'
+            key: icmppingsec
+    - uuid: 6a3e451b8dd247bbb9df740f1038f371
+      name: 'Memory: Physical Memory'
+      yaxismax: '0'
+      show_work_period: 'NO'
+      show_triggers: 'NO'
+      type: EXPLODED
+      show_3d: 'YES'
+      graph_items:
+        - color: 6C59DC
+          calc_fnc: LAST
+          type: GRAPH_SUM
+          item:
+            host: 'QNAP QTS by SNMP'
+            key: qnap.system.memory.total
+        - sortorder: '1'
+          color: EEEE00
+          calc_fnc: LAST
+          item:
+            host: 'QNAP QTS by SNMP'
+            key: qnap.system.memory.used
+    - uuid: 9ede0f95d806450c8d93ec9f715a610c
+      name: 'System Temperature'
+      yaxismax: '0'
+      graph_items:
+        - drawtype: FILLED_REGION
+          color: 2774A4
+          calc_fnc: ALL
+          item:
+            host: 'QNAP QTS by SNMP'
+            key: qnap.system.temperature
