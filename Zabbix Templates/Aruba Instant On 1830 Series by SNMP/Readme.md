@@ -13,8 +13,8 @@ Add your switch using SNMPv2, then adjust the macro values if needed.
 **Overview:**
 ![Overview](./images/Overview.png)
 **Port Speed:**
-![Port Speed](./images/Port Speed.png)
+![Port Speed](./images/Port%20Speed.png)
 **Network Traffic:**
-![Network Traffic](./images/Network Traffic.png)
+![Network Traffic](./images/Network%20Traffic.png)
 **PoE (when applicable):**
 ![PoE](./images/PoE.png)
