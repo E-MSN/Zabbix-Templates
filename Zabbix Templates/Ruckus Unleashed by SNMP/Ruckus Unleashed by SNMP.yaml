@@ -1,0 +1,1997 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: f71faac2ecaf43e4b251b991cc1bf1af
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: 77dd62a08faf468a9f0d70d1240365c4
+      template: 'Ruckus Unleashed by SNMP'
+      name: 'Ruckus Unleashed by SNMP'
+      description: |
+        Ruckus Unleashed by SNMP.
+        
+        MIBs used:
+        - RUCKUS-UNLEASHED-SYSTEM-MIB
+        - RUCKUS-UNLEASHED-WLAN-MIB
+        - RUCKUS-ROOT-MIB
+        - RUCKUS-TC-MIB
+        - IF-MIB
+        - SNMPv2-SMI
+        - SNMPv2-TC
+        - SNMPv2-CONF
+      vendor:
+        name: E-MSN
+        version: 7.4.11
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 7a45bcc70edc468183f0fc29765b7c87
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          delay: '60'
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: health
+            - tag: component
+              value: network
+          triggers:
+            - uuid: 6615b8a34a0d4d459b3b416d132cc816
+              expression: 'max(/Ruckus Unleashed by SNMP/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: e340a96e4c4f4090ab623b9cca466203
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: component
+              value: health
+            - tag: component
+              value: network
+          triggers:
+            - uuid: ee1c1c5837a541d4b5373a03bce9115b
+              expression: 'min(/Ruckus Unleashed by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Ruckus Unleashed by SNMP/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'ICMP packets loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Ruckus Unleashed by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: fe80cb000f0b49bd906b55e0a2bffeca
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: component
+              value: health
+            - tag: component
+              value: network
+          triggers:
+            - uuid: d791d95e6db342889ea412cce5771c8a
+              expression: 'avg(/Ruckus Unleashed by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              event_name: 'High ICMP ping response time (>{$ICMP_RESPONSE_TIME_WARN}s for 5m)'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'min(/Ruckus Unleashed by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Ruckus Unleashed by SNMP/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Ruckus Unleashed by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: cdf5e866f0254c12b981f876fd151c07
+          name: 'Master AP IP Address'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.1.2.0
+          key: ruckus.Unleashed.System.AP.IP
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: application
+              value: general
+            - tag: component
+              value: inventory
+        - uuid: a51719b71dff4535b50093ad6d4ae055
+          name: 'Total APs Capacity'
+          type: CALCULATED
+          key: ruckus.Unleashed.System.APs.Load
+          history: 90d
+          value_type: FLOAT
+          units: '%'
+          params: 'round(100 * last(//ruckus.Unleashed.System.Stats.Total.AP) / (last(//ruckus.Unleashed.System.Licensed.APs)+0.000001),1)'
+          tags:
+            - tag: application
+              value: ap
+            - tag: scope
+              value: capacity
+          triggers:
+            - uuid: d0c17589d96c484cac4ec82ae4bda5c6
+              expression: 'min(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.APs.Load,#3)>={$AP.LOAD.WARN}'
+              name: 'High AP capacity usage'
+              opdata: 'Usage: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Registered AP capacity usage is above the configured threshold.'
+              tags:
+                - tag: scope
+                  value: capacity
+        - uuid: 2e69ad953a9c4dbca3824696a3e00202
+          name: 'Country code'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.1.20.0
+          key: ruckus.Unleashed.System.CountryCode
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: application
+              value: general
+            - tag: component
+              value: wlan
+        - uuid: eae79f5555bb484ba46d0cccf6589525
+          name: 'Max Access Point Supported'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.1.12.0
+          key: ruckus.Unleashed.System.Licensed.APs
+          delay: 1h
+          history: 90d
+          tags:
+            - tag: application
+              value: general
+        - uuid: 8d78f2fadb1643e0a4ba2cbbddd9653e
+          name: 'Max Connections'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.1.13.0
+          key: ruckus.Unleashed.System.Max.Sta
+          delay: 1h
+          history: 90d
+          tags:
+            - tag: application
+              value: general
+        - uuid: c0461ace393e4f1aae4597d59ff5e849
+          name: 'Master AP Serial Number'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.1.15.0
+          key: ruckus.Unleashed.System.Serial.Number
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: application
+              value: general
+            - tag: component
+              value: inventory
+        - uuid: 39561c140af349f5877b974cd85231b2
+          name: 'Total Users Capacity'
+          type: CALCULATED
+          key: ruckus.Unleashed.System.Sta.Load
+          history: 90d
+          value_type: FLOAT
+          units: '%'
+          params: 'round(100 * last(//ruckus.Unleashed.System.Stats.Total.Num.Sta) / (last(//ruckus.Unleashed.System.Max.Sta)+0.000001),1)'
+          tags:
+            - tag: application
+              value: ap
+            - tag: scope
+              value: capacity
+          triggers:
+            - uuid: 39edfbeda1bd44ed957d0a8104c53083
+              expression: 'min(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Sta.Load,#3)>={$STA.LOAD.WARN}'
+              name: 'High WiFi client capacity usage'
+              opdata: 'Usage: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'WiFi client capacity usage is above the configured threshold.'
+        - uuid: c15d5ef223e54b888210a2d24ce69370
+          name: 'CPU Utilization'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.13.0
+          key: ruckus.Unleashed.System.Stats.CPU.Util
+          history: 90d
+          units: '%'
+          tags:
+            - tag: component
+              value: cpu
+            - tag: scope
+              value: performance
+          triggers:
+            - uuid: 7f37998a01054dca922f4ebbd1cdeb4d
+              expression: 'min(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Stats.CPU.Util,#3)>={$CPU.UTIL.CRIT}'
+              name: 'High CPU Usage'
+              opdata: 'CPU: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+        - uuid: 126b2ac0b4574fb5911a0aed00a7d9b4
+          name: 'Memory Utilization'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.14.0
+          key: ruckus.Unleashed.System.Stats.Memory.Util
+          history: 90d
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: component
+              value: memory
+            - tag: scope
+              value: performance
+          triggers:
+            - uuid: dfc237de2bd54bb1bb8585d1eb1c4c56
+              expression: 'min(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Stats.Memory.Util,#3)>={$MEMORY.UTIL.MAX}'
+              name: 'High Memory Usage'
+              opdata: 'Memory: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+        - uuid: b91d9657fa734a5dad2c334e8c4a754d
+          name: 'Number of Registered Access Points'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.15.0
+          key: ruckus.Unleashed.System.Stats.Total.AP
+          history: 90d
+          tags:
+            - tag: application
+              value: ap
+            - tag: scope
+              value: capacity
+        - uuid: aeb4a63cfa764951a73f1358380c6b8b
+          name: 'Total Users Connected'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.30.0
+          key: ruckus.Unleashed.System.Stats.Total.Num.Sta
+          history: 90d
+          units: users
+          tags:
+            - tag: application
+              value: ap
+            - tag: scope
+              value: capacity
+        - uuid: 1b6df8e9518440bbb789ac482db11b7e
+          name: 'WLAN Rx error frame ratio'
+          type: CALCULATED
+          key: ruckus.Unleashed.System.Stats.WLAN.Rx.ErrFrm.Ratio
+          history: 90d
+          value_type: FLOAT
+          units: '%'
+          params: 'round(100 * last(//ruckus.Unleashed.System.Stats.WLAN.Total.Rx.ErrFrm) / (last(//ruckus.Unleashed.System.Stats.WLAN.Total.Rx.Pkts)+0.000001),2)'
+          description: 'Ratio between received error frames and total received packets.'
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+          triggers:
+            - uuid: 8135c8172e474f2b81088508e23caead
+              expression: 'min(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Stats.WLAN.Rx.ErrFrm.Ratio,5m)>={$WLAN.RX.ERROR.RATIO.WARN}'
+              name: 'WLAN Rx error frame ratio high'
+              opdata: 'Ratio: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Ratio between received error frames and total received packets.'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: d7a03a39c67f4d6f84cb8e63641388ad
+          name: 'Associations Failed'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.16.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Assoc.Fail
+          history: 90d
+          units: associations/s
+          description: 'Failed client associations per second.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: wlan
+            - tag: scope
+              value: performance
+        - uuid: f2c68d0751c944f48900d775c7f9c38b
+          name: 'WLAN Total Rx Bytes'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.6.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Rx.Bytes
+          history: 90d
+          units: Bps
+          description: 'Total received bytes of wireless interfaces'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: f16238db8d5d4becad287c5fc77d1404
+          name: 'WLAN Total Rx Error Frames'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.17.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Rx.ErrFrm
+          history: 90d
+          units: fps
+          description: 'Total received erroneous frames per second on wireless interfaces.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: 33be68f57ba94a699ab6c8b64dee461c
+          name: 'WLAN Total Rx Multicast'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.7.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Rx.Multicast
+          history: 90d
+          units: pps
+          description: 'Total received multicast packets per second on wireless interfaces.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: 3524b4a191734e9d80d50ba0593132d8
+          name: 'WLAN Total Rx Packets'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.5.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Rx.Pkts
+          history: 90d
+          units: pps
+          description: 'Total received packets per second on wireless interfaces.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: e868285106034fc7a7160647d6294536
+          name: 'WLAN Total Tx Bytes'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.9.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Bytes
+          history: 90d
+          units: Bps
+          description: 'Total transmitted bytes of wireless interfaces'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: 20d013e8b1e241fcba8d53816a3da60a
+          name: 'WLAN Total Tx Dropped Frames'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.21.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.DroppedFrm
+          history: 90d
+          units: fps
+          description: 'Total transmitted dropped frames per second on wireless interfaces.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: d85a353f3621487785a10fe680893efb
+          name: 'WLAN Total Tx Dropped Packets'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.19.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.DroppedPkts
+          history: 90d
+          units: pps
+          description: 'Total transmitted dropped packets per second on wireless interfaces.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: c9dcd090b4884256a7e39104985f4296
+          name: 'WLAN Total Tx Error Frames'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.20.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.ErrFrm
+          history: 90d
+          units: fps
+          description: 'Total transmitted erroneous frames per second on wireless interfaces.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: f41703ebb73741f2a8dbe7027f01c49d
+          name: 'WLAN Total Tx Fail'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.11.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Fail
+          history: 90d
+          units: pps
+          description: 'Total transmitted fail packets of wireless interfaces'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: 4f476cc5f6114e7b86e813777a54a625
+          name: 'WLAN Total Tx Multicast'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.10.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Multicast
+          history: 90d
+          units: pps
+          description: 'Total transmitted multicast packets per second on wireless interfaces.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: 550b32b24fec448bb123b23a2a14e7e9
+          name: 'WLAN Total Tx Packets'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.8.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Pkts
+          history: 90d
+          units: pps
+          description: 'Total transmitted packets per second on wireless interfaces.'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: f72b7b40de874622abb8953d6e880fa7
+          name: 'WLAN Total Tx Retry'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.15.12.0
+          key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Retry
+          history: 90d
+          units: pps
+          description: 'Total transmitted retry packets of wireless interfaces'
+          preprocessing:
+            - type: CHANGE_PER_SECOND
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+        - uuid: f861b1d3ce90400f9e22744209b37902
+          name: 'WLAN Tx dropped packet ratio'
+          type: CALCULATED
+          key: ruckus.Unleashed.System.Stats.WLAN.Tx.DroppedPkts.Ratio
+          history: 90d
+          value_type: FLOAT
+          units: '%'
+          params: 'round(100 * last(//ruckus.Unleashed.System.Stats.WLAN.Total.Tx.DroppedPkts) / (last(//ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Pkts)+0.000001),2)'
+          description: 'Ratio between transmitted dropped packets and total transmitted packets.'
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+          triggers:
+            - uuid: c73e7b63af7a499bbba03848e0547358
+              expression: 'min(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Stats.WLAN.Tx.DroppedPkts.Ratio,5m)>={$WLAN.TX.DROPPED.RATIO.WARN}'
+              name: 'WLAN Tx dropped packet ratio high'
+              opdata: 'Ratio: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Ratio between transmitted dropped packets and total transmitted packets.'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: d73a1377a03042dcb541309f1aebf8d7
+          name: 'WLAN Tx fail ratio'
+          type: CALCULATED
+          key: ruckus.Unleashed.System.Stats.WLAN.Tx.Fail.Ratio
+          history: 90d
+          value_type: FLOAT
+          units: '%'
+          params: 'round(100 * last(//ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Fail) / (last(//ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Pkts)+0.000001),2)'
+          description: 'Ratio between transmitted failed packets and total transmitted packets.'
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+          triggers:
+            - uuid: 5f10ca9ed2ba47b8bb8b3a0f3f2401df
+              expression: 'min(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Stats.WLAN.Tx.Fail.Ratio,5m)>={$WLAN.TX.FAIL.RATIO.WARN}'
+              name: 'WLAN Tx fail ratio high'
+              opdata: 'Ratio: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Ratio between transmitted failed packets and total transmitted packets.'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 0b9af6bf57624a79adeac89423c3c857
+          name: 'WLAN Tx retry ratio'
+          type: CALCULATED
+          key: ruckus.Unleashed.System.Stats.WLAN.Tx.Retry.Ratio
+          history: 90d
+          value_type: FLOAT
+          units: '%'
+          params: 'round(100 * last(//ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Retry) / (last(//ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Pkts)+0.000001),2)'
+          description: 'Ratio between transmitted retry packets and total transmitted packets.'
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: wlan
+          triggers:
+            - uuid: c0ac203679e14c8f8293f6a37a170896
+              expression: 'min(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Stats.WLAN.Tx.Retry.Ratio,5m)>={$WLAN.TX.RETRY.RATIO.WARN}'
+              name: 'WLAN Tx retry ratio high'
+              opdata: 'Ratio: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Ratio between transmitted retry packets and total transmitted packets.'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 6445de38258644dfbc47f2e563a4e979
+          name: 'Master AP uptime'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.1.8.0
+          key: ruckus.Unleashed.System.Uptime
+          history: 90d
+          units: uptime
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: application
+              value: general
+            - tag: component
+              value: system
+        - uuid: 56a3e754df7a4258b2378eec3478a9c0
+          name: 'Firmware Version'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.1.18.0
+          key: ruckus.Unleashed.System.Version
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: application
+              value: general
+            - tag: component
+              value: inventory
+          triggers:
+            - uuid: f72ad6fb977143eb99ca1515d3bd97dc
+              expression: 'last(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Version,#1)<>last(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Version,#2)'
+              name: 'Firmware version changed on {HOST.NAME}'
+              priority: INFO
+              manual_close: 'YES'
+        - uuid: dd3efd32edbf44959789270330239478
+          name: 'Device name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.25053.1.15.1.1.1.1.1.0
+          key: sys.Name
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: application
+              value: general
+            - tag: component
+              value: inventory
+        - uuid: 87bc723643684c8b96d24d1595974f6c
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 90d
+          description: |
+            Availability of SNMP checks on the host. The value of this item corresponds to availability icons in the host list.
+            Possible value:
+            0 - not available
+            1 - available
+            2 - unknown
+          tags:
+            - tag: component
+              value: health
+            - tag: component
+              value: network
+          triggers:
+            - uuid: 2820b90e14874e9fa33aec8d44ac1947
+              expression: 'max(/Ruckus Unleashed by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'No SNMP data collection'
+              priority: AVERAGE
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: 01cb789e5a6e420dbb8996e5cabc9fb5
+          name: 'Ruckus AP discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#AP.MAC},1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.1.6,{#AP.DESCRIPTION},1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.2.6,{#AP.STATUS},1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.3.6,{#AP.MODEL},1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.4.6,{#AP.UPTIME},1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.6.6,{#AP.ROLE},1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.9.6]'
+          key: ruckus.ap.discovery
+          delay: 5m
+          filter:
+            conditions:
+              - macro: '{#AP.MAC}'
+                value: .+
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: 0dec21acfc924859b2e7e4c4a520cc30
+              name: 'AP Description [{#AP.LABEL}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.2.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.Description[{#SNMPINDEX}]'
+              value_type: TEXT
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              tags:
+                - tag: ap
+                  value: '{#AP.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: ap
+                - tag: model
+                  value: '{#AP.MODEL}'
+                - tag: scope
+                  value: inventory
+            - uuid: bb49f507e6e7463d8c0a50aca1be965a
+              name: 'AP MAC address [{#AP.LABEL}]'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.1.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.MacAddr[{#SNMPINDEX}]'
+              value_type: TEXT
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              tags:
+                - tag: ap
+                  value: '{#AP.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: ap
+                - tag: model
+                  value: '{#AP.MODEL}'
+                - tag: scope
+                  value: inventory
+            - uuid: 8d43feed1b224f2890ced4e9585f703d
+              name: 'AP Model [{#AP.LABEL}]'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.4.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.Model[{#SNMPINDEX}]'
+              value_type: TEXT
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              tags:
+                - tag: ap
+                  value: '{#AP.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: ap
+                - tag: model
+                  value: '{#AP.MODEL}'
+                - tag: scope
+                  value: inventory
+            - uuid: 0b57f0c652c24dfbaaeaff5f38c4caa9
+              name: 'AP Role [{#AP.LABEL}]'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.9.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.Role[{#SNMPINDEX}]'
+              delay: 5m
+              trends: '0'
+              valuemap:
+                name: 'Ruckus AP Role'
+              tags:
+                - tag: ap
+                  value: '{#AP.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: ap
+                - tag: model
+                  value: '{#AP.MODEL}'
+              trigger_prototypes:
+                - uuid: 126ae369f3bf47c5bff3379aac2547d6
+                  expression: 'last(/Ruckus Unleashed by SNMP/ruckus.Unleashed.WLAN.AP.Role[{#SNMPINDEX}],#1)<>last(/Ruckus Unleashed by SNMP/ruckus.Unleashed.WLAN.AP.Role[{#SNMPINDEX}],#2)'
+                  name: 'AP {#AP.LABEL} role changed'
+                  priority: INFO
+                  manual_close: 'YES'
+            - uuid: 8c43d3c74a944387818e448c385c6813
+              name: 'AP Status [{#AP.LABEL}]'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.3.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.Status[{#SNMPINDEX}]'
+              trends: '0'
+              valuemap:
+                name: 'Ruckus AP Status'
+              tags:
+                - tag: ap
+                  value: '{#AP.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: ap
+                - tag: model
+                  value: '{#AP.MODEL}'
+              trigger_prototypes:
+                - uuid: 41c9fda767c74a149fbf075a22db210e
+                  expression: 'max(/Ruckus Unleashed by SNMP/ruckus.Unleashed.WLAN.AP.Status[{#SNMPINDEX}],5m)=0'
+                  recovery_mode: RECOVERY_EXPRESSION
+                  recovery_expression: 'last(/Ruckus Unleashed by SNMP/ruckus.Unleashed.WLAN.AP.Status[{#SNMPINDEX}])=1'
+                  name: 'AP {#AP.LABEL} disconnected for 5 minutes'
+                  priority: AVERAGE
+                  dependencies:
+                    - name: 'No SNMP data collection'
+                      expression: 'max(/Ruckus Unleashed by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+            - uuid: 721bff88f246411b8f019cbf15f43f88
+              name: 'AP Uptime [{#AP.LABEL}]'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.6.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.Uptime[{#SNMPINDEX}]'
+              trends: '0'
+              units: uptime
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.01'
+              tags:
+                - tag: ap
+                  value: '{#AP.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: ap
+                - tag: model
+                  value: '{#AP.MODEL}'
+          trigger_prototypes:
+            - uuid: 7b83d665245740eeb7205eb54ea6309a
+              expression: |
+                last(/Ruckus Unleashed by SNMP/ruckus.Unleashed.WLAN.AP.Uptime[{#SNMPINDEX}])<10m
+                and
+                last(/Ruckus Unleashed by SNMP/ruckus.Unleashed.WLAN.AP.Status[{#SNMPINDEX}])=1
+              name: 'AP {#AP.LABEL} restarted'
+              priority: INFO
+              description: 'The host uptime is less than 10 minutes.'
+              manual_close: 'YES'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  for (var i = 0; i < data.length; i++) {
+                      var desc = data[i]["{#AP.DESCRIPTION}"];
+                      var mac = data[i]["{#AP.MAC}"];
+                      if (desc !== undefined && desc !== null) {
+                          desc = String(desc).trim();
+                      } else {
+                          desc = "";
+                      }
+                      data[i]["{#AP.DESCRIPTION}"] = desc;
+                      data[i]["{#AP.LABEL}"] = desc !== "" ? desc : mac;
+                  }
+                  return JSON.stringify(data);
+        - uuid: 64e89d68603f4a78b0de545334432c9a
+          name: 'Ruckus AP Ethernet discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#AP.ETH.MAC},1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.1.6,{#AP.ETH.PORT},1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.2.6,{#AP.ETH.IFNAME},1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.5.6,{#AP.ETH.PHY.STATUS},1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.8.6,{#AP.ETH.SPEED},1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.9.6,{#AP.ETH.STATUS},1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.10.6,{#AP.ETH.LABEL},1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.11.6,{#AP.DESCRIPTION},1.3.6.1.4.1.25053.1.15.2.1.1.2.1.1.2.6]'
+          key: ruckus.ap.ethernet.discovery
+          delay: 5m
+          filter:
+            conditions:
+              - macro: '{#AP.ETH.IFNAME}'
+                value: .+
+              - macro: '{#AP.ETH.MAC}'
+                value: .+
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: dde9c63346184e59a218b863768ab797
+              name: 'AP Ethernet label [{#AP.LABEL}/{#AP.ETH.IFNAME}]'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.11.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.Ethernet.Label[{#SNMPINDEX}]'
+              value_type: TEXT
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              tags:
+                - tag: ap
+                  value: '{#AP.ETH.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#AP.ETH.IFNAME}'
+                - tag: scope
+                  value: inventory
+            - uuid: dc49ed9e73974c979b92ca4c3ea162e6
+              name: 'AP Ethernet physical status [{#AP.LABEL}/{#AP.ETH.IFNAME}]'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.8.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.Ethernet.PhysStatus[{#SNMPINDEX}]'
+              trends: '0'
+              valuemap:
+                name: 'Ruckus AP Ethernet physical status'
+              tags:
+                - tag: ap
+                  value: '{#AP.ETH.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#AP.ETH.IFNAME}'
+                - tag: scope
+                  value: availability
+            - uuid: 92c5f108d31f453c9e447f6759575205
+              name: 'AP Ethernet speed [{#AP.LABEL}/{#AP.ETH.IFNAME}]'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.25053.1.15.2.1.1.2.8.1.9.6.{#SNMPINDEX}'
+              key: 'ruckus.Unleashed.WLAN.AP.Ethernet.Speed[{#SNMPINDEX}]'
+              units: bps
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '1000000'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              tags:
+                - tag: ap
+                  value: '{#AP.ETH.MAC}'
+                - tag: ap_description
+                  value: '{#AP.DESCRIPTION}'
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#AP.ETH.IFNAME}'
+                - tag: scope
+                  value: performance
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  var descByApIndex = {};
+                  var result = [];
+                  for (var i = 0; i < data.length; i++) {
+                      var idx = data[i]["{#SNMPINDEX}"];
+                      var desc = data[i]["{#AP.DESCRIPTION}"];
+                      if (idx !== undefined && desc !== undefined && data[i]["{#AP.ETH.IFNAME}"] === undefined) {
+                          desc = desc !== null ? String(desc).trim() : "";
+                          descByApIndex[String(idx)] = desc;
+                      }
+                  }
+                  for (var j = 0; j < data.length; j++) {
+                      if (data[j]["{#AP.ETH.IFNAME}"] !== undefined && data[j]["{#AP.ETH.MAC}"] !== undefined) {
+                          var ethIdx = String(data[j]["{#SNMPINDEX}"] || "");
+                          var parts = ethIdx.split(".");
+                          var apIdx = parts.length > 6 ? parts.slice(0, 6).join(".") : ethIdx;
+                          var apDesc = descByApIndex[apIdx] !== undefined ? descByApIndex[apIdx] : "";
+                          var apMac = data[j]["{#AP.ETH.MAC}"];
+                          data[j]["{#AP.DESCRIPTION}"] = apDesc;
+                          data[j]["{#AP.LABEL}"] = apDesc !== "" ? apDesc : apMac;
+                          result.push(data[j]);
+                      }
+                  }
+                  return JSON.stringify(result);
+      tags:
+        - tag: class
+          value: network
+        - tag: class
+          value: wireless
+        - tag: target
+          value: ruckus
+        - tag: target
+          value: unleashed
+      macros:
+        - macro: '{$AP.LOAD.WARN}'
+          value: '80'
+          description: 'Warning threshold for AP capacity usage, in percent.'
+        - macro: '{$CPU.UTIL.CRIT}'
+          value: '90'
+          description: 'Critical threshold for CPU usage, in percent.'
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+        - macro: '{$MEMORY.UTIL.MAX}'
+          value: '90'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+        - macro: '{$STA.LOAD.WARN}'
+          value: '80'
+          description: 'Warning threshold for WiFi client capacity usage, in percent.'
+        - macro: '{$WLAN.RX.ERROR.RATIO.WARN}'
+          value: '20'
+          description: 'Warning threshold for WLAN Rx error frame ratio, in percent.'
+        - macro: '{$WLAN.TX.DROPPED.RATIO.WARN}'
+          value: '20'
+          description: 'Warning threshold for WLAN Tx dropped packet ratio, in percent.'
+        - macro: '{$WLAN.TX.FAIL.RATIO.WARN}'
+          value: '20'
+          description: 'Warning threshold for WLAN Tx fail ratio, in percent.'
+        - macro: '{$WLAN.TX.RETRY.RATIO.WARN}'
+          value: '20'
+          description: 'Warning threshold for WLAN Tx retry ratio, in percent.'
+      dashboards:
+        - uuid: 0fd30a67ea584a1c97f7452fb817c8db
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'AP Group Name'
+                  width: '32'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'AP Group Name'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: sys.Name
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+                - type: gauge
+                  name: 'CPU utilization'
+                  'y': '3'
+                  width: '18'
+                  height: '4'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'CPU usage'
+                    - type: INTEGER
+                      name: desc_size
+                      value: '10'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Stats.CPU.Util
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: scale_size
+                      value: '10'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                - type: honeycomb
+                  name: 'AP model'
+                  'y': '7'
+                  width: '72'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'AP Model [*]'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^AP Model \[(.*)\]$", \1)}'
+                    - type: STRING
+                      name: reference
+                      value: PCBHB
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                - type: honeycomb
+                  name: 'AP role'
+                  'y': '10'
+                  width: '72'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'AP Role [*]'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^AP Role \[(.*)\]$", \1)}'
+                    - type: STRING
+                      name: reference
+                      value: MPGWF
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: '009688'
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 0080FF
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                - type: honeycomb
+                  name: 'AP status'
+                  'y': '13'
+                  width: '72'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'AP Status [*]'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^AP Status \[(.*)\]$", \1)}'
+                    - type: STRING
+                      name: reference
+                      value: EBNSC
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: FF5722
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: F9A825
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '4'
+                - type: svggraph
+                  name: 'AP uptime'
+                  'y': '16'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'AP Uptime [*]'
+                    - type: INTEGER
+                      name: ds.0.missingdatafunc
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: UMBHK
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'Memory usage'
+                  x: '18'
+                  'y': '3'
+                  width: '18'
+                  height: '4'
+                  hide_header: 'YES'
+                  fields:
+                    - type: STRING
+                      name: description
+                      value: 'Memory usage'
+                    - type: INTEGER
+                      name: desc_size
+                      value: '10'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Stats.Memory.Util
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: scale_size
+                      value: '10'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                - type: item
+                  name: 'Firmware version'
+                  x: '32'
+                  width: '23'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Firmware version'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Version
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+                - type: item
+                  name: 'Number of AP'
+                  x: '36'
+                  'y': '3'
+                  width: '12'
+                  height: '4'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Number of AP'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Stats.Total.AP
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: units_size
+                      value: '25'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'WiFi clients'
+                  x: '48'
+                  'y': '3'
+                  width: '12'
+                  height: '4'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'WiFi clients'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Stats.Total.Num.Sta
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: units_size
+                      value: '25'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'Master AP Serial number'
+                  x: '55'
+                  width: '17'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Master AP Serial number'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Serial.Number
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+                - type: item
+                  name: Availability
+                  x: '60'
+                  'y': '3'
+                  width: '12'
+                  height: '4'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: Availability
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: units_size
+                      value: '25'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+            - name: Network
+              widgets:
+                - type: honeycomb
+                  name: 'Port status'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'AP Ethernet physical status [*]'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^AP Ethernet physical status \[(.*)\]$", \1)}'
+                    - type: STRING
+                      name: reference
+                      value: UWFDK
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                - type: honeycomb
+                  name: 'Port Speed'
+                  'y': '4'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'AP Ethernet speed*'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^AP Ethernet speed \[(.*)\]$", \1)}'
+                    - type: STRING
+                      name: reference
+                      value: PEAHE
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF4000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '10000000'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF681E
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '100000000'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1000000000'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 0040FF
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '10000000000'
+            - name: WiFi
+              widgets:
+                - type: item
+                  name: 'Country code'
+                  width: '12'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Country code'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.CountryCode
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+                - type: svggraph
+                  name: 'WiFi clients'
+                  'y': '3'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.color
+                      value: 0277BD
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Total Users Connected'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: TBYNT
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'WLAN RX/TX'
+                  'y': '9'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'WLAN Total Rx Bytes'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'WLAN Total Tx Bytes'
+                    - type: STRING
+                      name: ds.0.items.2
+                      value: 'WLAN Total Rx Multicast'
+                    - type: STRING
+                      name: ds.0.items.3
+                      value: 'WLAN Total Tx Multicast'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '4'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: RLMVC
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'WLAN error ratios'
+                  'y': '15'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'WLAN Tx retry ratio'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'WLAN Tx fail ratio'
+                    - type: STRING
+                      name: ds.0.items.2
+                      value: 'WLAN Tx dropped packet ratio'
+                    - type: STRING
+                      name: ds.0.items.3
+                      value: 'WLAN Rx error frame ratio'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '4'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: WLERR
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: 'Number of AP'
+                  x: '12'
+                  width: '15'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Number of AP'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Stats.Total.AP
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+                - type: item
+                  name: 'AP capacity'
+                  x: '27'
+                  width: '15'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'AP capacity'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.APs.Load
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+                - type: item
+                  name: 'WiFi clients'
+                  x: '42'
+                  width: '15'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'WiFi clients'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Stats.Total.Num.Sta
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+                - type: item
+                  name: 'Client capacity'
+                  x: '57'
+                  width: '15'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Client capacity'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Ruckus Unleashed by SNMP'
+                        key: ruckus.Unleashed.System.Sta.Load
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+      valuemaps:
+        - uuid: f267073eeb4348c7b0ec46b703b50ab4
+          name: 'Ruckus AP Ethernet physical status'
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+        - uuid: 6b05dcb0c02a467eadad60cc8af1ebf1
+          name: 'Ruckus AP Role'
+          mappings:
+            - value: '0'
+              newvalue: Member
+            - value: '1'
+              newvalue: Master
+        - uuid: d4d16fdaee2e4678b99f9bdcf8ea6438
+          name: 'Ruckus AP Status'
+          mappings:
+            - value: '0'
+              newvalue: Disconnected
+            - value: '1'
+              newvalue: Connected
+            - value: '2'
+              newvalue: 'Approval pending'
+            - value: '3'
+              newvalue: 'Upgrading Firmware'
+            - value: '4'
+              newvalue: Provisioning
+        - uuid: b20545fdf47b4c98a2b970e50020fdee
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 6674735e6aec400483b65d407816ae90
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
+  triggers:
+    - uuid: 9dd5bc83610e4c23a6532f30efd54442
+      expression: 'last(/Ruckus Unleashed by SNMP/ruckus.Unleashed.System.Uptime)<10m and last(/Ruckus Unleashed by SNMP/zabbix[host,snmp,available])=1'
+      name: 'Master AP has been restarted'
+      event_name: 'Ruckus: Master AP has been restarted (uptime < 10m)'
+      priority: INFO
+      description: 'Uptime is less than 10 minutes.'
+      manual_close: 'YES'
+      dependencies:
+        - name: 'No SNMP data collection'
+          expression: 'max(/Ruckus Unleashed by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+      tags:
+        - tag: scope
+          value: notice
+  graphs:
+    - uuid: ee76112f2e3e49989b0caab27161de9f
+      name: 'CPU Usage'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.CPU.Util
+    - uuid: 9a4edc80e64643e58523def8556b43bc
+      name: 'ICMP response time'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: icmppingsec
+    - uuid: de0ceb8dfaea4af39bdde7c95a365c07
+      name: 'Memory Usage'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.Memory.Util
+    - uuid: 0773d96f7dd941e2a833e7fc306bcee9
+      name: 'Network Bandwidth'
+      percent_left: '90'
+      graph_items:
+        - color: 80FF00
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Rx.Bytes
+        - sortorder: '1'
+          color: 03A9F4
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Bytes
+        - sortorder: '2'
+          color: F63100
+          yaxisside: RIGHT
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Fail
+    - uuid: bc673517f1394ad89068d62632e3fa0d
+      name: 'Unleashed Connected APs'
+      width: '400'
+      yaxismax: '0'
+      show_work_period: 'NO'
+      show_triggers: 'NO'
+      type: EXPLODED
+      show_3d: 'YES'
+      graph_items:
+        - color: FF0000
+          calc_fnc: LAST
+          type: GRAPH_SUM
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.Total.AP
+    - uuid: dc01ef37f7504541bfe2a01b9cfce71d
+      name: 'Unleashed Users Capacity'
+      width: '400'
+      yaxismax: '0'
+      show_work_period: 'NO'
+      show_triggers: 'NO'
+      type: PIE
+      show_3d: 'YES'
+      graph_items:
+        - color: FB8C00
+          calc_fnc: LAST
+          type: GRAPH_SUM
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Max.Sta
+        - sortorder: '1'
+          color: BFFF00
+          calc_fnc: LAST
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.Total.Num.Sta
+    - uuid: cc72c5353a4c438294a8bc65fa9d1006
+      name: 'WLAN Error ratios'
+      graph_items:
+        - color: F63100
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Tx.Retry.Ratio
+        - sortorder: '1'
+          color: FF0000
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Tx.Fail.Ratio
+        - sortorder: '2'
+          color: BF00FF
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Tx.DroppedPkts.Ratio
+        - sortorder: '3'
+          color: 00A0E4
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Rx.ErrFrm.Ratio
+    - uuid: 9bfb3d1d679c451a858d91d2f57308da
+      name: 'WLAN Errors and retries'
+      graph_items:
+        - color: F63100
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Retry
+        - sortorder: '1'
+          color: FF0000
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Fail
+        - sortorder: '2'
+          color: BF00FF
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.DroppedPkts
+        - sortorder: '3'
+          color: 00A0E4
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Rx.ErrFrm
+    - uuid: a09e0c4e59114434af7c29c2c55f0e73
+      name: 'WLAN Packets'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Rx.Pkts
+        - sortorder: '1'
+          color: 2774A4
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Pkts
+        - sortorder: '2'
+          color: F7941D
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Rx.Multicast
+        - sortorder: '3'
+          color: 8E44AD
+          calc_fnc: ALL
+          item:
+            host: 'Ruckus Unleashed by SNMP'
+            key: ruckus.Unleashed.System.Stats.WLAN.Total.Tx.Multicast
