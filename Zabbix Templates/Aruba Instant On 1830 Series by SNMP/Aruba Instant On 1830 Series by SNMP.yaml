@@ -1,0 +1,2487 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: f71faac2ecaf43e4b251b991cc1bf1af
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: d4294b6286d4428a86c9ff17b84d5770
+      template: 'Aruba Instant On 1830 Series by SNMP'
+      name: 'Aruba Instant On 1830 Series by SNMP'
+      description: |
+        Aruba Instant On 1830 series template by SNMP.
+        
+        MIBs used:
+        SNMPv2-MIB
+        IF-MIB
+        EtherLike-MIB
+        POWER-ETHERNET-MIB
+        HPE-rndMng
+        HPE-Physicaldescription-MIB
+        HPE-HWENVIROMENT
+        ENTITY-SENSOR-MIB
+        HPE-POE-MIB
+        HPE-GREEN-MIB
+        HPE-CLOUDMANAGER
+      vendor:
+        name: E-MSN
+        version: 7.4.11
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 7bff9b637a9f48698f23f5761a079d56
+          name: 'Cloud: Agent status'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.236.2.0
+          key: aruba1830.cloud.agent.status
+          delay: 5m
+          history: 30d
+          description: 'Cloud agent status reported by HPE Cloud Manager MIB.'
+          valuemap:
+            name: 'Aruba Cloud agent status'
+          tags:
+            - tag: component
+              value: cloud
+        - uuid: 5db7d1530896405f8a0e1a9b1df43cc4
+          name: 'Cloud: Manager mode'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.236.1.0
+          key: aruba1830.cloud.manager.mode
+          delay: 1h
+          history: 30d
+          description: 'Cloud manager mode reported by HPE Cloud Manager MIB.'
+          valuemap:
+            name: 'Aruba Cloud manager mode'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 6h
+          tags:
+            - tag: component
+              value: cloud
+        - uuid: 0f4132d3269643b295eaf4338e404909
+          name: 'Environment: Unit temperature'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.15.1.10.1
+          key: aruba1830.env.temperature
+          history: 30d
+          value_type: FLOAT
+          units: °C
+          description: 'Current unit temperature reported by the device.'
+          tags:
+            - tag: component
+              value: temperature
+        - uuid: f306bdc8ae5b4a3abdccd40119032b02
+          name: 'Environment: Unit critical temperature threshold'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.15.1.13.1
+          key: aruba1830.env.temperature.critical.threshold
+          delay: 1h
+          history: 30d
+          value_type: FLOAT
+          units: °C
+          description: 'Critical temperature threshold reported by the device.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 6h
+          tags:
+            - tag: component
+              value: temperature
+        - uuid: 1e056a8080e343f6b1b98ad7d4664ee1
+          name: 'Environment: Unit temperature status'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.15.1.16.1
+          key: aruba1830.env.temperature.status
+          history: 30d
+          description: 'Overall unit temperature status reported by the device.'
+          valuemap:
+            name: 'Aruba Temperature status'
+          tags:
+            - tag: component
+              value: temperature
+          triggers:
+            - uuid: 9b3c3650fcbc4446bd51da72ebefe3f2
+              expression: 'last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature.status)<>1'
+              name: 'Environment: Temperature status is not OK'
+              opdata: 'Status: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Unit temperature status reported by the device is not OK.'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: temperature
+        - uuid: 25ad956090db40c38b0044d77a3700cc
+          name: 'Environment: Unit warning temperature threshold'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.15.1.12.1
+          key: aruba1830.env.temperature.warning.threshold
+          delay: 1h
+          history: 30d
+          value_type: FLOAT
+          units: °C
+          description: 'Warning temperature threshold reported by the device.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 6h
+          tags:
+            - tag: component
+              value: temperature
+        - uuid: 0ff2782d49144faf94c9df8d43fd9aa2
+          name: 'Inventory: Firmware version'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.14.1.3.1
+          key: aruba1830.inventory.firmware
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          description: 'Firmware version reported by the device.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: 9348263d5eba472a96c0530afb2e8e2e
+          name: 'Inventory: Hardware version'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.14.1.4.1
+          key: aruba1830.inventory.hardware
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          description: 'Hardware version reported by the device.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: fdfca8de7f19433da706c9e70cef51c5
+          name: 'Inventory: Model'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.14.1.11.1
+          key: aruba1830.inventory.model
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          description: 'Device model reported by HPE physical description MIB.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: b1a63d8e48f342cb978389866de975cb
+          name: 'Inventory: Serial number'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.14.1.5.1
+          key: aruba1830.inventory.serial
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          description: 'Device serial number reported by HPE physical description MIB.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: 3d02014fc20a491aa4ec1d913fc44203
+          name: 'Inventory: Software version'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.53.4.1.5.1
+          key: aruba1830.inventory.software
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          description: 'Software version reported by HPE physical description MIB.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: fff08fcb2dea46d2bcb9c73a90327812
+          name: 'Green Ethernet: Consumption ratio'
+          type: CALCULATED
+          key: greeneth.consumption.ratio
+          delay: 5m
+          history: 30d
+          value_type: FLOAT
+          units: '%'
+          params: '100*last(//greeneth.current.consumption)/last(//greeneth.max.consumption)'
+          description: 'Current Green Ethernet consumption ratio compared to the estimated maximum consumption.'
+          tags:
+            - tag: component
+              value: power
+        - uuid: 03a8e4b0f2984826a45b24661c32874e
+          name: 'Green Ethernet: Cumulative power save'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.134.5.0
+          key: greeneth.cumulative.save
+          delay: 1h
+          history: 90d
+          units: Wh
+          description: 'Cumulative energy saved by Green Ethernet.'
+          tags:
+            - tag: component
+              value: power
+        - uuid: e59007d75a0241208008076300ffb638
+          name: 'Green Ethernet: Current energy consumption'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.134.3.0
+          key: greeneth.current.consumption
+          delay: 5m
+          history: 30d
+          value_type: FLOAT
+          units: W
+          description: 'Current Green Ethernet energy consumption.'
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.001'
+          tags:
+            - tag: component
+              value: power
+        - uuid: 73a032cf256f4bb297401246642d2e96
+          name: 'Green Ethernet: Current maximum energy consumption'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.134.4.0
+          key: greeneth.max.consumption
+          delay: 5m
+          history: 30d
+          value_type: FLOAT
+          units: W
+          description: 'Estimated energy consumption without Green Ethernet savings.'
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.001'
+          tags:
+            - tag: component
+              value: power
+        - uuid: 3c54cc318e264443b3bebb81959e6f96
+          name: 'ICMP: Ping'
+          type: SIMPLE
+          key: icmpping
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: eda2db6bb505481a93c87240a7899da1
+              expression: 'max(/Aruba Instant On 1830 Series by SNMP/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 71d90dcf64a1486aba99befca7837e85
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: d9570568eb984173bc3d58799b2a9d7b
+              expression: 'max(/Aruba Instant On 1830 Series by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Aruba Instant On 1830 Series by SNMP/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              priority: AVERAGE
+              description: 'ICMP packets loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Aruba Instant On 1830 Series by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: f3f29ff864134247a59c96f1ae0f5309
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          history: 1w
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: af4f16d49e8e4e149cc6dbc002c7a811
+              expression: 'avg(/Aruba Instant On 1830 Series by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'max(/Aruba Instant On 1830 Series by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Aruba Instant On 1830 Series by SNMP/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Aruba Instant On 1830 Series by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: b58207a4407b473d8203ec36bce0d676
+          name: 'PoE: Main PSE consumption'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.105.1.3.1.1.4.1
+          key: 'poe.main.consumption[1]'
+          history: 30d
+          value_type: FLOAT
+          units: W
+          description: 'Current PoE power consumption for the main PSE group.'
+          tags:
+            - tag: component
+              value: poe
+        - uuid: e880eaa954c34a4e8343fc97742708d7
+          name: 'PoE: Main PSE nominal power'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.105.1.3.1.1.2.1
+          key: 'poe.main.power[1]'
+          delay: 5m
+          history: 30d
+          units: W
+          description: 'Nominal PoE power budget for the main PSE group.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: component
+              value: poe
+        - uuid: c622ab296506484ba988fd99134fbc5f
+          name: 'PoE: Main PSE operational status'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.105.1.3.1.1.3.1
+          key: 'poe.main.status[1]'
+          history: 30d
+          description: 'Operational status of the main PSE group.'
+          valuemap:
+            name: 'PSE operational status'
+          tags:
+            - tag: component
+              value: poe
+          triggers:
+            - uuid: 85986cc225ca4459884798201417e8a0
+              expression: 'last(/Aruba Instant On 1830 Series by SNMP/poe.main.status[1])<>1'
+              name: 'PoE: Main PSE is not operational'
+              opdata: 'Status: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Main PoE PSE operational status is not on.'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: poe
+        - uuid: 7a1a08209bff44e5a9f305d5cadf085f
+          name: 'PoE: Main PSE temperature'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.108.2.1.8.1
+          key: 'poe.main.temperature[1]'
+          history: 30d
+          value_type: FLOAT
+          units: °C
+          description: 'PoE controller temperature. Value 32767 means not available according to the MIB.'
+          tags:
+            - tag: component
+              value: poe
+            - tag: component
+              value: temperature
+          triggers:
+            - uuid: 14b9eeec14644736a37b9ea252c81191
+              expression: 'last(/Aruba Instant On 1830 Series by SNMP/poe.main.temperature[1])<>32767 and last(/Aruba Instant On 1830 Series by SNMP/poe.main.temperature[1])>{$POE.TEMP.WARN}'
+              name: 'PoE: Main PSE temperature is high'
+              opdata: 'Temperature: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'PoE controller temperature is above the warning threshold.'
+              tags:
+                - tag: scope
+                  value: poe
+                - tag: scope
+                  value: temperature
+        - uuid: bef23604af8c4503bca33aa1fe771446
+          name: 'PoE: Main PSE usage threshold'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.105.1.3.1.1.5.1
+          key: 'poe.main.threshold[1]'
+          delay: 5m
+          history: 30d
+          units: '%'
+          description: 'Configured PoE usage threshold for the main PSE group.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: component
+              value: poe
+        - uuid: b6d8be78eef64a2c9fae3066c40afe94
+          name: 'PoE: Main PSE utilization'
+          type: CALCULATED
+          key: 'poe.main.util[1]'
+          history: 30d
+          value_type: FLOAT
+          units: '%'
+          params: '100*last(//poe.main.consumption[1])/last(//poe.main.power[1])'
+          description: 'PoE power budget utilization for the main PSE group.'
+          tags:
+            - tag: component
+              value: poe
+          triggers:
+            - uuid: a7eede353a9d46e09de79d1b2225e117
+              expression: 'min(/Aruba Instant On 1830 Series by SNMP/poe.main.util[1],5m)>{$POE.PSE.UTIL.WARN}'
+              name: 'PoE: Main PSE utilization is high'
+              opdata: 'Utilization: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Main PoE PSE power budget utilization is above the warning threshold.'
+              tags:
+                - tag: scope
+                  value: capacity
+                - tag: scope
+                  value: poe
+        - uuid: 6876c1dabe5b4e23a00cdfc41b7edc72
+          name: 'System: Contact'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.4.0
+          key: system.contact
+          delay: 1h
+          history: 30d
+          value_type: CHAR
+          description: 'SNMP system contact.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: 143efb474c424800820750fa4ff44a9e
+          name: 'System: CPU utilization'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.11.2.1.8.0
+          key: 'system.cpu.util[rlCpuUtilDuringLastMinute]'
+          history: 30d
+          value_type: FLOAT
+          description: 'CPU utilization during the last minute reported by HPE rlCpuUtilDuringLastMinute.'
+          tags:
+            - tag: component
+              value: cpu
+          triggers:
+            - uuid: 011118d125664270b5c909b2bf50159a
+              expression: 'min(/Aruba Instant On 1830 Series by SNMP/system.cpu.util[rlCpuUtilDuringLastMinute],5m)>{$ARUBA.CPU.UTIL.MAX}'
+              name: 'Aruba: High CPU utilization'
+              opdata: 'CPU: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'CPU utilization is above the warning threshold for 5 minutes.'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: e751a62133fe4ea6817eeecb66062b97
+          name: 'System: Description'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.1.0
+          key: system.descr
+          delay: 1h
+          history: 30d
+          value_type: CHAR
+          description: 'SNMP system description.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: 79340743153543318d1b4faf336c9dcc
+          name: 'System: Location'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.2.1.1.6.0]'
+          key: system.location
+          delay: 1h
+          history: 30d
+          value_type: CHAR
+          description: 'SNMP system location.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: e263280d0ad642d48ab6cbf25ff783ed
+          name: 'System: Name'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.5.0
+          key: system.name
+          delay: 1h
+          history: 30d
+          value_type: CHAR
+          description: 'SNMP system name.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: 2523f6d8b9c44e1da2bd45efd8625d61
+          name: 'System: Object ID'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.2.0
+          key: system.objectid
+          delay: 1h
+          history: 30d
+          value_type: CHAR
+          description: 'SNMP system object identifier.'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: 61172aceca6b4d9192eb1f301c0c6e57
+          name: 'System: Uptime'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.3.0
+          key: 'system.uptime[sysUpTime]'
+          history: 30d
+          value_type: FLOAT
+          units: uptime
+          description: 'SNMP sysUpTime converted from TimeTicks centiseconds to seconds.'
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 52b7b4037e2b47cda5b722f69a3708ff
+              expression: 'last(/Aruba Instant On 1830 Series by SNMP/system.uptime[sysUpTime])<10m'
+              name: 'Aruba: Device has been restarted'
+              priority: INFO
+              description: 'Device uptime is below 10 minutes.'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 39489bfd575347b482de0ee654082c87
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          valuemap:
+            name: 'SNMP available'
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: component
+              value: network
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 41fb5ed02edc48089c7d695964f9e603
+              expression: 'max(/Aruba Instant On 1830 Series by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'Aruba: No SNMP data collection'
+              priority: AVERAGE
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: 22a8ab43381c48ddbc6d124e1697c91a
+          name: 'Fans discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#FANINDEX},.1.3.6.1.4.1.11.2.83.1.1.1.1,{#FANDESCR},.1.3.6.1.4.1.11.2.83.1.1.1.2]'
+          key: env.fan.discovery
+          delay: 1h
+          description: 'Discovers fans from HPE environment MIB. Fanless models may return no rows.'
+          item_prototypes:
+            - uuid: e5c6295672aa4b9b8f476afefe0e57e5
+              name: '{#FANNAME}: Description'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.11.2.83.1.1.1.2.{#SNMPINDEX}'
+              key: 'env.fan.description[{#SNMPINDEX}]'
+              history: 30d
+              value_type: CHAR
+              description: 'Raw fan description reported by the device.'
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 12h
+              tags:
+                - tag: component
+                  value: fan
+            - uuid: bfb4787cfb1d472f8970a94ff27b6123
+              name: '{#FANNAME}: State'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.11.2.83.1.1.1.3.{#SNMPINDEX}'
+              key: 'env.fan.state[{#SNMPINDEX}]'
+              history: 30d
+              description: 'Current operational state of this fan.'
+              valuemap:
+                name: 'Aruba Environment state'
+              tags:
+                - tag: component
+                  value: fan
+              trigger_prototypes:
+                - uuid: 4d5b42de0d7b4245b6d33207f7f5af1e
+                  expression: 'find(/Aruba Instant On 1830 Series by SNMP/env.fan.state[{#SNMPINDEX}],#1,"regexp","{$ARUBA.ENV.STATE.OK}")=0'
+                  name: '{#FANNAME}: State is not normal'
+                  opdata: 'State: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  description: 'Fan state is outside the allowed OK states defined by {$ARUBA.ENV.STATE.OK}.'
+                  tags:
+                    - tag: scope
+                      value: availability
+                    - tag: scope
+                      value: fan
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  data.forEach(function (row) {
+                      var raw = String(row['{#FANDESCR}'] || row['{#FANINDEX}'] || row['{#SNMPINDEX}'] || '');
+                      var m = raw.match(/^fan([0-9]+)_unit([0-9]+)$/i);
+                      if (m) {
+                          row['{#FANNAME}'] = 'Fan ' + m[1] + ' Unit ' + m[2];
+                      } else if (raw.match(/^fan([0-9]+)$/i)) {
+                          row['{#FANNAME}'] = raw.replace(/^fan([0-9]+)$/i, 'Fan $1');
+                      } else {
+                          row['{#FANNAME}'] = raw || 'Fan';
+                      }
+                  });
+                  return JSON.stringify(data);
+        - uuid: 3d2bd59564be4501a57a88d5346fca87
+          name: 'Power supplies discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#PSINDEX},.1.3.6.1.4.1.11.2.83.1.2.1.1,{#PSDESCR},.1.3.6.1.4.1.11.2.83.1.2.1.2]'
+          key: env.psu.discovery
+          delay: 1h
+          description: 'Discovers power supplies from HPE environment MIB.'
+          item_prototypes:
+            - uuid: bd005217e80547278440792d53168fa5
+              name: '{#PSNAME}: Description'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.11.2.83.1.2.1.2.{#SNMPINDEX}'
+              key: 'env.psu.description[{#SNMPINDEX}]'
+              history: 30d
+              value_type: CHAR
+              description: 'Raw power supply description reported by the device.'
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 12h
+              tags:
+                - tag: component
+                  value: power
+            - uuid: dd06582ebd2b4c10a7fcfe7d560428bf
+              name: '{#PSNAME}: Source'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.11.2.83.1.2.1.4.{#SNMPINDEX}'
+              key: 'env.psu.source[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              description: 'Current power source reported for this power supply.'
+              valuemap:
+                name: 'Aruba power supply source'
+              tags:
+                - tag: component
+                  value: power
+            - uuid: eaaf521a00a745578379bd1ca3697a5c
+              name: '{#PSNAME}: State'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.11.2.83.1.2.1.3.{#SNMPINDEX}'
+              key: 'env.psu.state[{#SNMPINDEX}]'
+              history: 30d
+              description: 'Current operational state of this power supply.'
+              valuemap:
+                name: 'Aruba Environment state'
+              tags:
+                - tag: component
+                  value: power
+              trigger_prototypes:
+                - uuid: 4da3d50f2d8a43e9b57ef2245ddaac98
+                  expression: 'find(/Aruba Instant On 1830 Series by SNMP/env.psu.state[{#SNMPINDEX}],#1,"regexp","{$ARUBA.ENV.STATE.OK}")=0'
+                  name: '{#PSNAME}: State is not normal'
+                  opdata: 'State: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  description: 'Power supply state is outside the allowed OK states defined by {$ARUBA.ENV.STATE.OK}.'
+                  tags:
+                    - tag: scope
+                      value: availability
+                    - tag: scope
+                      value: power
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  data.forEach(function (row) {
+                      var raw = String(row['{#PSDESCR}'] || row['{#PSINDEX}'] || row['{#SNMPINDEX}'] || '');
+                      var m = raw.match(/^ps([0-9]+)_unit([0-9]+)$/i);
+                      if (m) {
+                          row['{#PSNAME}'] = 'Power supply ' + m[1] + ' Unit ' + m[2];
+                      } else if (raw.match(/^ps([0-9]+)$/i)) {
+                          row['{#PSNAME}'] = raw.replace(/^ps([0-9]+)$/i, 'Power supply $1');
+                      } else {
+                          row['{#PSNAME}'] = raw || 'Power supply';
+                      }
+                  });
+                  return JSON.stringify(data);
+        - uuid: 20926ce2062d4960b51532feb26c7a9e
+          name: 'Network interfaces discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#IFDESCR},.1.3.6.1.2.1.2.2.1.2,{#IFNAME},.1.3.6.1.2.1.31.1.1.1.1,{#IFALIAS},.1.3.6.1.2.1.31.1.1.1.18,{#IFTYPE},.1.3.6.1.2.1.2.2.1.3,{#IFADMINSTATUS},.1.3.6.1.2.1.2.2.1.7,{#IFOPERSTATUS},.1.3.6.1.2.1.2.2.1.8,{#PORTNAME},.1.3.6.1.4.1.11.2.53.3.1.2,{#MEDIATYPE},.1.3.6.1.4.1.11.2.53.3.1.3]'
+          key: net.if.discovery
+          delay: 1h
+          filter:
+            evaltype: FORMULA
+            formula: 'A and B and C and D and (E or F)'
+            conditions:
+              - macro: '{#IFNAME}'
+                value: '{$NET.IF.IFNAME.MATCHES}'
+                formulaid: A
+              - macro: '{#IFNAME}'
+                value: '{$NET.IF.IFNAME.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+                formulaid: B
+              - macro: '{#IFTYPE}'
+                value: '{$NET.IF.IFTYPE.MATCHES}'
+                formulaid: C
+              - macro: '{#IFADMINSTATUS}'
+                value: '{$NET.IF.ADMINSTATUS.MATCHES}'
+                formulaid: D
+              - macro: '{#IFNAME}'
+                value: '^TRK[0-9]+$'
+                operator: NOT_MATCHES_REGEX
+                formulaid: E
+              - macro: '{#IFOPERSTATUS}'
+                value: ^6$
+                operator: NOT_MATCHES_REGEX
+                formulaid: F
+          description: 'Discovers physical Ethernet interfaces and LAG interfaces using IF-MIB and HPE physical port metadata.'
+          item_prototypes:
+            - uuid: f2ebd608736b40ba94e71e98c2fa79f7
+              name: 'Interface {#IFNAME}: Admin status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}'
+              key: 'net.if.admin.status[{#SNMPINDEX}]'
+              history: 30d
+              description: 'Administrative status of this interface from IF-MIB ifAdminStatus.'
+              valuemap:
+                name: 'Interface admin status'
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: 182cce6cab164662a55397275318a505
+              name: 'Interface {#IFNAME}: Alias'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.18.{#SNMPINDEX}'
+              key: 'net.if.alias[{#SNMPINDEX}]'
+              delay: 1h
+              history: 30d
+              value_type: CHAR
+              description: 'Interface alias configured on the device from IF-MIB ifAlias.'
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 12h
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: 1d995a4e087740508119b162a50266b8
+              name: 'Interface {#IFNAME}: Duplex status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.10.7.2.1.19.{#SNMPINDEX}'
+              key: 'net.if.dot3.duplex[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              description: 'Ethernet duplex status from EtherLike-MIB.'
+              valuemap:
+                name: 'EtherLike-MIB::dot3StatsDuplexStatus'
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: c90a6b833ed640728b96c8ebd9ad29c7
+              name: 'Interface {#IFNAME}: Excessive collisions'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.10.7.2.1.9.{#SNMPINDEX}'
+              key: 'net.if.dot3.excessive_collisions[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: pps
+              description: 'Rate of excessive collision events on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: 80feb21f65a64aafa36eea2e27b33622
+              name: 'Interface {#IFNAME}: FCS/CRC errors'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.10.7.2.1.3.{#SNMPINDEX}'
+              key: 'net.if.dot3.fcs_errors[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: pps
+              description: 'Rate of FCS/CRC errors on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+              trigger_prototypes:
+                - uuid: 144878b61bd44c0e8e28ee9053274b04
+                  expression: 'min(/Aruba Instant On 1830 Series by SNMP/net.if.dot3.fcs_errors[{#SNMPINDEX}],5m)>{$NET.IF.CRC.WARN}'
+                  name: 'Interface {#IFNAME}: FCS/CRC errors detected'
+                  opdata: 'FCS errors: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'FCS/CRC errors were detected on the interface.'
+                  tags:
+                    - tag: scope
+                      value: performance
+            - uuid: 5e901d65e49d48f0a45200cec8aec54d
+              name: 'Interface {#IFNAME}: Late collisions'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.10.7.2.1.8.{#SNMPINDEX}'
+              key: 'net.if.dot3.late_collisions[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: pps
+              description: 'Rate of late collision events on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: 480bf7676cb149b3aec635538937c737
+              name: 'Interface {#IFNAME}: Inbound discards'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}'
+              key: 'net.if.in.discards[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: pps
+              description: 'Rate of inbound packets discarded on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: a416f7d1c81b4543805dec6eea8c0d08
+              name: 'Interface {#IFNAME}: Inbound errors'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}'
+              key: 'net.if.in.errors[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: pps
+              description: 'Rate of inbound error packets on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+              trigger_prototypes:
+                - uuid: 3c8d1942a2904df0a68b8aee2a78f6b2
+                  expression: 'min(/Aruba Instant On 1830 Series by SNMP/net.if.in.errors[{#SNMPINDEX}],5m)>{$NET.IF.ERRORS.WARN}'
+                  name: 'Interface {#IFNAME}: Input errors detected'
+                  opdata: 'Errors: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'Inbound errors were detected on the interface.'
+                  tags:
+                    - tag: scope
+                      value: performance
+            - uuid: e978e98ded954130a15b86c38b6c6036
+              name: 'Interface {#IFNAME}: Bits received'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}'
+              key: 'net.if.in[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: bps
+              description: 'Inbound traffic rate on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: dfefbb7c9c99406e8cbd12a69f7c627f
+              name: 'Interface {#IFNAME}: Operational status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}'
+              key: 'net.if.oper.status[{#SNMPINDEX}]'
+              history: 30d
+              description: 'Operational status of this interface from IF-MIB ifOperStatus.'
+              valuemap:
+                name: 'IF-MIB::ifOperStatus'
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: 928f298ed1a34b2d8fd736ec8271e109
+              name: 'Interface {#IFNAME}: Outbound discards'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}'
+              key: 'net.if.out.discards[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: pps
+              description: 'Rate of outbound packets discarded on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: cf9a7527ab1c41d28a96669ed992714e
+              name: 'Interface {#IFNAME}: Outbound errors'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}'
+              key: 'net.if.out.errors[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: pps
+              description: 'Rate of outbound error packets on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+              trigger_prototypes:
+                - uuid: 4e42b99df0cc46249d38eb55c331f8ca
+                  expression: 'min(/Aruba Instant On 1830 Series by SNMP/net.if.out.errors[{#SNMPINDEX}],5m)>{$NET.IF.ERRORS.WARN}'
+                  name: 'Interface {#IFNAME}: Output errors detected'
+                  opdata: 'Errors: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'Outbound errors were detected on the interface.'
+                  tags:
+                    - tag: scope
+                      value: performance
+            - uuid: a81da8a79dbf48e68cad9e18a69e6ecd
+              name: 'Interface {#IFNAME}: Bits sent'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}'
+              key: 'net.if.out[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: bps
+              description: 'Outbound traffic rate on this interface.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: f8a0255b38004d4dbc1c03543338eca6
+              name: 'Interface {#IFNAME}: Speed capability'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.2.2.1.5.{#SNMPINDEX}'
+              key: 'net.if.speed.capability[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              units: bps
+              description: 'Raw interface speed reported by IF-MIB ifSpeed.'
+              tags:
+                - tag: component
+                  value: interface
+            - uuid: 77a96f517f32459681277f87bde83194
+              name: 'Interface {#IFNAME}: Speed'
+              type: CALCULATED
+              key: 'net.if.speed[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              units: bps
+              params: 'last(//net.if.speed.capability[{#SNMPINDEX}])*(last(//net.if.oper.status[{#SNMPINDEX}])=1)'
+              description: 'Operational interface speed. Returns 0 when the interface is not up.'
+              tags:
+                - tag: component
+                  value: interface
+          trigger_prototypes:
+            - uuid: ccb736d328474de788df91e44184aba7
+              expression: 'last(/Aruba Instant On 1830 Series by SNMP/net.if.oper.status[{#SNMPINDEX}])=2 and last(/Aruba Instant On 1830 Series by SNMP/net.if.admin.status[{#SNMPINDEX}])=1'
+              name: 'Interface {#IFNAME}: Link down'
+              opdata: 'Operational status: {ITEM.LASTVALUE1}'
+              status: DISABLED
+              discover: NO_DISCOVER
+              priority: AVERAGE
+              description: 'Interface is administratively up but operationally down.'
+              tags:
+                - tag: scope
+                  value: availability
+          graph_prototypes:
+            - uuid: 97714e1b636d4bd2857982d0157caa2e
+              name: 'Interface {#IFNAME} ({#IFALIAS}): Network traffic'
+              show_triggers: 'NO'
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 199C0D
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'net.if.in[{#SNMPINDEX}]'
+                - sortorder: '1'
+                  drawtype: BOLD_LINE
+                  color: F63100
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'net.if.out[{#SNMPINDEX}]'
+                - sortorder: '2'
+                  color: 00611C
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'net.if.out.errors[{#SNMPINDEX}]'
+                - sortorder: '3'
+                  color: F7941D
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'net.if.in.errors[{#SNMPINDEX}]'
+                - sortorder: '4'
+                  color: FC6EA3
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'net.if.out.discards[{#SNMPINDEX}]'
+                - sortorder: '5'
+                  color: 6C59DC
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'net.if.in.discards[{#SNMPINDEX}]'
+                - sortorder: '6'
+                  color: C7A72D
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'net.if.dot3.fcs_errors[{#SNMPINDEX}]'
+                - sortorder: '7'
+                  color: BA2A5D
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'net.if.dot3.late_collisions[{#SNMPINDEX}]'
+        - uuid: 07af2f5c8eed4f2999917449313900c7
+          name: 'PoE ports discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#POEADMIN},.1.3.6.1.2.1.105.1.1.1.3,{#POEDETECTION},.1.3.6.1.2.1.105.1.1.1.6,{#POETYPE},.1.3.6.1.2.1.105.1.1.1.9,{#POECLASS},.1.3.6.1.2.1.105.1.1.1.10]'
+          key: poe.port.discovery
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#SNMPINDEX}'
+                value: '{$POE.PORT.MATCHES}'
+          description: 'Discovers PoE ports using POWER-ETHERNET-MIB. The SNMP index generally follows group.port format.'
+          item_prototypes:
+            - uuid: 15039a671ddf43b9827516f0bd32769d
+              name: '{#POEPORTNAME}: Admin status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.3.{#SNMPINDEX}'
+              key: 'poe.port.admin.status[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              description: 'PoE administrative status for this port.'
+              valuemap:
+                name: TruthValue
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              tags:
+                - tag: component
+                  value: poe
+            - uuid: 634873ee049f4d49bba23ab42de9b8c6
+              name: '{#POEPORTNAME}: Power classification'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.10.{#SNMPINDEX}'
+              key: 'poe.port.classification[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              description: 'Power classification reported for the powered device connected to this port.'
+              valuemap:
+                name: 'PoE port classification'
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              tags:
+                - tag: component
+                  value: poe
+            - uuid: 3e0a7d154678484190daff1b05c32258
+              name: '{#POEPORTNAME}: Detection status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.6.{#SNMPINDEX}'
+              key: 'poe.port.detection.status[{#SNMPINDEX}]'
+              history: 30d
+              description: 'Current PoE detection status for this port.'
+              valuemap:
+                name: 'PoE port detection status'
+              tags:
+                - tag: component
+                  value: poe
+              trigger_prototypes:
+                - uuid: 4ad74b4416cc4b41bab221ff82c98aef
+                  expression: 'find(/Aruba Instant On 1830 Series by SNMP/poe.port.detection.status[{#SNMPINDEX}],#1,"regexp","^(4|6)$")=1'
+                  name: '{#POEPORTNAME}: Detection status is fault'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'PoE detection status reports a fault condition on this port.'
+                  tags:
+                    - tag: scope
+                      value: poe
+            - uuid: d624b8e0db0249aebb665036c85619c5
+              name: '{#POEPORTNAME}: Invalid signature events'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.11.{#SNMPINDEX}'
+              key: 'poe.port.invalid_signature.rate[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: eps
+              description: 'Rate of invalid PoE signature events on this port.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+            - uuid: 39d3fb5213304ddabc7e37d0ab729171
+              name: '{#POEPORTNAME}: MPS absent events'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.8.{#SNMPINDEX}'
+              key: 'poe.port.mps_absent.rate[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: eps
+              description: 'Rate of maintain power signature absent events on this port.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+            - uuid: f591a36415e644358f84c105da2c1c38
+              name: '{#POEPORTNAME}: Overload events'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.13.{#SNMPINDEX}'
+              key: 'poe.port.overload.rate[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: eps
+              description: 'Rate of PoE overload events on this port.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+            - uuid: 9dd4a39dab4e48e0b20a91e0ee354797
+              name: '{#POEPORTNAME}: Actual power'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.15.{#SNMPINDEX}'
+              key: 'poe.port.power[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: W
+              description: 'Current PoE power draw on this port, converted from mW to W.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.001'
+              tags:
+                - tag: component
+                  value: poe
+            - uuid: ba76424d08b64c29a8f3e8cec72b024c
+              name: '{#POEPORTNAME}: Power denied events'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.12.{#SNMPINDEX}'
+              key: 'poe.port.power_denied.rate[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: eps
+              description: 'Rate of PoE power denied events on this port.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+              trigger_prototypes:
+                - uuid: e00ade565a6c4351bb2a72ffc2f5b8f3
+                  expression: 'min(/Aruba Instant On 1830 Series by SNMP/poe.port.power_denied.rate[{#SNMPINDEX}],5m)>0'
+                  name: '{#POEPORTNAME}: Power denied events detected'
+                  opdata: 'Events/s: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'PoE power denied events were detected on this port.'
+                  tags:
+                    - tag: scope
+                      value: poe
+            - uuid: 84b6251607fd4121835e97a5a42284f8
+              name: '{#POEPORTNAME}: Priority'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.7.{#SNMPINDEX}'
+              key: 'poe.port.priority[{#SNMPINDEX}]'
+              delay: 5m
+              history: 30d
+              description: 'Configured PoE priority for this port.'
+              valuemap:
+                name: 'PoE port priority'
+              preprocessing:
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              tags:
+                - tag: component
+                  value: poe
+            - uuid: b6cb8786ffae4de497bd1e20251bff59
+              name: '{#POEPORTNAME}: Short events'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.105.1.1.1.14.{#SNMPINDEX}'
+              key: 'poe.port.short.rate[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: eps
+              description: 'Rate of PoE short circuit events on this port.'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+          trigger_prototypes:
+            - uuid: 8a78c0c2017049d9b421596b58fe5b83
+              expression: 'min(/Aruba Instant On 1830 Series by SNMP/poe.port.overload.rate[{#SNMPINDEX}],5m)>0 or min(/Aruba Instant On 1830 Series by SNMP/poe.port.short.rate[{#SNMPINDEX}],5m)>0'
+              name: '{#POEPORTNAME}: Electrical fault events detected'
+              opdata: 'Events/s: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'PoE overload or short circuit events were detected on this port.'
+              tags:
+                - tag: scope
+                  value: poe
+          graph_prototypes:
+            - uuid: 3279ab4199334506852a442b62f0e35e
+              name: '{#POEPORTNAME}: Power'
+              graph_items:
+                - color: 199C0D
+                  item:
+                    host: 'Aruba Instant On 1830 Series by SNMP'
+                    key: 'poe.port.power[{#SNMPINDEX}]'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  data.forEach(function (row) {
+                      var idx = String(row['{#SNMPINDEX}'] || '');
+                      var m = idx.match(/^([0-9]+)\.([0-9]+)$/);
+                      if (m) {
+                          row['{#POEGROUP}'] = m[1];
+                          row['{#POEPORT}'] = m[2];
+                          row['{#POEPORTNAME}'] = 'PoE Port ' + m[2];
+                      } else {
+                          row['{#POEGROUP}'] = '';
+                          row['{#POEPORT}'] = idx;
+                          row['{#POEPORTNAME}'] = 'PoE Port ' + idx;
+                      }
+                  });
+                  return JSON.stringify(data);
+        - uuid: 6936e5fb8811406c9b45ed2576eb5e10
+          name: 'Thermal sensors discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#SENSORTYPE},.1.3.6.1.4.1.11.2.83.2.1.1.1.1,{#SENSORSTATUS},.1.3.6.1.4.1.11.2.83.2.1.1.1.5,{#SENSORUNITS},.1.3.6.1.4.1.11.2.83.2.1.1.1.6]'
+          key: thermal.sensor.discovery
+          delay: 1h
+          description: 'Discovers thermal sensors from the HPE private ENTITY-SENSOR implementation.'
+          item_prototypes:
+            - uuid: ef1ed562b4874205a647cb23fbb91d78
+              name: '{#SENSORNAME}: Status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.11.2.83.2.1.1.1.5.{#SNMPINDEX}'
+              key: 'sensor.status[{#SNMPINDEX}]'
+              history: 30d
+              description: 'Current operational status of this thermal sensor.'
+              valuemap:
+                name: 'Entity sensor status'
+              tags:
+                - tag: component
+                  value: sensor
+              trigger_prototypes:
+                - uuid: c949a1e88b324318a15d4428bf06d567
+                  expression: 'last(/Aruba Instant On 1830 Series by SNMP/sensor.status[{#SNMPINDEX}])<>1'
+                  name: '{#SENSORNAME}: Status is not OK'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'Thermal sensor operational status is not OK.'
+                  tags:
+                    - tag: scope
+                      value: sensor
+            - uuid: f1e21ca0e52d4bf5b950d92a4265d202
+              name: '{#SENSORNAME}: Temperature'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.4.1.11.2.83.2.1.1.1.4.{#SNMPINDEX}'
+              key: 'sensor.value[{#SNMPINDEX}]'
+              history: 30d
+              value_type: FLOAT
+              units: °C
+              description: 'Current temperature reported by this thermal sensor.'
+              tags:
+                - tag: component
+                  value: sensor
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  data.forEach(function (row) {
+                      var idx = Number(row['{#SNMPINDEX}']);
+                      var sensorNumber = idx - 68420480;
+                      if (sensorNumber >= 1 && sensorNumber <= 7) {
+                          row['{#SENSORNAME}'] = 'Thermal Sensor ' + sensorNumber;
+                          row['{#SENSORPHYINDEX}'] = String(idx + 896);
+                      }
+                      else {
+                          row['{#SENSORNAME}'] = 'Sensor ' + idx;
+                          row['{#SENSORPHYINDEX}'] = String(idx);
+                      }
+                  });
+                  return JSON.stringify(data);
+      tags:
+        - tag: class
+          value: network
+        - tag: target
+          value: aruba
+        - tag: target
+          value: instant-on-1830s
+      macros:
+        - macro: '{$ARUBA.CPU.UTIL.MAX}'
+          value: '90'
+          description: 'CPU utilization warning threshold in percent.'
+        - macro: '{$ARUBA.ENV.STATE.OK}'
+          value: ^(1|5|7)$
+          description: 'Regular expression matching environment states considered OK.'
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+          description: 'ICMP packet loss warning threshold in percent.'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+          description: 'ICMP response time warning threshold in seconds.'
+        - macro: '{$NET.IF.ADMINSTATUS.MATCHES}'
+          value: ^(1|2)$
+          description: 'Regular expression matching interface administrative statuses to discover.'
+        - macro: '{$NET.IF.CRC.WARN}'
+          value: '0'
+          description: 'Warning threshold for interface CRC/FCS error rate.'
+        - macro: '{$NET.IF.ERRORS.WARN}'
+          value: '1'
+          description: 'Warning threshold for interface error rate.'
+        - macro: '{$NET.IF.IFNAME.MATCHES}'
+          value: '.*'
+          description: 'Regular expression matching interface names to discover.'
+        - macro: '{$NET.IF.IFNAME.NOT_MATCHES}'
+          value: (^lo$|^Loopback|^InLoopback|^NULL|^VLAN|^vlan|^br|^bridge)
+          description: 'Regular expression matching interface names to exclude from discovery.'
+        - macro: '{$NET.IF.IFTYPE.MATCHES}'
+          value: ^(6|161)$
+          description: 'Regular expression matching interface types to discover.'
+        - macro: '{$POE.PORT.MATCHES}'
+          value: '.*'
+          description: 'Regular expression matching PoE port indexes to discover.'
+        - macro: '{$POE.PSE.UTIL.WARN}'
+          value: '80'
+          description: 'Main PSE PoE utilization warning threshold in percent.'
+        - macro: '{$POE.TEMP.WARN}'
+          value: '70'
+          description: 'PoE controller temperature warning threshold in degrees Celsius.'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+          description: 'Time window used to detect SNMP agent unavailability.'
+      dashboards:
+        - uuid: 8ddfb0bf400d4be2aa2b6b6c001bd5a6
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'System name'
+                  width: '29'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: system.name
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Model
+                  'y': '3'
+                  width: '38'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: decimal_size
+                      value: '28'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: aruba1830.inventory.model
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '28'
+                - type: item
+                  name: 'System location'
+                  'y': '6'
+                  width: '32'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: decimal_size
+                      value: '28'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: system.location
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '28'
+                - type: gauge
+                  name: 'CPU utilization'
+                  'y': '9'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: 'system.cpu.util[rlCpuUtilDuringLastMinute]'
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: svggraph
+                  name: Temperatures
+                  'y': '12'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Environment: Unit temperature'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'Thermal Sensor *: Temperature'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: WTYXH
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: honeycomb
+                  name: 'Thermal sensor state'
+                  x: '20'
+                  'y': '9'
+                  width: '52'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Thermal Sensor *: Status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.+): Status$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: OBXOL
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                - type: item
+                  name: 'Serial number'
+                  x: '29'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: aruba1830.inventory.serial
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: honeycomb
+                  name: 'Fan state'
+                  x: '32'
+                  'y': '6'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'FAN*: State'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.+): State$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: SIZSD
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF7043
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                    - type: STRING
+                      name: thresholds.6.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.6.threshold
+                      value: '7'
+                    - type: STRING
+                      name: thresholds.7.color
+                      value: 2ED3B7
+                    - type: STRING
+                      name: thresholds.7.threshold
+                      value: '8'
+                    - type: STRING
+                      name: thresholds.8.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.8.threshold
+                      value: '9'
+                - type: item
+                  name: Uptime
+                  x: '38'
+                  'y': '3'
+                  width: '22'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: 'system.uptime[sysUpTime]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Software version'
+                  x: '47'
+                  width: '13'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: aruba1830.inventory.software
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: honeycomb
+                  name: 'Power supply state'
+                  x: '52'
+                  'y': '6'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Power supply *: State'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.+): State$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: GBGZO
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF7043
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                    - type: STRING
+                      name: thresholds.6.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.6.threshold
+                      value: '7'
+                    - type: STRING
+                      name: thresholds.7.color
+                      value: 2ED3B7
+                    - type: STRING
+                      name: thresholds.7.threshold
+                      value: '8'
+                    - type: STRING
+                      name: thresholds.8.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.8.threshold
+                      value: '9'
+                - type: item
+                  name: Availability
+                  x: '60'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Cloud
+                  x: '60'
+                  'y': '3'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: aruba1830.cloud.agent.status
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 90A4AE
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+            - name: 'Port Speed'
+              widgets:
+                - type: honeycomb
+                  name: 'Port Speed'
+                  width: '72'
+                  height: '10'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Interface * Speed'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Interface ([^:]+): Speed$", "Port \1")}'
+                    - type: STRING
+                      name: reference
+                      value: EWBGO
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF4000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '10000000'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF681E
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '100000000'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1000000000'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 0040FF
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '10000000000'
+            - name: 'Network Traffic'
+              widgets:
+                - type: graphprototype
+                  name: 'Network Traffic'
+                  width: '72'
+                  height: '36'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        name: 'Interface {#IFNAME} ({#IFALIAS}): Network traffic'
+                    - type: STRING
+                      name: reference
+                      value: AUELB
+                    - type: INTEGER
+                      name: rows
+                      value: '6'
+        - uuid: 398bdb4c72834277a95c1264eca046af
+          name: PoE
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'Operational status'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: 'poe.main.status[1]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: svggraph
+                  name: 'Total power consumption'
+                  'y': '3'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'PoE: Main PSE consumption'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_min
+                      value: '0'
+                    - type: STRING
+                      name: lefty_static_units
+                      value: W
+                    - type: INTEGER
+                      name: lefty_units
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: EAGAM
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: honeycomb
+                  name: 'PoE port detection status'
+                  'y': '7'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'PoE Port *: Detection status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^PoE Port ([0-9]+):.*$","Port \1")}'
+                    - type: STRING
+                      name: reference
+                      value: DFBLI
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: B0BEC5
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                - type: graphprototype
+                  name: 'PoE usage'
+                  'y': '14'
+                  width: '72'
+                  height: '36'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        name: '{#POEPORTNAME}: Power'
+                    - type: STRING
+                      name: reference
+                      value: MROGN
+                    - type: INTEGER
+                      name: rows
+                      value: '6'
+                - type: item
+                  name: 'Power consumption'
+                  x: '18'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: 'poe.main.consumption[1]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Power budget'
+                  x: '36'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: 'poe.main.power[1]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Usage threshold'
+                  x: '54'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Aruba Instant On 1830 Series by SNMP'
+                        key: 'poe.main.threshold[1]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+      valuemaps:
+        - uuid: fdd3c0a6b9c64343a89cb4a65d8eaa5f
+          name: 'Aruba Cloud agent status'
+          mappings:
+            - value: '1'
+              newvalue: Inactive
+            - value: '2'
+              newvalue: Active
+            - value: '3'
+              newvalue: 'Internal Error'
+            - value: '4'
+              newvalue: 'Agent Error'
+            - value: '5'
+              newvalue: 'Interface Error'
+        - uuid: 5a34540e83dd4adfa66df7f71f67ffcf
+          name: 'Aruba Cloud manager mode'
+          mappings:
+            - value: '1'
+              newvalue: Default
+            - value: '2'
+              newvalue: Cloud
+            - value: '3'
+              newvalue: MTS
+        - uuid: 474e54aa910a42f1ab57f1923dc3da9d
+          name: 'Aruba Environment state'
+          mappings:
+            - value: '1'
+              newvalue: Normal
+            - value: '2'
+              newvalue: Warning
+            - value: '3'
+              newvalue: Critical
+            - value: '4'
+              newvalue: Shutdown
+            - value: '5'
+              newvalue: 'Not present'
+            - value: '6'
+              newvalue: 'Not functioning'
+            - value: '7'
+              newvalue: 'Not available'
+            - value: '8'
+              newvalue: 'Backing up'
+            - value: '9'
+              newvalue: 'Reading failed'
+        - uuid: 43df432d80554e2ea112b18d238f0916
+          name: 'Aruba power supply source'
+          mappings:
+            - value: '1'
+              newvalue: Unknown
+            - value: '2'
+              newvalue: AC
+            - value: '3'
+              newvalue: DC
+            - value: '4'
+              newvalue: External
+            - value: '5'
+              newvalue: 'Internal redundant'
+        - uuid: 778eaf1a006d42708eb17a423660dd92
+          name: 'Aruba Temperature status'
+          mappings:
+            - value: '1'
+              newvalue: Ok
+            - value: '2'
+              newvalue: Warning
+            - value: '3'
+              newvalue: Critical
+        - uuid: 8d01f42201aa43c7baa7d32e1a1505cc
+          name: 'Entity sensor status'
+          mappings:
+            - value: '1'
+              newvalue: Ok
+            - value: '2'
+              newvalue: Unavailable
+            - value: '3'
+              newvalue: 'Non operational'
+        - uuid: 863b013125dc41f7ab4bd93638b93c4f
+          name: 'EtherLike-MIB::dot3StatsDuplexStatus'
+          mappings:
+            - value: '1'
+              newvalue: Unknown
+            - value: '2'
+              newvalue: 'Half Duplex'
+            - value: '3'
+              newvalue: 'Full Duplex'
+        - uuid: 0e346b9c61944170b9030e9aa34a8fb0
+          name: 'IF-MIB::ifOperStatus'
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+            - value: '4'
+              newvalue: Unknown
+            - value: '5'
+              newvalue: Dormant
+            - value: '6'
+              newvalue: 'Not present'
+            - value: '7'
+              newvalue: 'Lower layer down'
+        - uuid: 17d24c9e685344398bf668179d88a2df
+          name: 'Interface admin status'
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+            - value: '3'
+              newvalue: Testing
+        - uuid: 178b20ba044e4ac891d9a84ff5d6d711
+          name: 'PoE port classification'
+          mappings:
+            - value: '1'
+              newvalue: Class0
+            - value: '2'
+              newvalue: Class1
+            - value: '3'
+              newvalue: Class2
+            - value: '4'
+              newvalue: Class3
+            - value: '5'
+              newvalue: Class4
+        - uuid: cbe4d14465a9442cb145abd068a5bb86
+          name: 'PoE port detection status'
+          mappings:
+            - value: '1'
+              newvalue: Disabled
+            - value: '2'
+              newvalue: Searching
+            - value: '3'
+              newvalue: 'Delivering power'
+            - value: '4'
+              newvalue: Fault
+            - value: '5'
+              newvalue: Test
+            - value: '6'
+              newvalue: 'Other fault'
+        - uuid: fb2c63e381054c369f15355d7d852233
+          name: 'PoE port priority'
+          mappings:
+            - value: '1'
+              newvalue: Critical
+            - value: '2'
+              newvalue: High
+            - value: '3'
+              newvalue: Low
+        - uuid: 7d3da7bf74fe43f6882bf22bed666d6f
+          name: 'PSE operational status'
+          mappings:
+            - value: '1'
+              newvalue: 'On'
+            - value: '2'
+              newvalue: 'Off'
+            - value: '3'
+              newvalue: Faulty
+        - uuid: ac974424baf64820988f5fde8ae66211
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 5c591f9da0924968ad5fbd129fff4dfb
+          name: 'SNMP available'
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
+        - uuid: 560f6625468c4f91aa730fb3a53ef6c7
+          name: TruthValue
+          mappings:
+            - value: '1'
+              newvalue: 'True'
+            - value: '2'
+              newvalue: 'False'
+  triggers:
+    - uuid: a5a6f90836ef4e73819546528f071e98
+      expression: |
+        last(/Aruba Instant On 1830 Series by SNMP/aruba1830.cloud.manager.mode)=2
+        and
+        last(/Aruba Instant On 1830 Series by SNMP/aruba1830.cloud.agent.status)<>2
+      name: 'Aruba Cloud: Agent status is not active'
+      opdata: 'Status: {ITEM.LASTVALUE1}'
+      priority: INFO
+      description: 'Cloud manager mode is set to cloud, but the cloud agent is not active.'
+      manual_close: 'YES'
+      tags:
+        - tag: scope
+          value: availability
+        - tag: scope
+          value: cloud
+    - uuid: 1080647c844042dd84f4c46f16bc0dc2
+      expression: |
+        last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature)
+        >
+        last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature.critical.threshold)
+        and
+        last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature.critical.threshold)>0
+      name: 'Environment: Temperature is critical'
+      opdata: 'Temperature: {ITEM.LASTVALUE1}'
+      priority: HIGH
+      description: 'Unit temperature is above the critical threshold reported by the device.'
+      tags:
+        - tag: scope
+          value: temperature
+    - uuid: 5e7b0c327d6f4ed690674ced9d355ebf
+      expression: |
+        last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature)
+        >
+        last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature.warning.threshold)
+        and
+        last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature.warning.threshold)>0
+      name: 'Environment: Temperature is high'
+      opdata: 'Temperature: {ITEM.LASTVALUE1}'
+      priority: AVERAGE
+      description: 'Unit temperature is above the warning threshold reported by the device.'
+      dependencies:
+        - name: 'Environment: Temperature is critical'
+          expression: |
+            last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature)
+            >
+            last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature.critical.threshold)
+            and
+            last(/Aruba Instant On 1830 Series by SNMP/aruba1830.env.temperature.critical.threshold)>0
+      tags:
+        - tag: scope
+          value: temperature
+  graphs:
+    - uuid: e3914cd89c224c8fa4afe80293e44e8d
+      name: 'Environment: Temperature'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: aruba1830.env.temperature
+        - sortorder: '1'
+          color: FFB300
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: aruba1830.env.temperature.warning.threshold
+        - sortorder: '2'
+          color: F63100
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: aruba1830.env.temperature.critical.threshold
+    - uuid: 44bfad720a01445092cf36247beb7757
+      name: 'Green Ethernet: Consumption'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: greeneth.current.consumption
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: greeneth.max.consumption
+    - uuid: 8bf736c105c9461ebc84cb83514c67e2
+      name: 'ICMP response time'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: icmppingsec
+    - uuid: 94a7348eeded4ac798fdbe6366f28105
+      name: 'PoE: Main PSE power'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: 'poe.main.consumption[1]'
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: 'poe.main.power[1]'
+    - uuid: 3f38b3ff49fa4c469198d81496a7ab01
+      name: 'System: CPU usage'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Aruba Instant On 1830 Series by SNMP'
+            key: 'system.cpu.util[rlCpuUtilDuringLastMinute]'
