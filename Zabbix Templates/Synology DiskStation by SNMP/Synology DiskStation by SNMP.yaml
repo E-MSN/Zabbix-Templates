@@ -1,7 +1,7 @@
 zabbix_export:
   version: '7.4'
   template_groups:
-    - uuid: 5e177452ac0d49d587dba98c4649bcec
+    - uuid: b5df79584eab43a1930f04644d938e09
       name: 'Templates/NAS & SAN'
   templates:
     - uuid: 59c750b5f0ac4ac8ae8df10bd130c00e
@@ -2796,7 +2796,7 @@ zabbix_export:
                       name: thresholds.4.threshold
                       value: '5'
                 - type: svggraph
-                  name: 'Bad sector count'
+                  name: 'Bad sector count (Last 24h)'
                   'y': '6'
                   width: '72'
                   height: '5'
@@ -2810,9 +2810,6 @@ zabbix_export:
                     - type: STRING
                       name: ds.0.items.0
                       value: 'Disk * Bad sectors count'
-                    - type: INTEGER
-                      name: ds.0.missingdatafunc
-                      value: '3'
                     - type: INTEGER
                       name: ds.0.type
                       value: '2'
@@ -2828,6 +2825,12 @@ zabbix_export:
                     - type: INTEGER
                       name: righty
                       value: '0'
+                    - type: STRING
+                      name: time_period.from
+                      value: now-24h
+                    - type: STRING
+                      name: time_period.to
+                      value: now
                 - type: svggraph
                   name: 'Disk load %'
                   'y': '11'
