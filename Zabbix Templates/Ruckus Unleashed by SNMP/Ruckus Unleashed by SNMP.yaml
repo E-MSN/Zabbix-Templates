@@ -638,6 +638,8 @@ zabbix_export:
             0 - not available
             1 - available
             2 - unknown
+          valuemap:
+            name: zabbix.host.available
           tags:
             - tag: component
               value: health
