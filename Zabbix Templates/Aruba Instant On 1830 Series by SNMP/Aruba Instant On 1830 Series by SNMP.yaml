@@ -208,6 +208,21 @@ zabbix_export:
           tags:
             - tag: component
               value: inventory
+          triggers:
+            - uuid: 02a7521850cc490480573ae5bb4266c1
+              expression: |
+                last(/Aruba Instant On 1830 Series by SNMP/aruba1830.inventory.software,#1)<>last(/Aruba Instant On 1830 Series by SNMP/aruba1830.inventory.software,#2)
+                and
+                length(last(/Aruba Instant On 1830 Series by SNMP/aruba1830.inventory.software,#1))>0
+              name: 'Aruba: Firmware has been upgraded'
+              priority: INFO
+              description: |
+                The firmware version has changed.
+                Acknowledge to close the problem manually.
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
         - uuid: fff08fcb2dea46d2bcb9c73a90327812
           name: 'Green Ethernet: Consumption ratio'
           type: CALCULATED
