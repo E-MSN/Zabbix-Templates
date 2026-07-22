@@ -1,7 +1,7 @@
 zabbix_export:
   version: '7.4'
   template_groups:
-    - uuid: b5df79584eab43a1930f04644d938e09
+    - uuid: 3097d88f9bd741b69eac32e51be0f0b9
       name: 'Templates/NAS & SAN'
   templates:
     - uuid: 59c750b5f0ac4ac8ae8df10bd130c00e
@@ -2010,9 +2010,21 @@ zabbix_export:
                   value: 'Synology RAID'
               trigger_prototypes:
                 - uuid: a77d0dbc873840aa95a8827833f16d73
-                  expression: 'last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])>1 and last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])<11'
-                  name: 'RAID status is abnormal on {HOST.NAME}'
-                  priority: AVERAGE
+                  expression: |
+                    (
+                        last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])>1
+                        and
+                        last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])<11
+                    )
+                    or
+                    (
+                        last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])>12
+                        and
+                        last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])<21
+                    )
+                  name: 'RAID operation is in progress on {HOST.NAME}'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: WARNING
                 - uuid: 26214e2d73ec4f5aad5490e36572f80c
                   expression: 'last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])=12'
                   name: 'RAID status is crashed on {HOST.NAME}'
@@ -2020,6 +2032,10 @@ zabbix_export:
                 - uuid: d51db37d6a1c430196f1236ca5cb3543
                   expression: 'last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])=11'
                   name: 'RAID status is degraded on {HOST.NAME}'
+                  priority: AVERAGE
+                - uuid: e24b5c7a7c28461182dfef5ebea41319
+                  expression: 'last(/Synology DiskStation by SNMP/synoRaid.raidTable.raidEntry.raidStatus.[{#SNMPINDEX}])=21'
+                  name: 'RAID status is unknown on {HOST.NAME}'
                   priority: AVERAGE
             - uuid: d84729aa45694f3d986d87daaa454623
               name: '{#SNMPVALUE} RAID Total Size'
@@ -2349,6 +2365,60 @@ zabbix_export:
                     - type: STRING
                       name: thresholds.11.threshold
                       value: '12'
+                    - type: STRING
+                      name: thresholds.12.color
+                      value: 5D98FE
+                    - type: STRING
+                      name: thresholds.12.threshold
+                      value: '13'
+                    - type: STRING
+                      name: thresholds.13.color
+                      value: 5D98FE
+                    - type: STRING
+                      name: thresholds.13.threshold
+                      value: '14'
+                    - type: STRING
+                      name: thresholds.14.color
+                      value: 5D98FE
+                    - type: STRING
+                      name: thresholds.14.threshold
+                      value: '15'
+                    - type: STRING
+                      name: thresholds.15.color
+                      value: 5D98FE
+                    - type: STRING
+                      name: thresholds.15.threshold
+                      value: '16'
+                    - type: STRING
+                      name: thresholds.16.color
+                      value: 5D98FE
+                    - type: STRING
+                      name: thresholds.16.threshold
+                      value: '17'
+                    - type: STRING
+                      name: thresholds.17.color
+                      value: 5D98FE
+                    - type: STRING
+                      name: thresholds.17.threshold
+                      value: '18'
+                    - type: STRING
+                      name: thresholds.18.color
+                      value: 5D98FE
+                    - type: STRING
+                      name: thresholds.18.threshold
+                      value: '19'
+                    - type: STRING
+                      name: thresholds.19.color
+                      value: 5D98FE
+                    - type: STRING
+                      name: thresholds.19.threshold
+                      value: '20'
+                    - type: STRING
+                      name: thresholds.20.color
+                      value: FF7043
+                    - type: STRING
+                      name: thresholds.20.threshold
+                      value: '21'
                 - type: honeycomb
                   name: 'System Temperature'
                   'y': '12'
@@ -3122,6 +3192,24 @@ zabbix_export:
               newvalue: Degraded
             - value: '12'
               newvalue: Crashed
+            - value: '13'
+              newvalue: 'Data Scrubbing'
+            - value: '14'
+              newvalue: 'Raid Deploying'
+            - value: '15'
+              newvalue: 'Raid UnDeploying'
+            - value: '16'
+              newvalue: 'Raid Mount Cache'
+            - value: '17'
+              newvalue: 'Raid Unmount Cache'
+            - value: '18'
+              newvalue: 'Raid Expanding Unfinished SHR'
+            - value: '19'
+              newvalue: 'Raid Convert SHR to Pool'
+            - value: '20'
+              newvalue: 'Raid Migrate SHR1 to SHR2'
+            - value: '21'
+              newvalue: 'Raid Unknown Status'
         - uuid: 944f0aee568c40b9b105e9f75fa74cb1
           name: 'SYNOLOGY-SYSTEM-MIB::powerStatus'
           mappings:
