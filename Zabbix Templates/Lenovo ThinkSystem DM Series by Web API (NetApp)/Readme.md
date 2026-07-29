@@ -12,7 +12,7 @@ Import template as usual: **Data Collection -> Templates -> Import**<br>
 Add your SAN and configure at least the required values:
 - Set the host interface type to **Agent** (IP or DNS) for ICMP ping checks (usually "e0M" ethernet port on the controller of your choice)
 - **{$ONTAP.USERNAME}** : Username to access the API (read only account recommended)
-- **{$ONTAP.USERNAME}** : Password to access the API
+- **{$ONTAP.PASSWORD}** : Password to access the API
 
 ## Dashboards preview
 **Overview:**
