@@ -21,6 +21,6 @@ Add your switch using SNMPv2 or SNMPv3, then adjust the macro values if needed.
 **Network Traffic:**
 ![Network Traffic](./images/Network%20Traffic.png)
 **CRC/FCS Errors:**
-![CRC/FCS Errors](./images/CRC%20FCS%20Errors.png)
+![CRC/FCS Errors](./images/CRC%20FCS%20errors.png)
 **PoE (when applicable):**
 ![PoE](./images/PoE.png)
