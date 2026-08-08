@@ -1,7 +1,7 @@
 zabbix_export:
   version: '7.4'
   template_groups:
-    - uuid: b5df79584eab43a1930f04644d938e09
+    - uuid: 3097d88f9bd741b69eac32e51be0f0b9
       name: 'Templates/NAS & SAN'
   templates:
     - uuid: 38fa1ac92ba54d749af081ba2116a11b
@@ -859,6 +859,17 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Global Health'
+          triggers:
+            - uuid: fe2fb384f3e64e0e8fcfc6b76f9965aa
+              expression: 'last(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.status)<>"optimal"'
+              name: 'SANtricity: Overall status is not optimal'
+              event_name: 'Status: {ITEM.LASTVALUE1}'
+              priority: HIGH
+              description: |
+                The overall storage array status is not optimal.
+                Check SANtricity Recovery Guru for details and recommended recovery actions.
+                
+                Current status: {ITEM.LASTVALUE1}
         - uuid: bbec7da1c6384e5c9d2a0b40c639e706
           name: 'Overall Status code'
           type: DEPENDENT
@@ -926,6 +937,11 @@ zabbix_export:
                     'maxTempExceed': 39,
                     'expired': 40,
                     'nominalTempExceed': 41,
+                    'needsAttn': 42,
+                    'neverContacted':43,
+                    'newDevice':44,
+                    'offline':45,
+                    'lockDown':46,
                     'ok': 5,
                     'normal': 5,
                     'nominal': 5
@@ -8147,6 +8163,30 @@ zabbix_export:
                     - type: STRING
                       name: thresholds.41.threshold
                       value: '41'
+                    - type: STRING
+                      name: thresholds.42.color
+                      value: FF5722
+                    - type: STRING
+                      name: thresholds.42.threshold
+                      value: '42'
+                    - type: STRING
+                      name: thresholds.43.color
+                      value: 78909C
+                    - type: STRING
+                      name: thresholds.43.threshold
+                      value: '43'
+                    - type: STRING
+                      name: thresholds.44.color
+                      value: 0080FF
+                    - type: STRING
+                      name: thresholds.44.threshold
+                      value: '44'
+                    - type: STRING
+                      name: thresholds.45.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.45.threshold
+                      value: '45'
                 - type: item
                   name: 'SAN Serial Number'
                   x: '36'
@@ -10483,6 +10523,16 @@ zabbix_export:
               newvalue: expired
             - value: '41'
               newvalue: nominalTempExceed
+            - value: '42'
+              newvalue: needsAttn
+            - value: '43'
+              newvalue: neverContacted
+            - value: '44'
+              newvalue: newDevice
+            - value: '45'
+              newvalue: offline
+            - value: '46'
+              newvalue: lockDown
         - uuid: d06ead43bfef41cc8fa3652862b840cb
           name: 'Service state'
           mappings:
