@@ -1,0 +1,1958 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 36bff6c29af64692839d077febfc7079
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: c93a5775ebb54d89a310009157116987
+      template: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+      name: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+      description: 'SNMP template for Alcatel-Lucent Enterprise WebSmart switches.'
+      vendor:
+        name: E-MSN
+        version: 7.4-11
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: e50f406d7533421b8aa0df0d33024161
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          history: 7d
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: component
+              value: icmp
+          triggers:
+            - uuid: 8adb1da51c1b448485e991400d5f5116
+              expression: 'max(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/icmpping,#3)=0'
+              name: 'Unavailable by ICMP ping'
+              priority: HIGH
+              tags:
+                - tag: component
+                  value: icmp
+                - tag: scope
+                  value: availability
+        - uuid: f40ecb6d132f432981b7bea91e05afd2
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          history: 7d
+          units: '%'
+          tags:
+            - tag: component
+              value: icmp
+          triggers:
+            - uuid: 16afe9dc050c4dfa891de459c66db339
+              expression: 'min(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/icmppingloss,5m)<100'
+              name: 'High ICMP ping loss'
+              priority: WARNING
+              tags:
+                - tag: component
+                  value: icmp
+                - tag: scope
+                  value: availability
+        - uuid: 8fbe0a40255948d5b0ba089a42ded1f2
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          history: 7d
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: component
+              value: icmp
+          triggers:
+            - uuid: 5b3462300bc7473e997355fc6ec2d4bf
+              expression: 'avg(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'High ICMP ping response time'
+              priority: WARNING
+              tags:
+                - tag: component
+                  value: icmp
+                - tag: scope
+                  value: performance
+        - uuid: d2930667af2c43b4865eb3e6fbc276de
+          name: 'PoE: Power budget'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.105.1.3.1.1.2.1
+          key: poe.budget.w
+          history: 7d
+          units: W
+          description: 'POWER-ETHERNET-MIB::pethMainPsePower. Total PoE budget.'
+          tags:
+            - tag: component
+              value: poe
+        - uuid: 57e8cf855a3c4d049827f03bc99a4e6f
+          name: 'PoE: Power consumption'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.105.1.3.1.1.4.1,1.3.6.1.4.1.4413.1.1.15.1.1.1.2.1,1.3.6.1.4.1.6486.803.1.2.1.27.1.1.1.1.2.1]'
+          key: poe.consumption.w
+          history: 7d
+          value_type: FLOAT
+          units: W
+          description: 'Total PoE port load in watts. Uses the per-port actual-power table on OS2220/OS2260 and falls back to POWER-ETHERNET-MIB::pethMainPseConsumptionPower when no supported per-port table is available.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var s = String(value || '');
+                  var m;
+                  var sum = 0;
+                  var count = 0;
+                  // OS2220 Broadcom FASTPATH actual per-port power, raw value in mW.
+                  var re = /(?:iso\.|\.?1\.)3\.6\.1\.4\.1\.4413\.1\.1\.15\.1\.1\.1\.2\.1\.\d+\s*=\s*(?:Gauge32|INTEGER|Unsigned32):\s*(-?[0-9]+(?:\.[0-9]+)?)/gi;
+                  while ((m = re.exec(s)) !== null) {
+                      sum += Number(m[1]);
+                      count++;
+                  }
+                  if (count > 0) {
+                      return sum * 0.001;
+                  }
+                  // OS2260 ALE actual per-port power, raw value in mW.
+                  sum = 0;
+                  count = 0;
+                  re = /(?:iso\.|\.?1\.)3\.6\.1\.4\.1\.6486\.803\.1\.2\.1\.27\.1\.1\.1\.1\.2\.1\.\d+\s*=\s*(?:Gauge32|INTEGER|Unsigned32):\s*(-?[0-9]+(?:\.[0-9]+)?)/gi;
+                  while ((m = re.exec(s)) !== null) {
+                      sum += Number(m[1]);
+                      count++;
+                  }
+                  if (count > 0) {
+                      return sum * 0.001;
+                  }
+                  // Generic fallback: standard POWER-ETHERNET-MIB value is defined in watts.
+                  m = s.match(/(?:iso\.|\.?1\.)3\.6\.1\.2\.1\.105\.1\.3\.1\.1\.4\.1\s*=\s*(?:Gauge32|INTEGER|Unsigned32):\s*(-?[0-9]+(?:\.[0-9]+)?)/i);
+                  if (m) {
+                      return Number(m[1]);
+                  }
+                  throw 'PoE consumption value not found';
+          tags:
+            - tag: component
+              value: poe
+        - uuid: 9cc5906f438c45af8d92ebe43a775bec
+          name: 'PoE: Firmware version'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.105.1.3.1.1.6.1,1.3.6.1.4.1.6486.803.1.2.1.27.1.1.2.1.11.1]'
+          key: poe.firmware.version
+          history: 7d
+          value_type: CHAR
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var s = String(value || '');
+                  var m = s.match(/(?:iso\.3\.6\.1\.2\.1\.105\.1\.3\.1\.1\.6\.1|\.?1\.3\.6\.1\.2\.1\.105\.1\.3\.1\.1\.6\.1)\s*=\s*STRING:\s*"([^"]+)"/i);
+                  if (m && m[1].trim() !== '') {
+                      return m[1].trim();
+                  }
+                  m = s.match(/(?:iso\.3\.6\.1\.4\.1\.6486\.803\.1\.2\.1\.27\.1\.1\.2\.1\.11\.1|\.?1\.3\.6\.1\.4\.1\.6486\.803\.1\.2\.1\.27\.1\.1\.2\.1\.11\.1)\s*=\s*STRING:\s*"([^"]+)"/i);
+                  if (m && m[1].trim() !== '') {
+                      return m[1].trim();
+                  }
+                  throw 'PoE firmware version not found';
+          tags:
+            - tag: component
+              value: poe
+        - uuid: 28d2cf038616497796191fb584a93f28
+          name: 'PoE: Main operational status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.105.1.3.1.1.3.1
+          key: poe.main.status
+          history: 7d
+          valuemap:
+            name: 'PoE main PSE status'
+          tags:
+            - tag: component
+              value: poe
+          triggers:
+            - uuid: edcb5292c35448d1b9b5d5ef9dffab22
+              expression: 'last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.main.status)<>1'
+              name: 'PoE main PSE is not on'
+              priority: AVERAGE
+              tags:
+                - tag: component
+                  value: poe
+                - tag: scope
+                  value: availability
+        - uuid: 1193ca437a6c4e8fbf21a4c027ab5b09
+          name: 'PoE: Per-port power table'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.4.1.4413.1.1.15.1.1.1.2.1,1.3.6.1.4.1.6486.803.1.2.1.27.1.1.1.1.2.1]'
+          key: poe.port.power.walk
+          delay: 1h
+          history: '0'
+          value_type: TEXT
+          description: 'Raw per-port PoE power table used as the master item for dynamic PoE discovery. Only ports actually exposed by SNMP are discovered.'
+          tags:
+            - tag: component
+              value: poe
+        - uuid: 3f329280975345baad17b657540bba60
+          name: 'PoE: Usage threshold'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.105.1.3.1.1.5.1
+          key: poe.threshold.percent
+          history: 7d
+          units: '%'
+          tags:
+            - tag: component
+              value: poe
+        - uuid: 458c8cc7786a44e48de3b18430d3d2e4
+          name: 'PoE: Power utilization'
+          type: CALCULATED
+          key: poe.utilization.percent
+          history: 7d
+          value_type: FLOAT
+          units: '%'
+          params: '100*last(//poe.consumption.w)/last(//poe.budget.w)'
+          tags:
+            - tag: component
+              value: poe
+          triggers:
+            - uuid: 675d720b0361479083a434c38b22d61d
+              expression: 'avg(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.utilization.percent,5m)>{$POE.UTIL.HIGH}'
+              name: 'PoE power utilization is high'
+              priority: AVERAGE
+              tags:
+                - tag: component
+                  value: poe
+                - tag: scope
+                  value: capacity
+            - uuid: 798a6f61fb6b408ba3bd074a915f8af3
+              expression: 'avg(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.utilization.percent,5m)>{$POE.UTIL.WARN}'
+              name: 'PoE power utilization is warning'
+              priority: WARNING
+              dependencies:
+                - name: 'PoE power utilization is high'
+                  expression: 'avg(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.utilization.percent,5m)>{$POE.UTIL.HIGH}'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: scope
+                  value: capacity
+        - uuid: bf499ee5c13046ec9f2982c0e1c7bb31
+          name: 'System contact'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.4.0
+          key: 'system.contact[sysContact.0]'
+          history: 7d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: system
+        - uuid: 5319fd2707a54bd0bab487846d8f1436
+          name: 'System description'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.1.0
+          key: 'system.descr[sysDescr.0]'
+          history: 7d
+          value_type: TEXT
+          description: 'SNMP sysDescr. Contains model, firmware, Linux version and serial on OS22xx WebSmart switches.'
+          tags:
+            - tag: component
+              value: system
+        - uuid: 562ccde80f324326867699bb4541cf12
+          name: 'Hardware model'
+          type: DEPENDENT
+          key: system.hw.model
+          history: 7d
+          value_type: CHAR
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var s = String(value || '').trim();
+                  var m = s.match(/^([^:]+):/);
+                  if (m) {
+                      return m[1].trim();
+                  }
+                  m = s.match(/\b(OS[0-9]{4}(?:-[A-Za-z0-9]+)?)\b/);
+                  if (m) {
+                      return m[1].trim();
+                  }
+                  return s;
+          master_item:
+            key: 'system.descr[sysDescr.0]'
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: 45a1481f54f4491199212d9bc7fd45c6
+          name: 'Serial number'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.1.1.0,1.3.6.1.2.1.47.1.1.1.1.11]'
+          key: system.hw.serialnumber
+          history: 7d
+          value_type: CHAR
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var s = String(value || '');
+                  // OS2220: serial embedded in sysDescr.
+                  var m = s.match(/Serial\s*:\s*([^,"\r\n]+)/i);
+                  if (m && m[1].trim() !== '') {
+                      return m[1].trim();
+                  }
+                  // OS2260: prefer the chassis entry at ENTITY-MIB index 209.
+                  m = s.match(/(?:iso\.|\.?1\.)3\.6\.1\.2\.1\.47\.1\.1\.1\.1\.11\.209\s*=\s*STRING:\s*"?([^"\r\n]+)"?/i);
+                  if (m) {
+                      var sn = m[1].trim();
+                      if (sn !== '' && sn !== 'N/A') {
+                          return sn;
+                      }
+                  }
+                  // Generic fallback: first non-empty ENTITY-MIB serial.
+                  var re = /(?:iso\.|\.?1\.)3\.6\.1\.2\.1\.47\.1\.1\.1\.1\.11\.\d+\s*=\s*STRING:\s*"?([^"\r\n]+)"?/gi;
+                  while ((m = re.exec(s)) !== null) {
+                      var sn = m[1].trim();
+                      if (sn !== '' && sn !== 'N/A') {
+                          return sn;
+                      }
+                  }
+                  throw 'No serial number found';
+            - type: DISCARD_UNCHANGED
+          tags:
+            - tag: component
+              value: inventory
+          triggers:
+            - uuid: 9d26a88931df44adb8245d7f88b4f0d7
+              expression: 'change(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/system.hw.serialnumber)<>0 and length(last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/system.hw.serialnumber))>0'
+              name: 'Serial number has changed'
+              priority: INFO
+              manual_close: 'YES'
+              tags:
+                - tag: component
+                  value: inventory
+                - tag: scope
+                  value: notice
+        - uuid: 753a609b04264ca29107e315d6946410
+          name: 'System location'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.6.0
+          key: 'system.location[sysLocation.0]'
+          history: 7d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: system
+        - uuid: 1d2850124f774ecbba2582f69dff2928
+          name: 'System name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.5.0
+          key: 'system.name[sysName.0]'
+          history: 7d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: system
+        - uuid: 34d5948cc76a4c47abbf171ee74fd769
+          name: 'System object ID'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.2.0
+          key: 'system.objectid[sysObjectID.0]'
+          history: 7d
+          value_type: CHAR
+          description: |
+            Expected ALE WebSmart sysObjectID branches: 
+            - OS2220 1.3.6.1.4.1.6486.800.1.1.2.2.10.*
+            - OS2260 1.3.6.1.4.1.6486.803.1.1.2.1.1.1.2.*
+          tags:
+            - tag: component
+              value: system
+        - uuid: 8b406fa0ab9d421cafd5329de24f2aa0
+          name: 'Firmware version'
+          type: DEPENDENT
+          key: system.sw.version
+          history: 7d
+          value_type: CHAR
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var s = String(value || '').trim();
+                  var m = s.match(/WebSmart,\s*([^,]+)/);
+                  if (m) {
+                      return m[1].trim();
+                  }
+                  m = s.match(/\bOS[0-9]{4}(?:-[A-Za-z0-9]+)?\s+([^,]+)/);
+                  if (m) {
+                      return m[1].trim();
+                  }
+                  return s;
+          master_item:
+            key: 'system.descr[sysDescr.0]'
+          tags:
+            - tag: component
+              value: inventory
+          triggers:
+            - uuid: 6e120e3721fa4550b02f3261e04e66a0
+              expression: 'change(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/system.sw.version)<>0 and length(last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/system.sw.version))>0'
+              name: 'Firmware version has changed'
+              priority: INFO
+              manual_close: 'YES'
+              tags:
+                - tag: component
+                  value: inventory
+                - tag: scope
+                  value: notice
+        - uuid: 54784a3ad2054a3198d700f4c75a231d
+          name: 'System uptime'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.3.0
+          key: 'system.uptime[sysUpTime.0]'
+          history: 7d
+          units: uptime
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 8da1995124174d9f83a3795b9801dd87
+              expression: 'last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/system.uptime[sysUpTime.0])<10m'
+              name: 'Device has been restarted'
+              priority: INFO
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: notice
+        - uuid: 6d78f85a2c0142b1a9905a2340ac01fb
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          trends: '0'
+          valuemap:
+            name: zabbix.host.available
+          tags:
+            - tag: component
+              value: status
+          triggers:
+            - uuid: 203a43c2d86b4f0c8ba8e03e7d9bd1ab
+              expression: 'max(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'No SNMP data collection'
+              priority: AVERAGE
+              dependencies:
+                - name: 'Unavailable by ICMP ping'
+                  expression: 'max(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: component
+                  value: snmp
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: a5a7d703ec444c0481d573aebc7e932c
+          name: 'LLDP neighbors discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#LLDP.CHASSIS.SUBTYPE},1.0.8802.1.1.2.1.4.1.1.4,{#LLDP.PORT.ID.SUBTYPE},1.0.8802.1.1.2.1.4.1.1.6]'
+          key: lldp.rem.discovery
+          delay: 1h
+          description: 'Discovers LLDP remote systems from LLDP-MIB.'
+          item_prototypes:
+            - uuid: 14e25bc14a2b42dfaad5f1714fb082bb
+              name: 'LLDP local port {#LLDP.LOCAL.PORT} remote {#LLDP.REM.INDEX}: Chassis ID'
+              type: SNMP_AGENT
+              snmp_oid: '1.0.8802.1.1.2.1.4.1.1.5.{#SNMPINDEX}'
+              key: 'lldp.rem.chassis.id[lldpRemChassisId.{#SNMPINDEX}]'
+              history: 7d
+              value_type: CHAR
+              tags:
+                - tag: component
+                  value: lldp
+                - tag: local_port
+                  value: '{#LLDP.LOCAL.PORT}'
+            - uuid: 9a73cb44796d447bb54ab0be7edd224f
+              name: 'LLDP local port {#LLDP.LOCAL.PORT} remote {#LLDP.REM.INDEX}: Port description'
+              type: SNMP_AGENT
+              snmp_oid: '1.0.8802.1.1.2.1.4.1.1.8.{#SNMPINDEX}'
+              key: 'lldp.rem.port.desc[lldpRemPortDesc.{#SNMPINDEX}]'
+              history: 7d
+              value_type: CHAR
+              tags:
+                - tag: component
+                  value: lldp
+                - tag: local_port
+                  value: '{#LLDP.LOCAL.PORT}'
+            - uuid: 7a6ec2b754a54c68b17f392f3c703a3f
+              name: 'LLDP local port {#LLDP.LOCAL.PORT} remote {#LLDP.REM.INDEX}: Port ID'
+              type: SNMP_AGENT
+              snmp_oid: '1.0.8802.1.1.2.1.4.1.1.7.{#SNMPINDEX}'
+              key: 'lldp.rem.port.id[lldpRemPortId.{#SNMPINDEX}]'
+              history: 7d
+              value_type: CHAR
+              tags:
+                - tag: component
+                  value: lldp
+                - tag: local_port
+                  value: '{#LLDP.LOCAL.PORT}'
+            - uuid: 9c76cacb410e43709f8425f2eb2303bf
+              name: 'LLDP local port {#LLDP.LOCAL.PORT} remote {#LLDP.REM.INDEX}: System description'
+              type: SNMP_AGENT
+              snmp_oid: '1.0.8802.1.1.2.1.4.1.1.10.{#SNMPINDEX}'
+              key: 'lldp.rem.sys.desc[lldpRemSysDesc.{#SNMPINDEX}]'
+              history: 7d
+              value_type: TEXT
+              tags:
+                - tag: component
+                  value: lldp
+                - tag: local_port
+                  value: '{#LLDP.LOCAL.PORT}'
+            - uuid: 901343d1c6ae429da1d7633eb79e83d7
+              name: 'LLDP local port {#LLDP.LOCAL.PORT} remote {#LLDP.REM.INDEX}: System name'
+              type: SNMP_AGENT
+              snmp_oid: '1.0.8802.1.1.2.1.4.1.1.9.{#SNMPINDEX}'
+              key: 'lldp.rem.sys.name[lldpRemSysName.{#SNMPINDEX}]'
+              history: 7d
+              value_type: CHAR
+              tags:
+                - tag: component
+                  value: lldp
+                - tag: local_port
+                  value: '{#LLDP.LOCAL.PORT}'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var obj = JSON.parse(value);
+                  var data = Array.isArray(obj) ? obj : obj.data;
+                  for (var i = 0; i < data.length; i++) {
+                      var idx = String(data[i]['{#SNMPINDEX}'] || '');
+                      var parts = idx.split('.');
+                      data[i]['{#LLDP.TIME.MARK}'] = parts.length >= 3 ? parts[0] : '';
+                      data[i]['{#LLDP.LOCAL.PORT}'] = parts.length >= 3 ? parts[1] : idx;
+                      data[i]['{#LLDP.REM.INDEX}'] = parts.length >= 3 ? parts[2] : '1';
+                  }
+                  return JSON.stringify(Array.isArray(obj) ? data : {data: data});
+        - uuid: c995ebb0fa8d45b1ada14098ae825a0a
+          name: 'Network interfaces discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#IFNAME},1.3.6.1.2.1.31.1.1.1.1,{#IFDESCR},1.3.6.1.2.1.2.2.1.2,{#IFTYPE},1.3.6.1.2.1.2.2.1.3,{#IFALIAS},1.3.6.1.2.1.31.1.1.1.18]'
+          key: net.if.discovery
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#IFDESCR}'
+                value: '{$NET.IF.IFDESCR.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+              - macro: '{#IFNAME}'
+                value: '{$NET.IF.IFNAME.MATCHES}'
+              - macro: '{#IFNAME}'
+                value: '{$NET.IF.IFNAME.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+              - macro: '{#IFTYPE}'
+                value: '{$NET.IF.IFTYPE.MATCHES}'
+          description: |
+            Discovers physical ports from IF-MIB/ifXTable.
+            CPU, management and loopback interfaces are excluded by default.
+          item_prototypes:
+            - uuid: 4ebfbee758d64f84a53c23be75fced82
+              name: 'Interface {#IFNAME}: Alias'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.31.1.1.1.18.{#SNMPINDEX}'
+              key: 'net.if.alias[ifAlias.{#SNMPINDEX}]'
+              history: 7d
+              value_type: CHAR
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: be6f17f5186a4e729281675da7f54c71
+              name: 'Interface {#IFNAME}: Description'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.2.{#SNMPINDEX}'
+              key: 'net.if.descr[ifDescr.{#SNMPINDEX}]'
+              history: 7d
+              value_type: CHAR
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 46ca7c8d9d494e45809d2fcbecf1c734
+              name: 'Interface {#IFNAME}: Inbound discards'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}'
+              key: 'net.if.in.discards[ifInDiscards.{#SNMPINDEX}]'
+              history: 7d
+              units: '!discards/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+                - tag: direction
+                  value: in
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 14e1aeab542f46d08365916e4556648f
+              name: 'Interface {#IFNAME}: Inbound errors'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}'
+              key: 'net.if.in.errors[ifInErrors.{#SNMPINDEX}]'
+              history: 7d
+              units: '!errors/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+                - tag: direction
+                  value: in
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 88fa0a40d8624d9eb122abd9a5b9742d
+              name: 'Interface {#IFNAME}: Bits received'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}'
+              key: 'net.if.in[ifHCInOctets.{#SNMPINDEX}]'
+              history: 7d
+              units: bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: direction
+                  value: in
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 362aebf25a0d48c281dcc0e498607906
+              name: 'Interface {#IFNAME}: Outbound discards'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}'
+              key: 'net.if.out.discards[ifOutDiscards.{#SNMPINDEX}]'
+              history: 7d
+              units: '!discards/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+                - tag: direction
+                  value: out
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: dc483a11a019416e8532cf3b2efaa46e
+              name: 'Interface {#IFNAME}: Outbound errors'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}'
+              key: 'net.if.out.errors[ifOutErrors.{#SNMPINDEX}]'
+              history: 7d
+              units: '!errors/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: interface
+                - tag: direction
+                  value: out
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: a436530d361448beb2e7a3159f44edf2
+              name: 'Interface {#IFNAME}: Bits sent'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}'
+              key: 'net.if.out[ifHCOutOctets.{#SNMPINDEX}]'
+              history: 7d
+              units: bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: direction
+                  value: out
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: f544221f64ac4130967cc63efe75139a
+              name: 'Interface {#IFNAME}: Speed'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.31.1.1.1.15.{#SNMPINDEX}'
+              key: 'net.if.speed[ifHighSpeed.{#SNMPINDEX}]'
+              history: 7d
+              units: bps
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '1000000'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+              trigger_prototypes:
+                - uuid: d5d5d3f9f3784f50a7d96320388d930a
+                  expression: 'change(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])<>0 and last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])>0'
+                  name: 'Interface {#IFNAME}: Speed changed'
+                  status: DISABLED
+                  discover: NO_DISCOVER
+                  priority: INFO
+                  manual_close: 'YES'
+                  tags:
+                    - tag: component
+                      value: interface
+                    - tag: interface
+                      value: '{#IFNAME}'
+                    - tag: scope
+                      value: notice
+            - uuid: f5933fd03bcc4d729ce545dbab16a0a7
+              name: 'Interface {#IFNAME}: Admin status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.7.{#SNMPINDEX}'
+              key: 'net.if.status[ifAdminStatus.{#SNMPINDEX}]'
+              history: 7d
+              valuemap:
+                name: 'IF-MIB ifAdminStatus'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 1d00ae8c4e944bd1b17cc9822b7aeddf
+              name: 'Interface {#IFNAME}: Operational status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}'
+              key: 'net.if.status[ifOperStatus.{#SNMPINDEX}]'
+              history: 7d
+              valuemap:
+                name: 'IF-MIB ifOperStatus'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: a938436838fb4c68ad11b69c190eab71
+              name: 'Interface {#IFNAME}: Type'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.3.{#SNMPINDEX}'
+              key: 'net.if.type[ifType.{#SNMPINDEX}]'
+              history: 7d
+              valuemap:
+                name: 'IF-MIB ifType'
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+          trigger_prototypes:
+            - uuid: a710c1b16995436c8e903a8dd736c30a
+              expression: 'min(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.in.discards[ifInDiscards.{#SNMPINDEX}],5m)>{$IF.DISCARDS.WARN:"{#IFNAME}"} or min(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.out.discards[ifOutDiscards.{#SNMPINDEX}],5m)>{$IF.DISCARDS.WARN:"{#IFNAME}"}'
+              name: 'Interface {#IFNAME}: Discard rate is high'
+              priority: WARNING
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+                - tag: scope
+                  value: availability
+            - uuid: 45a084e0806c472b8a5ca869e7e30b5b
+              expression: 'min(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.in.errors[ifInErrors.{#SNMPINDEX}],5m)>{$IF.ERRORS.WARN:"{#IFNAME}"} or min(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.out.errors[ifOutErrors.{#SNMPINDEX}],5m)>{$IF.ERRORS.WARN:"{#IFNAME}"}'
+              name: 'Interface {#IFNAME}: Error rate is high'
+              priority: WARNING
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+                - tag: scope
+                  value: availability
+            - uuid: fce367edd44e417eb17c3c9892ecf5e3
+              expression: '(avg(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.in[ifHCInOctets.{#SNMPINDEX}],5m)>last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])*{$IF.UTIL.MAX:"{#IFNAME}"}/100 or avg(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.out[ifHCOutOctets.{#SNMPINDEX}],5m)>last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])*{$IF.UTIL.MAX:"{#IFNAME}"}/100) and last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.speed[ifHighSpeed.{#SNMPINDEX}])>0 and last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=1'
+              name: 'Interface {#IFNAME}: High bandwidth usage'
+              priority: WARNING
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+                - tag: scope
+                  value: performance
+            - uuid: bbe66c4aea494e50b9672d939d3c6536
+              expression: '{$IF.CONTROL:"{#IFNAME}"}=1 and last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=2 and last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/net.if.status[ifAdminStatus.{#SNMPINDEX}])=1'
+              name: 'Interface {#IFNAME}: Link down'
+              status: DISABLED
+              discover: NO_DISCOVER
+              priority: AVERAGE
+              tags:
+                - tag: component
+                  value: interface
+                - tag: interface
+                  value: '{#IFNAME}'
+                - tag: scope
+                  value: availability
+          graph_prototypes:
+            - uuid: c92d568ccf744df19754c1b3d278a7bc
+              name: 'Interface {#IFNAME}: Network traffic'
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 00AA00
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'net.if.in[ifHCInOctets.{#SNMPINDEX}]'
+                - sortorder: '1'
+                  drawtype: GRADIENT_LINE
+                  color: 3333FF
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'net.if.out[ifHCOutOctets.{#SNMPINDEX}]'
+                - sortorder: '2'
+                  color: FF0000
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'net.if.in.errors[ifInErrors.{#SNMPINDEX}]'
+                - sortorder: '3'
+                  color: A54F10
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'net.if.out.errors[ifOutErrors.{#SNMPINDEX}]'
+                - sortorder: '4'
+                  color: FC6EA3
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'net.if.in.discards[ifInDiscards.{#SNMPINDEX}]'
+                - sortorder: '5'
+                  color: 6C59DC
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'net.if.out.discards[ifOutDiscards.{#SNMPINDEX}]'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var obj = JSON.parse(value);
+                  var data = Array.isArray(obj) ? obj : obj.data;
+                  for (var i = 0; i < data.length; i++) {
+                      if (data[i]['{#IFNAME}'] === undefined || data[i]['{#IFNAME}'] === '') {
+                          data[i]['{#IFNAME}'] = data[i]['{#SNMPINDEX}'];
+                      }
+                  }
+                  return JSON.stringify(Array.isArray(obj) ? data : {data: data});
+        - uuid: d00057e77d664ba3b1868c35f7af9fad
+          name: 'FASTPATH PoE electrical metrics discovery'
+          type: DEPENDENT
+          key: poe.fastpath.discovery
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#POEFASTPATH.PORT}'
+                value: '{$POE.PORT.MATCHES}'
+          description: |
+            OS2220-only dependent discovery for Broadcom FASTPATH PoE electrical metrics.
+            Discovers per-port current and voltage; power metrics are handled by the unified PoE power discovery.
+          item_prototypes:
+            - uuid: 6a21edd6db254b0284222e1289547856
+              name: 'PoE port {#POEFASTPATH.PORT}: Current'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.4413.1.1.15.1.1.1.3.1.{#POEFASTPATH.PORT}'
+              key: 'poe.port.current.ma[fastpath.{#POEFASTPATH.PORT}]'
+              history: 7d
+              value_type: FLOAT
+              units: mA
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POEFASTPATH.PORT}'
+            - uuid: c161c66639754586b504c099b3d45e86
+              name: 'PoE port {#POEFASTPATH.PORT}: Voltage'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.4413.1.1.15.1.1.1.4.1.{#POEFASTPATH.PORT}'
+              key: 'poe.port.voltage.v[fastpath.{#POEFASTPATH.PORT}]'
+              history: 7d
+              value_type: FLOAT
+              units: V
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POEFASTPATH.PORT}'
+          master_item:
+            key: poe.port.power.walk
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var s = String(value || '');
+                  var data = [];
+                  var seen = {};
+                  var re = /(?:iso\.|\.?1\.)3\.6\.1\.4\.1\.4413\.1\.1\.15\.1\.1\.1\.2\.1\.(\d+)\s*=/gi;
+                  var m;
+                  while ((m = re.exec(s)) !== null) {
+                      var port = String(Number(m[1]));
+                      if (!seen[port]) {
+                          seen[port] = true;
+                          data.push({
+                              '{#SNMPINDEX}': port,
+                              '{#POEFASTPATH.PORT}': port
+                          });
+                      }
+                  }
+                  return JSON.stringify({data: data});
+        - uuid: 9684f0780fec4b6d946a84116d23e3d1
+          name: 'PoE ports discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#POE.ADMIN},1.3.6.1.2.1.105.1.1.1.3,{#POE.STATUS},1.3.6.1.2.1.105.1.1.1.6]'
+          key: poe.port.discovery
+          delay: 1h
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#POE.PORT}'
+                value: '{$POE.PORT.MATCHES}'
+          description: 'Discovers PoE ports from POWER-ETHERNET-MIB.'
+          item_prototypes:
+            - uuid: eedaa64c580645c1a7c376215141ddea
+              name: 'PoE port {#POE.PORT}: Admin status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.3.{#SNMPINDEX}'
+              key: 'poe.port.admin[pethPsePortAdminEnable.{#SNMPINDEX}]'
+              history: 7d
+              valuemap:
+                name: 'PoE port admin status'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+            - uuid: c940f63783814c4e935cbb00266ba46c
+              name: 'PoE port {#POE.PORT}: Detection status'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.6.{#SNMPINDEX}'
+              key: 'poe.port.detection[pethPsePortDetectionStatus.{#SNMPINDEX}]'
+              history: 7d
+              valuemap:
+                name: 'PoE port detection status'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+            - uuid: 8169b09fd1544e1e9d3e7e75c23a4f75
+              name: 'PoE port {#POE.PORT}: Invalid signature counter'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.8.{#SNMPINDEX}'
+              key: 'poe.port.invalid_signature[pethPsePortInvalidSignatureCounter.{#SNMPINDEX}]'
+              history: 7d
+              units: '!events/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+            - uuid: 641c387a6ba34da69f156b8038ba17dc
+              name: 'PoE port {#POE.PORT}: MPS absent counter'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.14.{#SNMPINDEX}'
+              key: 'poe.port.mps_absent[pethPsePortMPSAbsentCounter.{#SNMPINDEX}]'
+              history: 7d
+              units: '!events/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+            - uuid: dab34ab80b5a491cb91d706e7e8c1632
+              name: 'PoE port {#POE.PORT}: Overload counter'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.12.{#SNMPINDEX}'
+              key: 'poe.port.overload[pethPsePortOverLoadCounter.{#SNMPINDEX}]'
+              history: 7d
+              units: '!events/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+              trigger_prototypes:
+                - uuid: 200ef3d13d104ef28a84a8d49bc0ed61
+                  expression: 'max(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.port.overload[pethPsePortOverLoadCounter.{#SNMPINDEX}],5m)>0'
+                  name: 'PoE port {#POE.PORT}: Overload events'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: component
+                      value: poe
+                    - tag: poe_port
+                      value: '{#POE.PORT}'
+                    - tag: scope
+                      value: availability
+            - uuid: d967f4c89a9e466bb27c099de6c430b6
+              name: 'PoE port {#POE.PORT}: Power pairs control ability'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.4.{#SNMPINDEX}'
+              key: 'poe.port.pairs.control[pethPsePortPowerPairsControlAbility.{#SNMPINDEX}]'
+              history: 7d
+              valuemap:
+                name: 'Truth value'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+            - uuid: 4be523c71ffe47fe908bf0a243c3c606
+              name: 'PoE port {#POE.PORT}: Power pairs'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.5.{#SNMPINDEX}'
+              key: 'poe.port.pairs[pethPsePortPowerPairs.{#SNMPINDEX}]'
+              history: 7d
+              valuemap:
+                name: 'PoE power pairs'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+            - uuid: 5ff50e4361ff4c56bb750f16a37b56dc
+              name: 'PoE port {#POE.PORT}: Power denied counter'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.11.{#SNMPINDEX}'
+              key: 'poe.port.power_denied[pethPsePortPowerDeniedCounter.{#SNMPINDEX}]'
+              history: 7d
+              units: '!events/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+              trigger_prototypes:
+                - uuid: b68d665c3af942078a916a6e98fef182
+                  expression: 'max(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.port.power_denied[pethPsePortPowerDeniedCounter.{#SNMPINDEX}],5m)>0'
+                  name: 'PoE port {#POE.PORT}: Power denied events'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: component
+                      value: poe
+                    - tag: poe_port
+                      value: '{#POE.PORT}'
+                    - tag: scope
+                      value: availability
+            - uuid: 3c98859f2a1d40efa0d721336cd55342
+              name: 'PoE port {#POE.PORT}: Priority'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.7.{#SNMPINDEX}'
+              key: 'poe.port.priority[pethPsePortPowerPriority.{#SNMPINDEX}]'
+              history: 7d
+              valuemap:
+                name: 'PoE port priority'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+            - uuid: 668d3cc1f9714550bd191639d0042089
+              name: 'PoE port {#POE.PORT}: Short counter'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.105.1.1.1.13.{#SNMPINDEX}'
+              key: 'poe.port.short[pethPsePortShortCounter.{#SNMPINDEX}]'
+              history: 7d
+              units: '!events/s'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+          trigger_prototypes:
+            - uuid: 7b5c49c488ed448ab03be1b2bb39d7ed
+              expression: 'last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.port.admin[pethPsePortAdminEnable.{#SNMPINDEX}])=1 and (last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.port.detection[pethPsePortDetectionStatus.{#SNMPINDEX}])=4 or last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.port.detection[pethPsePortDetectionStatus.{#SNMPINDEX}])=6)'
+              name: 'PoE port {#POE.PORT}: Detection fault'
+              priority: AVERAGE
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+                - tag: scope
+                  value: availability
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var obj = JSON.parse(value);
+                  var data = Array.isArray(obj) ? obj : obj.data;
+                  for (var i = 0; i < data.length; i++) {
+                      var idx = String(data[i]['{#SNMPINDEX}'] || '');
+                      var parts = idx.split('.');
+                      data[i]['{#POE.GROUP}'] = parts.length > 1 ? parts[0] : '1';
+                      data[i]['{#POE.PORT}'] = parts.length > 1 ? parts[parts.length - 1] : idx;
+                  }
+                  return JSON.stringify(Array.isArray(obj) ? data : {data: data});
+        - uuid: d7552eeb999243798277118f6f259b5f
+          name: 'PoE power metrics discovery'
+          type: DEPENDENT
+          key: poe.power.discovery
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#POE.PORT}'
+                value: '{$POE.PORT.MATCHES}'
+          description: |
+            Unified per-port PoE power discovery for OS2220 and OS2260 WebSmart switches.
+            OS2220 uses the Broadcom FASTPATH enterprise MIB
+            OS2260 uses the ALE enterprise MIB.
+            
+            Both expose per-port power values in mW, normalized to watts by the item prototypes.
+          item_prototypes:
+            - uuid: e8e2c2ce734142b49256f574d5998d4b
+              name: 'PoE port {#POE.PORT}: Power consumption'
+              type: SNMP_AGENT
+              snmp_oid: '{#POE.POWER.OID}'
+              key: 'poe.port.power.consumption.w[{#POE.PORT}]'
+              history: 7d
+              value_type: FLOAT
+              units: W
+              description: 'Per-port PoE power consumption. Source OID is selected by discovery according to the switch model; raw value is returned in mW.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.001'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+              trigger_prototypes:
+                - uuid: 25b2b39d5dc248289c06f4aaea3340aa
+                  expression: 'avg(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/poe.port.power.consumption.w[{#POE.PORT}],5m)>{$POE.PORT.POWER.WARN:"{#POE.PORT}"}'
+                  name: 'PoE port {#POE.PORT}: High power consumption'
+                  priority: WARNING
+                  tags:
+                    - tag: component
+                      value: poe
+                    - tag: poe_port
+                      value: '{#POE.PORT}'
+                    - tag: scope
+                      value: capacity
+            - uuid: 1c99749dc8c64fe4b05cbfbf50e2a666
+              name: 'PoE port {#POE.PORT}: Power limit'
+              type: SNMP_AGENT
+              snmp_oid: '{#POE.LIMIT.OID}'
+              key: 'poe.port.power.limit.w[{#POE.PORT}]'
+              history: 7d
+              value_type: FLOAT
+              units: W
+              description: 'Per-port PoE power limit. Source OID is selected by discovery according to the switch model; raw value is returned in mW.'
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.001'
+              tags:
+                - tag: component
+                  value: poe
+                - tag: poe_port
+                  value: '{#POE.PORT}'
+          graph_prototypes:
+            - uuid: 9240aa5d31ef44799a28882267a5ddc7
+              name: 'PoE port {#POE.PORT}: Power'
+              graph_items:
+                - color: 199C0D
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'poe.port.power.consumption.w[{#POE.PORT}]'
+                - sortorder: '1'
+                  color: F63100
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'poe.port.power.limit.w[{#POE.PORT}]'
+          master_item:
+            key: poe.port.power.walk
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var s = String(value || '');
+                  var data = [];
+                  var seen = {};
+                  var m;
+                  var port;
+                  // OS2220 / Broadcom FASTPATH: discover only rows actually exposed by SNMP.
+                  var re = /(?:iso\.|\.?1\.)3\.6\.1\.4\.1\.4413\.1\.1\.15\.1\.1\.1\.2\.1\.(\d+)\s*=/gi;
+                  while ((m = re.exec(s)) !== null) {
+                      port = String(Number(m[1]));
+                      if (!seen[port]) {
+                          seen[port] = true;
+                          data.push({
+                              '{#SNMPINDEX}': port,
+                              '{#POE.PORT}': port,
+                              '{#POE.POWER.OID}': '1.3.6.1.4.1.4413.1.1.15.1.1.1.2.1.' + port,
+                              '{#POE.LIMIT.OID}': '1.3.6.1.4.1.4413.1.1.15.1.1.1.1.1.' + port
+                          });
+                      }
+                  }
+                  // OS2260 / ALE: discover only rows actually exposed by SNMP.
+                  re = /(?:iso\.|\.?1\.)3\.6\.1\.4\.1\.6486\.803\.1\.2\.1\.27\.1\.1\.1\.1\.2\.1\.(\d+)\s*=/gi;
+                  while ((m = re.exec(s)) !== null) {
+                      port = String(Number(m[1]));
+                      if (!seen[port]) {
+                          seen[port] = true;
+                          data.push({
+                              '{#SNMPINDEX}': port,
+                              '{#POE.PORT}': port,
+                              '{#POE.POWER.OID}': '1.3.6.1.4.1.6486.803.1.2.1.27.1.1.1.1.2.1.' + port,
+                              '{#POE.LIMIT.OID}': '1.3.6.1.4.1.6486.803.1.2.1.27.1.1.1.1.1.1.' + port
+                          });
+                      }
+                  }
+                  return JSON.stringify({data: data});
+        - uuid: 3699fffea376426b89bd93d9c5885335
+          name: 'System resources discovery'
+          type: DEPENDENT
+          key: system.resources.discovery
+          description: |
+            Discovery for CPU, RAM and flash metrics.
+            Returns no rows on OS2220, so the resource items are not created on that family.
+          item_prototypes:
+            - uuid: 4e8f1e12fa0f4d29a86e9bedd01fa292
+              name: 'CPU utilization'
+              type: SNMP_AGENT
+              snmp_oid: 1.3.6.1.4.1.6486.803.1.2.1.16.1.1.1.1.1.14.0
+              key: 'system.cpu.util[{#RESOURCE.MODEL}]'
+              history: 7d
+              units: '%'
+              description: 'Current CPU utilization from the ALE health monitoring MIB.'
+              tags:
+                - tag: component
+                  value: cpu
+              trigger_prototypes:
+                - uuid: 51ab80dfb0da4f6ab5d4901f9cd88001
+                  expression: 'min(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/system.cpu.util[{#RESOURCE.MODEL}],5m)>{$CPU.UTIL.WARN}'
+                  name: 'High CPU utilization'
+                  priority: WARNING
+                  description: 'CPU utilization has remained above {$CPU.UTIL.WARN}% for 5 minutes.'
+                  tags:
+                    - tag: component
+                      value: cpu
+                    - tag: scope
+                      value: performance
+            - uuid: 4d90ac8ed69e46e68b6e6a90238d7aaf
+              name: 'Flash free'
+              type: SNMP_AGENT
+              snmp_oid: 1.3.6.1.4.1.6486.803.1.1.1.3.1.1.8.1.2.1
+              key: 'system.flash.free[{#RESOURCE.MODEL}]'
+              history: 7d
+              units: B
+              description: 'Free flash file-system space in bytes.'
+              tags:
+                - tag: component
+                  value: storage
+            - uuid: 36e8a04c0c0d4fdfa98785186addae6e
+              name: 'Flash total'
+              type: SNMP_AGENT
+              snmp_oid: 1.3.6.1.4.1.6486.803.1.1.1.3.1.1.8.1.3.1
+              key: 'system.flash.total[{#RESOURCE.MODEL}]'
+              history: 7d
+              units: B
+              description: 'Total flash file-system size in bytes.'
+              tags:
+                - tag: component
+                  value: storage
+            - uuid: c1d5888a0472473288bd40675bb46104
+              name: 'Flash utilization'
+              type: SNMP_AGENT
+              snmp_oid: 1.3.6.1.4.1.6486.803.1.1.1.3.1.1.9.1.4.1
+              key: 'system.flash.util[{#RESOURCE.MODEL}]'
+              history: 7d
+              units: '%'
+              description: 'Percentage of flash storage currently used.'
+              tags:
+                - tag: component
+                  value: storage
+              trigger_prototypes:
+                - uuid: 2a8f17881eb6436bafe5a866f45d9f6b
+                  expression: 'last(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/system.flash.util[{#RESOURCE.MODEL}])>{$FLASH.UTIL.WARN}'
+                  name: 'High flash utilization'
+                  priority: WARNING
+                  description: 'Flash utilization is above {$FLASH.UTIL.WARN}%.'
+                  tags:
+                    - tag: component
+                      value: storage
+                    - tag: scope
+                      value: capacity
+            - uuid: e9f781208ba240d2a55c843f632f2d26
+              name: 'Memory utilization'
+              type: SNMP_AGENT
+              snmp_oid: 1.3.6.1.4.1.6486.803.1.2.1.16.1.1.1.1.1.10.0
+              key: 'system.memory.util[{#RESOURCE.MODEL}]'
+              history: 7d
+              units: '%'
+              description: 'Current RAM utilization from the ALE health monitoring MIB.'
+              tags:
+                - tag: component
+                  value: memory
+              trigger_prototypes:
+                - uuid: 44c6475af72a4a89aab2ca57027aba1c
+                  expression: 'min(/Alcatel-Lucent Entreprise WebSmart switch by SNMP/system.memory.util[{#RESOURCE.MODEL}],5m)>{$MEMORY.UTIL.WARN}'
+                  name: 'High memory utilization'
+                  priority: WARNING
+                  description: 'Memory utilization has remained above {$MEMORY.UTIL.WARN}% for 5 minutes.'
+                  tags:
+                    - tag: component
+                      value: memory
+                    - tag: scope
+                      value: performance
+          graph_prototypes:
+            - uuid: 516eb39fbdf74e938a948b82cbce714f
+              name: '{#RESOURCE.MODEL}: CPU utilization'
+              graph_items:
+                - color: 199C0D
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'system.cpu.util[{#RESOURCE.MODEL}]'
+            - uuid: 63f31d2b43dc43a3a830f276bf1c94e3
+              name: '{#RESOURCE.MODEL}: Flash storage'
+              show_work_period: 'NO'
+              show_triggers: 'NO'
+              type: PIE
+              show_3d: 'YES'
+              graph_items:
+                - color: 199C0D
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'system.flash.free[{#RESOURCE.MODEL}]'
+                - sortorder: '1'
+                  color: F63100
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'system.flash.total[{#RESOURCE.MODEL}]'
+            - uuid: b3e32838117b4c35b696c7deb80490b4
+              name: '{#RESOURCE.MODEL}: Memory utilization'
+              graph_items:
+                - color: 2774A4
+                  item:
+                    host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                    key: 'system.memory.util[{#RESOURCE.MODEL}]'
+          master_item:
+            key: 'system.objectid[sysObjectID.0]'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var oid = String(value || '');
+                  var data = [];
+                  if (oid.indexOf('6486.803.1.1.2.1.1.1.2') !== -1) {
+                      data.push({
+                          '{#RESOURCE.MODEL}': 'OS2260'
+                      });
+                  }
+                  return JSON.stringify({data: data});
+      tags:
+        - tag: class
+          value: network
+        - tag: target
+          value: alcatel
+        - tag: target
+          value: 'websmart switch'
+      macros:
+        - macro: '{$CPU.UTIL.WARN}'
+          value: '80'
+          description: 'CPU utilization warning threshold in percent.'
+        - macro: '{$FLASH.UTIL.WARN}'
+          value: '80'
+          description: 'Flash utilization warning threshold in percent.'
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+          description: 'ICMP packet loss warning threshold in percent.'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+          description: 'ICMP response time warning threshold in seconds.'
+        - macro: '{$IF.CONTROL}'
+          value: '1'
+          description: 'Set to 0 globally or per interface context to disable link-down trigger.'
+        - macro: '{$IF.DISCARDS.WARN}'
+          value: '5'
+          description: 'Interface discard rate warning threshold, discards per second.'
+        - macro: '{$IF.ERRORS.WARN}'
+          value: '1'
+          description: 'Interface error rate warning threshold, errors per second.'
+        - macro: '{$IF.UTIL.MAX}'
+          value: '85'
+          description: 'Interface utilization warning threshold in percent.'
+        - macro: '{$MEMORY.UTIL.WARN}'
+          value: '80'
+          description: 'Memory utilization warning threshold in percent.'
+        - macro: '{$NET.IF.IFDESCR.NOT_MATCHES}'
+          value: '^(CPU|CPU Interface|management|[Ll]oopback)$'
+          description: 'Interface descriptions excluded from monitoring.'
+        - macro: '{$NET.IF.IFNAME.MATCHES}'
+          value: '^([0-9]+|[0-9]+/[0-9]+/[0-9]+)$'
+          description: 'Interface names to monitor.'
+        - macro: '{$NET.IF.IFNAME.NOT_MATCHES}'
+          value: '^(CPU|CPU Interface|management|[Ll]oopback)$'
+          description: 'Interface names excluded from monitoring.'
+        - macro: '{$NET.IF.IFTYPE.MATCHES}'
+          value: ^6$
+          description: 'Monitor Ethernet interfaces only by default.'
+        - macro: '{$POE.PORT.MATCHES}'
+          value: '^[1-9][0-9]*$'
+          description: 'PoE ports to discover. By default, accepts every positive numeric port identifier exposed by SNMP.'
+        - macro: '{$POE.PORT.POWER.WARN}'
+          value: '25'
+          description: 'Per-port PoE power warning threshold in watts. Can be overridden by context.'
+        - macro: '{$POE.UTIL.HIGH}'
+          value: '90'
+          description: 'PoE utilization high threshold in percent.'
+        - macro: '{$POE.UTIL.WARN}'
+          value: '80'
+          description: 'PoE utilization warning threshold in percent.'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+          description: 'Time window used for SNMP availability trigger.'
+      dashboards:
+        - uuid: 1d42aa0779e040f4ad31a491cdf91b09
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'Device model'
+                  width: '31'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: system.hw.model
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                - type: item
+                  name: 'Firmware version'
+                  'y': '3'
+                  width: '31'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: system.sw.version
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                - type: item
+                  name: 'Device SN'
+                  x: '31'
+                  width: '31'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: system.hw.serialnumber
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                - type: item
+                  name: Uptime
+                  x: '31'
+                  'y': '3'
+                  width: '31'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: 'system.uptime[sysUpTime.0]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                - type: item
+                  name: Availability
+                  x: '62'
+                  width: '10'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'SNMP Availability'
+                  x: '62'
+                  'y': '3'
+                  width: '10'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: 'zabbix[host,snmp,available]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 78909C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+            - name: 'Port Speed'
+              widgets:
+                - type: honeycomb
+                  name: 'Port Speed'
+                  width: '72'
+                  height: '11'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Interface *: Speed'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(Interface [^:]+): Speed$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: KTVDZ
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF4000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '10000000'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF681E
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '100000000'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1000000000'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 0040FF
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '10000000000'
+            - name: 'Network Traffic'
+              widgets:
+                - type: graphprototype
+                  name: 'Interface traffic'
+                  width: '72'
+                  height: '20'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        name: 'Interface {#IFNAME}: Network traffic'
+                    - type: STRING
+                      name: reference
+                      value: IF001
+                    - type: INTEGER
+                      name: rows
+                      value: '4'
+            - name: PoE
+              widgets:
+                - type: item
+                  name: 'Operational status'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: poe.main.status
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: graph
+                  name: 'Total power consumption'
+                  'y': '3'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: GRAPH
+                      name: graphid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        name: 'PoE power usage'
+                    - type: STRING
+                      name: reference
+                      value: PO007
+                - type: honeycomb
+                  name: 'PoE port detection status'
+                  'y': '8'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'PoE port *: Detection status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^PoE port ([^:]+):.*$", "Port \1")}'
+                    - type: STRING
+                      name: reference
+                      value: AEDEK
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: B0BEC5
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                - type: graphprototype
+                  name: 'PoE port power'
+                  'y': '15'
+                  width: '72'
+                  height: '20'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        name: 'PoE port {#POE.PORT}: Power'
+                    - type: STRING
+                      name: reference
+                      value: PO008
+                    - type: INTEGER
+                      name: rows
+                      value: '4'
+                - type: item
+                  name: 'Power budget'
+                  x: '18'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: poe.budget.w
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'PoE consumption'
+                  x: '36'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '1'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: poe.consumption.w
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'PoE utilization'
+                  x: '54'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+                        key: poe.utilization.percent
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+      valuemaps:
+        - uuid: 49f74a2d248a49489c14d379b9eb4226
+          name: 'IF-MIB ifAdminStatus'
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+            - value: '3'
+              newvalue: Testing
+        - uuid: 42450201ae3c45e695ab5849b1279d63
+          name: 'IF-MIB ifOperStatus'
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+            - value: '3'
+              newvalue: Testing
+            - value: '4'
+              newvalue: Unknown
+            - value: '5'
+              newvalue: Dormant
+            - value: '6'
+              newvalue: 'Not present'
+            - value: '7'
+              newvalue: 'Lower layer down'
+        - uuid: 9c93ee4550804801a7f20f21c7452003
+          name: 'IF-MIB ifType'
+          mappings:
+            - value: '1'
+              newvalue: other
+            - value: '6'
+              newvalue: ethernetCsmacd
+            - value: '24'
+              newvalue: softwareLoopback
+            - value: '53'
+              newvalue: propVirtual
+            - value: '135'
+              newvalue: l2vlan
+            - value: '136'
+              newvalue: l3ipvlan
+        - uuid: cf6e21b3c4f2448f9ebc5e77e62f1792
+          name: 'PoE main PSE status'
+          mappings:
+            - value: '1'
+              newvalue: 'On'
+            - value: '2'
+              newvalue: 'Off'
+            - value: '3'
+              newvalue: Faulty
+        - uuid: 9117e385de7b4918ac4accb29f8f8c4a
+          name: 'PoE port admin status'
+          mappings:
+            - value: '1'
+              newvalue: Enabled
+            - value: '2'
+              newvalue: Disabled
+        - uuid: 85b5a43fe0cb42f78cca1cebf228e675
+          name: 'PoE port detection status'
+          mappings:
+            - value: '1'
+              newvalue: Disabled
+            - value: '2'
+              newvalue: Searching
+            - value: '3'
+              newvalue: 'Delivering power'
+            - value: '4'
+              newvalue: Fault
+            - value: '5'
+              newvalue: Test
+            - value: '6'
+              newvalue: 'Other fault'
+        - uuid: f5ac792d2f0343408adc01a0458a6a23
+          name: 'PoE port priority'
+          mappings:
+            - value: '1'
+              newvalue: Critical
+            - value: '2'
+              newvalue: High
+            - value: '3'
+              newvalue: Low
+            - value: '4'
+              newvalue: Unknown
+        - uuid: d02bcddb932c42cf9809b9d6bab320a9
+          name: 'PoE power pairs'
+          mappings:
+            - value: '1'
+              newvalue: Signal
+            - value: '2'
+              newvalue: Spare
+        - uuid: 364e0dd5dec849c6a8b5eb4ff05479df
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 43e4237d0bde44ae9b61ada388a93f6c
+          name: 'Truth value'
+          mappings:
+            - value: '1'
+              newvalue: 'True'
+            - value: '2'
+              newvalue: 'False'
+        - uuid: 0cce62dca29f437cbc669295026dd22d
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
+  graphs:
+    - uuid: 62741eba6a53448b95d49626989749f8
+      name: 'ICMP response time'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+            key: icmppingsec
+    - uuid: d7a2c9fffe164844aab25fe9ecdeb80c
+      name: 'PoE power usage'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+            key: poe.consumption.w
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'Alcatel-Lucent Entreprise WebSmart switch by SNMP'
+            key: poe.budget.w
