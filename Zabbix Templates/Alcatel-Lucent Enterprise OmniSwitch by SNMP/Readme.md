@@ -12,8 +12,6 @@ It has been tested on the following models:
   - OS6350 series
   - OS6450 series
 - Alcatel OmniSwitch v8:
-  - OS2220 series
-  - OS2260 series
   - OS6360 series
   - OS6560 series 
   - OS6860 series
