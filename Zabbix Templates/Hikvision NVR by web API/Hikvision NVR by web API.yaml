@@ -1,0 +1,2654 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: d37f71c7e3f7469bab645852a69a2018
+      name: 'Templates/Video surveillance'
+  templates:
+    - uuid: 3620f665df774b459b6b7c7c10a7563e
+      template: 'Hikvision NVR by web API'
+      name: 'Hikvision NVR by web API'
+      description: 'This template monitors Hikvision NVR devices through the ISAPI web API.'
+      vendor:
+        name: E-MSN
+        version: 7.4-4
+      groups:
+        - name: 'Templates/Video surveillance'
+      items:
+        - uuid: 30b2d534c40840f4ab5b1aae203cfbc5
+          name: 'CPU utilization'
+          type: DEPENDENT
+          key: hikvision_nvr.cpu.util
+          value_type: FLOAT
+          units: '%'
+          description: 'CPU utilization in %'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceStatus.CPUList.CPU.cpuUtilization
+              error_handler: DISCARD_VALUE
+          master_item:
+            key: hikvision_nvr.get_status
+          tags:
+            - tag: component
+              value: cpu
+          triggers:
+            - uuid: 85990c8a4cf04b70bd55af91213dff3d
+              expression: 'min(/Hikvision NVR by web API/hikvision_nvr.cpu.util,5m)>{$CPU.UTIL.CRIT}'
+              name: 'Hikvision: High CPU utilization'
+              event_name: 'Hikvision: High CPU utilization (over {$CPU.UTIL.CRIT}% for 5m)'
+              opdata: 'Current utilization: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'The CPU utilization is too high. The system might be slow to respond.'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 525e42c767ae46b5a1daa9364b7976ff
+          name: 'Current device time'
+          type: DEPENDENT
+          key: hikvision_nvr.current_device_time
+          value_type: CHAR
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceStatus.currentDeviceTime
+              error_handler: DISCARD_VALUE
+          master_item:
+            key: hikvision_nvr.get_status
+          tags:
+            - tag: component
+              value: system
+        - uuid: 30e1ab765898453a8791d3e79c87175a
+          name: 'Device description'
+          type: DEPENDENT
+          key: hikvision_nvr.device_description
+          value_type: CHAR
+          inventory_link: NOTES
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.deviceDescription
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: c880c55f3e6849959fd853dd9a4c69b1
+          name: 'Device ID'
+          type: DEPENDENT
+          key: hikvision_nvr.device_id
+          value_type: CHAR
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.deviceID
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: 4c95e21d2a864883ab83aeaa76441217
+          name: 'Device location'
+          type: DEPENDENT
+          key: hikvision_nvr.device_location
+          value_type: CHAR
+          inventory_link: LOCATION
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.deviceLocation
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: efe1fe7fcf734abe9488cc1168b527ab
+          name: 'Device name'
+          type: DEPENDENT
+          key: hikvision_nvr.device_name
+          value_type: CHAR
+          inventory_link: NAME
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.deviceName
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: 9640466b3f6b46068714580e55f8f7ee
+          name: 'Device type'
+          type: DEPENDENT
+          key: hikvision_nvr.device_type
+          value_type: CHAR
+          inventory_link: TYPE
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.deviceType
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: c0694f244020446b9f461f5ef4d6c262
+          name: 'Encoder released date'
+          type: DEPENDENT
+          key: hikvision_nvr.encoder_released_date
+          value_type: CHAR
+          inventory_link: SOFTWARE_APP_D
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.encoderReleasedDate
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: eb985cca41684f50bf41252f95aa8e2e
+          name: 'Encoder version'
+          type: DEPENDENT
+          key: hikvision_nvr.encoder_version
+          value_type: CHAR
+          inventory_link: SOFTWARE_APP_C
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.encoderVersion
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: 8ba863665bac487eb06eb3d3534ee6e0
+          name: 'Firmware released date'
+          type: DEPENDENT
+          key: hikvision_nvr.firmware_released_date
+          value_type: CHAR
+          inventory_link: SOFTWARE_APP_B
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.firmwareReleasedDate
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: c8e9516023ba480c89bff99663ee2365
+          name: 'Firmware version'
+          type: DEPENDENT
+          key: hikvision_nvr.firmware_version
+          value_type: CHAR
+          inventory_link: SOFTWARE_APP_A
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.firmwareVersion
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: fd78f0a1d99046268000a64caba1a4a5
+              expression: 'last(/Hikvision NVR by web API/hikvision_nvr.firmware_version,#1)<>last(/Hikvision NVR by web API/hikvision_nvr.firmware_version,#2) and length(last(/Hikvision NVR by web API/hikvision_nvr.firmware_version))>0'
+              recovery_mode: NONE
+              name: 'Hikvision: Version has changed'
+              event_name: 'Hikvision: Version has changed (new version: {ITEM.VALUE})'
+              priority: INFO
+              description: |
+                NVR firmware version has changed.
+                Acknowledge to close the problem manually.
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
+        - uuid: 622dcaa621694bcd8e7a42f776700205
+          name: 'Get cameras'
+          type: HTTP_AGENT
+          key: hikvision_nvr.get_channels
+          delay: 5m
+          history: '0'
+          value_type: TEXT
+          authtype: DIGEST
+          username: '{$HIKVISION_ISAPI.USER}'
+          password: '{$HIKVISION_ISAPI.PASSWORD}'
+          description: 'Raw and normalized response from the Hikvision ISAPI camera channel list endpoint.'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+            - type: XML_TO_JSON
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  if (data.html) {
+                      return value;
+                  }
+                  var channels = [];
+                  if (data.InputProxyChannelList && data.InputProxyChannelList.InputProxyChannel) {
+                      channels = data.InputProxyChannelList.InputProxyChannel;
+                  }
+                  if (!Array.isArray(channels)) {
+                      channels = [channels];
+                  }
+                  channels = channels.filter(function (channel) {
+                      return channel && channel.id !== undefined && channel.id !== null;
+                  }).map(function (channel) {
+                      channel.id = String(channel.id);
+                      return channel;
+                  });
+                  return JSON.stringify({channels: channels});
+          url: '{$HIKVISION_ISAPI.SCHEME}://{$HIKVISION_ISAPI.HOST}:{$HIKVISION_ISAPI.PORT}/ISAPI/ContentMgmt/InputProxy/channels'
+          status_codes: '200,401'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: 7eb58f6cb4794bf7bb52dcfeed4dd0ba
+          name: 'Get cameras: Login status'
+          type: DEPENDENT
+          key: hikvision_nvr.get_channels.login_status
+          valuemap:
+            name: 'Login status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  try {
+                      var data = JSON.parse(value);
+                      var title = '';
+                      if (data.html && data.html.head && data.html.head.title) {
+                          title = String(data.html.head.title).toLowerCase();
+                      }
+                      if (title.indexOf('unauthorized') !== -1) {
+                          return 1;
+                      }
+                      if (title.indexOf('connection error') !== -1) {
+                          return 2;
+                      }
+                      return 0;
+                  }
+                  catch (error) {
+                      return 2;
+                  }
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          master_item:
+            key: hikvision_nvr.get_channels
+          tags:
+            - tag: component
+              value: system
+        - uuid: 182d82fa44e74fb4a1cfcd83aa0f50c7
+          name: 'Get device info'
+          type: HTTP_AGENT
+          key: hikvision_nvr.get_info
+          delay: 1h
+          history: '0'
+          value_type: TEXT
+          authtype: DIGEST
+          username: '{$HIKVISION_ISAPI.USER}'
+          password: '{$HIKVISION_ISAPI.PASSWORD}'
+          description: 'Raw response from the Hikvision ISAPI device information endpoint.'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+            - type: XML_TO_JSON
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+          url: '{$HIKVISION_ISAPI.SCHEME}://{$HIKVISION_ISAPI.HOST}:{$HIKVISION_ISAPI.PORT}/ISAPI/System/deviceInfo'
+          status_codes: '200,401'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: 14465e91318a4d57a8114738725e7ada
+          name: 'Get device info: Login status'
+          type: DEPENDENT
+          key: hikvision_nvr.get_info.login_status
+          valuemap:
+            name: 'Login status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  try {
+                      var data = JSON.parse(value);
+                      var title = '';
+                      if (data.html && data.html.head && data.html.head.title) {
+                          title = String(data.html.head.title).toLowerCase();
+                      }
+                      if (title.indexOf('unauthorized') !== -1) {
+                          return 1;
+                      }
+                      if (title.indexOf('connection error') !== -1) {
+                          return 2;
+                      }
+                      return 0;
+                  }
+                  catch (error) {
+                      return 2;
+                  }
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: efde0c9cb2de4ae983f47bbc4d99ee60
+          name: 'Get system status'
+          type: HTTP_AGENT
+          key: hikvision_nvr.get_status
+          history: '0'
+          value_type: TEXT
+          authtype: DIGEST
+          username: '{$HIKVISION_ISAPI.USER}'
+          password: '{$HIKVISION_ISAPI.PASSWORD}'
+          description: 'Raw response from the Hikvision ISAPI system status endpoint.'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+            - type: XML_TO_JSON
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+          url: '{$HIKVISION_ISAPI.SCHEME}://{$HIKVISION_ISAPI.HOST}:{$HIKVISION_ISAPI.PORT}/ISAPI/System/status'
+          status_codes: '200,401'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: b3431ec83ace4b36a32066e97789955a
+          name: 'Get system status: Login status'
+          type: DEPENDENT
+          key: hikvision_nvr.get_status.login_status
+          valuemap:
+            name: 'Login status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  try {
+                      var data = JSON.parse(value);
+                      var title = '';
+                      if (data.html && data.html.head && data.html.head.title) {
+                          title = String(data.html.head.title).toLowerCase();
+                      }
+                      if (title.indexOf('unauthorized') !== -1) {
+                          return 1;
+                      }
+                      if (title.indexOf('connection error') !== -1) {
+                          return 2;
+                      }
+                      return 0;
+                  }
+                  catch (error) {
+                      return 2;
+                  }
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          master_item:
+            key: hikvision_nvr.get_status
+          tags:
+            - tag: component
+              value: system
+        - uuid: 4dcb3b5caeae49eb8e7baa19e9645dba
+          name: 'Get storage'
+          type: HTTP_AGENT
+          key: hikvision_nvr.get_storage
+          history: '0'
+          value_type: TEXT
+          authtype: DIGEST
+          username: '{$HIKVISION_ISAPI.USER}'
+          password: '{$HIKVISION_ISAPI.PASSWORD}'
+          description: 'Raw and normalized response from the Hikvision ISAPI storage endpoint.'
+          preprocessing:
+            - type: CHECK_NOT_SUPPORTED
+              parameters:
+                - '-1'
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+            - type: XML_TO_JSON
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  if (data.html) {
+                      return value;
+                  }
+                  var hdds = [];
+                  if (data.storage && data.storage.hddList && data.storage.hddList.hdd) {
+                      hdds = data.storage.hddList.hdd;
+                  }
+                  if (!Array.isArray(hdds)) {
+                      hdds = [hdds];
+                  }
+                  hdds = hdds.filter(function (disk) {
+                      return disk && disk.id !== undefined && disk.id !== null;
+                  }).map(function (disk) {
+                      disk.id = String(disk.id);
+                      return disk;
+                  });
+                  
+                  return JSON.stringify({hdds: hdds});
+          url: '{$HIKVISION_ISAPI.SCHEME}://{$HIKVISION_ISAPI.HOST}:{$HIKVISION_ISAPI.PORT}/ISAPI/ContentMgmt/Storage'
+          status_codes: '200,401'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: df52377d8b58422bb21fc09755932bae
+          name: 'Get storage: Login status'
+          type: DEPENDENT
+          key: hikvision_nvr.get_storage.login_status
+          valuemap:
+            name: 'Login status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  try {
+                      var data = JSON.parse(value);
+                      var title = '';
+                      if (data.html && data.html.head && data.html.head.title) {
+                          title = String(data.html.head.title).toLowerCase();
+                      }
+                      if (title.indexOf('unauthorized') !== -1) {
+                          return 1;
+                      }
+                      if (title.indexOf('connection error') !== -1) {
+                          return 2;
+                      }
+                      return 0;
+                  }
+                  catch (error) {
+                      return 2;
+                  }
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          master_item:
+            key: hikvision_nvr.get_storage
+          tags:
+            - tag: component
+              value: system
+        - uuid: 1119b69aec4947e69b01201f491060ab
+          name: 'MAC Address'
+          type: DEPENDENT
+          key: hikvision_nvr.mac_address
+          value_type: CHAR
+          inventory_link: MACADDRESS_A
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.macAddress
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: network
+        - uuid: eb18cb81e25a4fe88325434ff3be90da
+          name: 'Memory available'
+          type: DEPENDENT
+          key: hikvision_nvr.memory.available
+          value_type: FLOAT
+          units: B
+          description: 'Available memory in bytes.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceStatus.MemoryList.Memory.memoryAvailable
+              error_handler: DISCARD_VALUE
+            - type: REGEX
+              parameters:
+                - '([0-9.]+)'
+                - \1
+            - type: MULTIPLIER
+              parameters:
+                - '1048576'
+          master_item:
+            key: hikvision_nvr.get_status
+          tags:
+            - tag: component
+              value: memory
+        - uuid: 0b2b7ce79b2941879e1c41ad73e6a78c
+          name: 'Memory usage'
+          type: DEPENDENT
+          key: hikvision_nvr.memory.usage
+          value_type: FLOAT
+          units: B
+          description: 'Used memory in bytes.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceStatus.MemoryList.Memory.memoryUsage
+              error_handler: DISCARD_VALUE
+            - type: REGEX
+              parameters:
+                - '([0-9.]+)'
+                - \1
+            - type: MULTIPLIER
+              parameters:
+                - '1048576'
+          master_item:
+            key: hikvision_nvr.get_status
+          tags:
+            - tag: component
+              value: memory
+        - uuid: c6877e7ac673403b90c589ecfb96e987
+          name: 'Memory utilization'
+          type: DEPENDENT
+          key: hikvision_nvr.memory.util
+          value_type: FLOAT
+          units: '%'
+          description: 'Percentage of used memory calculated from the used and available memory values reported by the NVR.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  var memory = data.DeviceStatus && data.DeviceStatus.MemoryList ? data.DeviceStatus.MemoryList.Memory : null;
+                  
+                  if (Array.isArray(memory)) {
+                      memory = memory[0];
+                  }
+                  if (!memory) {
+                      throw 'Memory data is missing';
+                  }
+                  var used = parseFloat(memory.memoryUsage);
+                  var available = parseFloat(memory.memoryAvailable);
+                  var total = used + available;
+                  if (!isFinite(used) || !isFinite(available) || total <= 0) {
+                      throw 'Invalid memory data';
+                  }
+                  return used * 100 / total;
+          master_item:
+            key: hikvision_nvr.get_status
+          tags:
+            - tag: component
+              value: memory
+          triggers:
+            - uuid: a0b6fafcb6f74e2389748d20c5e29611
+              expression: 'min(/Hikvision NVR by web API/hikvision_nvr.memory.util,5m)>{$MEMORY.UTIL.MAX}'
+              name: 'Hikvision: High memory utilization'
+              event_name: 'Hikvision: High memory utilization (over {$MEMORY.UTIL.MAX}% for 5m)'
+              opdata: 'Current utilization: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Memory utilization is too high.'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: b8f3b4baced44df0980de597d676f3f8
+          name: Model
+          type: DEPENDENT
+          key: hikvision_nvr.model
+          value_type: CHAR
+          inventory_link: MODEL
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.model
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: d3f78dcf9e9d42ba9a726c1faf12867b
+          name: 'Serial number'
+          type: DEPENDENT
+          key: hikvision_nvr.serial_number
+          value_type: CHAR
+          inventory_link: SERIALNO_A
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.serialNumber
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 257281af218a484abf1eac7c15633d4b
+              expression: 'last(/Hikvision NVR by web API/hikvision_nvr.serial_number,#1)<>last(/Hikvision NVR by web API/hikvision_nvr.serial_number,#2) and length(last(/Hikvision NVR by web API/hikvision_nvr.serial_number))>0'
+              recovery_mode: NONE
+              name: 'Hikvision: NVR has been replaced'
+              event_name: 'Hikvision: NVR has been replaced (new serial number received)'
+              priority: INFO
+              description: |
+                NVR serial number has changed.
+                Acknowledge to close the problem manually.
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
+        - uuid: 27ea02afb186445c91ffb37245ba65fe
+          name: 'Supported beep'
+          type: DEPENDENT
+          key: hikvision_nvr.support_beep
+          value_type: CHAR
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.supportBeep
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: 25799d7dfa354aaba409c40711f47e77
+          name: 'Supported video loss'
+          type: DEPENDENT
+          key: hikvision_nvr.support_video_loss
+          value_type: CHAR
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.supportVideoLoss
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: ce41e9e0855d4b4d845a939972aada05
+          name: 'System contact'
+          type: DEPENDENT
+          key: hikvision_nvr.system_contact
+          value_type: CHAR
+          inventory_link: CONTACT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.systemContact
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: f7df13bac68e47ceb2b04940629551d7
+          name: 'Telecontrol ID'
+          type: DEPENDENT
+          key: hikvision_nvr.telecontrol_id
+          value_type: CHAR
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceInfo.telecontrolID
+              error_handler: DISCARD_VALUE
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: hikvision_nvr.get_info
+          tags:
+            - tag: component
+              value: system
+        - uuid: 28e459ba0a3341d1a89fd8bae557b644
+          name: Uptime
+          type: DEPENDENT
+          key: hikvision_nvr.uptime
+          trends: '0'
+          units: uptime
+          description: 'The system uptime expressed in the following format: "N days, hh:mm:ss".'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.DeviceStatus.deviceUpTime
+              error_handler: DISCARD_VALUE
+          master_item:
+            key: hikvision_nvr.get_status
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: a8a823c785f1497180f7258f541089df
+              expression: 'last(/Hikvision NVR by web API/hikvision_nvr.uptime)<10m'
+              name: 'Hikvision: NVR has been restarted'
+              event_name: 'Hikvision: NVR has been restarted (uptime < 10m)'
+              priority: INFO
+              description: 'Uptime is less than 10 minutes.'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
+        - uuid: 7ae9eb0262594691a946a88a61c432da
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: e1d778289e6d478da1a4baf8a495abec
+              expression: 'max(/Hikvision NVR by web API/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: e5cdb5222f0e43b6a203607bb175278e
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: df454a40ce6d403497a418032dd60968
+              expression: 'min(/Hikvision NVR by web API/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Hikvision NVR by web API/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'ICMP packets loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Hikvision NVR by web API/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 5c9a1caf4a4c4754b5b2ce6dd71a9d30
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: 9f22e25e2d874e7a98de4f3ab97cc39f
+              expression: 'avg(/Hikvision NVR by web API/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'min(/Hikvision NVR by web API/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Hikvision NVR by web API/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Hikvision NVR by web API/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+      discovery_rules:
+        - uuid: b982f95ad0634fb88ab81614623bc0c6
+          name: 'Cameras discovery'
+          type: DEPENDENT
+          key: hikvision_nvr.channels.discovery
+          item_prototypes:
+            - uuid: 155b14662ec844a2ad90b280a54f930c
+              name: 'Camera status request: Camera {#CAM_ID}'
+              type: HTTP_AGENT
+              key: 'hikvision_nvr.camera.status[{#CAM_ID}.info]'
+              delay: 5m
+              history: '0'
+              value_type: TEXT
+              authtype: DIGEST
+              username: '{$HIKVISION_ISAPI.USER}'
+              password: '{$HIKVISION_ISAPI.PASSWORD}'
+              description: 'Raw response from the Hikvision ISAPI status endpoint for camera {#CAM_ID}.'
+              preprocessing:
+                - type: CHECK_NOT_SUPPORTED
+                  parameters:
+                    - '-1'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+                - type: XML_TO_JSON
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+              url: '{$HIKVISION_ISAPI.SCHEME}://{$HIKVISION_ISAPI.HOST}:{$HIKVISION_ISAPI.PORT}/ISAPI/ContentMgmt/InputProxy/channels/{#CAM_ID}/status'
+              status_codes: '200,401'
+              tags:
+                - tag: component
+                  value: raw
+            - uuid: d760742d13394d32abf22b8e7ba100f3
+              name: 'Camera {#CAM_ID}: Connection status code'
+              type: DEPENDENT
+              key: 'hikvision_nvr.camera[{#CAM_ID}.connection.code]'
+              valuemap:
+                name: 'Camera connection status code'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      try {
+                          var data = JSON.parse(value);
+                          var status = null;
+                          if (
+                              data.InputProxyChannelStatus &&
+                              data.InputProxyChannelStatus.chanDetectResult !== undefined &&
+                              data.InputProxyChannelStatus.chanDetectResult !== null
+                          ) {
+                              status = String(
+                                  data.InputProxyChannelStatus.chanDetectResult
+                              ).trim();
+                          }
+                          if (!status) {
+                              return 255;
+                          }
+                          var normalizedStatus = status.toLowerCase();
+                          var statusCodes = {
+                              'connect': 1,
+                              'connected': 1,
+                              'normal': 1,
+                              'ok': 1,
+                              'success': 1,
+                              'online': 1,
+                              'connecting': 2,
+                              'oversysbandwidth': 3,
+                              'domainerror': 4,
+                              'ipcstreamfail': 5,
+                              'channoerror': 6,
+                              'ipaddrconflictwithdev': 7,
+                              'ipaddrconflicwithipc': 8,
+                              'ipaddrconflictwithipc': 8,
+                              'errorusernameorpasswd': 9,
+                              'netunreachable': 10,
+                              'unknownerror': 11,
+                              'notexist':  12,
+                              'ipcstreamtypenotsupport': 13,
+                              'ipcresolutionnotsupport': 14,
+                              'networkerror': 15,
+                              'userpwderror': 16,
+                              'noenoughbandwidth': 17,
+                              'ipchannelconflict': 18,
+                              'offline': 19,
+                              'disconnect': 19,
+                              'disconnected': 19
+                          };
+                          if (
+                              Object.prototype.hasOwnProperty.call(
+                                  statusCodes,
+                                  normalizedStatus
+                              )
+                          ) {
+                              return statusCodes[normalizedStatus];
+                          }
+                          return 255;
+                      }
+                      catch (error) {
+                          return 255;
+                      }
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              master_item:
+                key: 'hikvision_nvr.camera.status[{#CAM_ID}.info]'
+              tags:
+                - tag: component
+                  value: camera
+            - uuid: 903827d645cb439aafe2670bb760bc36
+              name: 'Camera {#CAM_ID}: Connection'
+              type: DEPENDENT
+              key: 'hikvision_nvr.camera[{#CAM_ID}.connection]'
+              value_type: CHAR
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.InputProxyChannelStatus.chanDetectResult
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: unknown
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              master_item:
+                key: 'hikvision_nvr.camera.status[{#CAM_ID}.info]'
+              tags:
+                - tag: component
+                  value: camera
+            - uuid: b006574c210647658a1ded0cdc48120f
+              name: 'Camera {#CAM_ID}: IP Address'
+              type: DEPENDENT
+              key: 'hikvision_nvr.camera[{#CAM_ID}.ip]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.channels[?(@.id == "{#CAM_ID}")].sourceInputPortDescriptor.ipAddress.first()'
+                  error_handler: DISCARD_VALUE
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: hikvision_nvr.get_channels
+              tags:
+                - tag: component
+                  value: camera
+            - uuid: b5c7845b9af746f2b15b46a40db23b1d
+              name: 'Camera {#CAM_ID}: Management port'
+              type: DEPENDENT
+              key: 'hikvision_nvr.camera[{#CAM_ID}.management_port]'
+              description: 'Camera management port reported by the InputProxyChannel configuration.'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.channels[?(@.id == "{#CAM_ID}")].sourceInputPortDescriptor.managePortNo.first()'
+                  error_handler: DISCARD_VALUE
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: hikvision_nvr.get_channels
+              tags:
+                - tag: component
+                  value: camera
+            - uuid: 03c1343ef0a545c5a3c6ae14133bcb14
+              name: 'Camera {#CAM_ID}: Name'
+              type: DEPENDENT
+              key: 'hikvision_nvr.camera[{#CAM_ID}.name]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.channels[?(@.id == "{#CAM_ID}")].name.first()'
+                  error_handler: DISCARD_VALUE
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: hikvision_nvr.get_channels
+              tags:
+                - tag: component
+                  value: camera
+            - uuid: 9f113f3d75a84bd49f32fd209580b5da
+              name: 'Camera {#CAM_ID}: Proxy protocol'
+              type: DEPENDENT
+              key: 'hikvision_nvr.camera[{#CAM_ID}.proxy.protocol]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.channels[?(@.id == "{#CAM_ID}")].sourceInputPortDescriptor.proxyProtocol.first()'
+                  error_handler: DISCARD_VALUE
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: hikvision_nvr.get_channels
+              tags:
+                - tag: component
+                  value: camera
+            - uuid: 7c30d99f72ee4e6092574aa9e115d89c
+              name: 'Camera {#CAM_ID}: Online status code'
+              type: DEPENDENT
+              key: 'hikvision_nvr.camera[{#CAM_ID}.status.code]'
+              valuemap:
+                name: 'Camera status code'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      try {
+                          var data = JSON.parse(value);
+                          var online = data.InputProxyChannelStatus ? data.InputProxyChannelStatus.online : null;
+                          if (online === true || online === 1 || String(online).toLowerCase() === 'true') {
+                              return 1;
+                          }
+                          if (online === false || online === 0 || String(online).toLowerCase() === 'false') {
+                              return 0;
+                          }
+                          return 2;
+                      }
+                      catch (error) {
+                          return 2;
+                      }
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              master_item:
+                key: 'hikvision_nvr.camera.status[{#CAM_ID}.info]'
+              tags:
+                - tag: component
+                  value: camera
+            - uuid: 60aa9aad114c4a15a89d8110ae87c3a1
+              name: 'Camera {#CAM_ID}: Online status'
+              type: DEPENDENT
+              key: 'hikvision_nvr.camera[{#CAM_ID}.status]'
+              value_type: CHAR
+              valuemap:
+                name: 'Online status'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $.InputProxyChannelStatus.online
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: unknown
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              master_item:
+                key: 'hikvision_nvr.camera.status[{#CAM_ID}.info]'
+              tags:
+                - tag: component
+                  value: camera
+          trigger_prototypes:
+            - uuid: c79defdb07d1470c9a8d8e3b850568aa
+              expression: 'last(/Hikvision NVR by web API/hikvision_nvr.camera[{#CAM_ID}.status.code])=0 and last(/Hikvision NVR by web API/hikvision_nvr.camera[{#CAM_ID}.connection])<>"notExist"'
+              name: 'Hikvision: Camera {#CAM_ID} is offline'
+              event_name: 'Hikvision: Camera {#CAM_ID} "{#CAM_NAME}" ({#CAM_IP}) is offline'
+              opdata: 'Online: {ITEM.LASTVALUE1}'
+              priority: HIGH
+              description: 'The camera reports an offline state. Channels reported as not existing are ignored.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Hikvision NVR by web API/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+          master_item:
+            key: hikvision_nvr.get_channels
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  var out = [];
+                  var channels = data.channels || [];
+                  if (!Array.isArray(channels)) {
+                      channels = [channels];
+                  }
+                  channels.forEach(function (cam) {
+                      var descriptor = cam.sourceInputPortDescriptor || {};
+                      out.push({
+                          "{#CAM_ID}": String(cam.id),
+                          "{#CAM_NAME}": cam.name || ('Camera ' + cam.id),
+                          "{#CAM_IP}": descriptor.ipAddress || ''
+                      });
+                  });
+                  return JSON.stringify(out);
+        - uuid: 6efadfe2785046d5909325a5c6e1f844
+          name: 'Storage discovery'
+          type: DEPENDENT
+          key: hikvision_nvr.storage.discovery
+          item_prototypes:
+            - uuid: 0c1b5e9dd33f406197d58b2a9428c036
+              name: 'HDD {#HDD_ID}: Capacity'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.capacity]'
+              value_type: FLOAT
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.hdds[?(@.id == "{#HDD_ID}")].capacity.first()'
+                  error_handler: DISCARD_VALUE
+                - type: MULTIPLIER
+                  parameters:
+                    - '1048576'
+              master_item:
+                key: hikvision_nvr.get_storage
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: 6129784d438946e2bb037c1b9bc1aeed
+              name: 'HDD {#HDD_ID}: Free space'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.freespace]'
+              value_type: FLOAT
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.hdds[?(@.id == "{#HDD_ID}")].freeSpace.first()'
+                  error_handler: DISCARD_VALUE
+                - type: MULTIPLIER
+                  parameters:
+                    - '1048576'
+              master_item:
+                key: hikvision_nvr.get_storage
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: ad4390f02a2d4c61bbabfd7e38bc717c
+              name: 'HDD {#HDD_ID}: Name'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.name]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.hdds[?(@.id == "{#HDD_ID}")].hddName.first()'
+                  error_handler: DISCARD_VALUE
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: hikvision_nvr.get_storage
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: f928562c1130427e8d1ed9ce8ab72edf
+              name: 'HDD {#HDD_ID}: SMART attributes'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.attributes]'
+              history: 7d
+              value_type: TEXT
+              description: 'Raw SMART attribute list returned by the NVR.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      if (!data.attributes || !Array.isArray(data.attributes) || data.attributes.length === 0) throw 'SMART attributes not available';
+                      return JSON.stringify(data.attributes);
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: ea6f2b6247804b4faa4eaac0fb3638d8
+              name: 'HDD {#HDD_ID}: SMART endpoint status'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.endpoint_status]'
+              valuemap:
+                name: 'SMART endpoint status'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - $._endpoint_status
+                  error_handler: DISCARD_VALUE
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: 3b6475f5ef6f452b82ef8fe2e37eb742
+              name: 'HDD {#HDD_ID}: SMART Offline uncorrectable sector count'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.offline_uncorrectable]'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var attributes = data.attributes || [];
+                      var requested = String('198');
+                      for (var i = 0; i < attributes.length; i++) {
+                          var attribute = attributes[i] || {};
+                          if (String(attribute.attributeID) !== requested) continue;
+                          var raw = attribute.rawValue;
+                          if (raw === undefined || raw === null) throw 'SMART raw value not available';
+                          var match = String(raw).match(/\d+/);
+                          if (!match) throw 'SMART raw value is not numeric';
+                          return parseInt(match[0], 10);
+                      }
+                      throw 'SMART attribute not reported';
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: 073a44b00972452eaab4ab6fe9872082
+              name: 'HDD {#HDD_ID}: SMART overall health code'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.overall_health.code]'
+              valuemap:
+                name: 'SMART overall health code'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var status = String(value || '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+                      if (status === 'functional' || status === 'ok' || status === 'normal') return 0;
+                      if (status === 'badsectors' || status === 'badsector') return 1;
+                      if (status === 'fault' || status === 'failed' || status === 'error') return 2;
+                      return 255;
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.overall_health]'
+              tags:
+                - tag: component
+                  value: hdd
+              trigger_prototypes:
+                - uuid: 1c95bd470e4d405397faa6f33ab65a93
+                  expression: 'last(/Hikvision NVR by web API/hikvision_nvr.storage.hdd[{#HDD_ID}.smart.overall_health.code])=2'
+                  name: 'Hikvision: HDD {#HDD_ID} SMART reports a fault'
+                  event_name: 'Hikvision: HDD {#HDD_ID} "{#HDD_NAME}" SMART reports a fault'
+                  opdata: 'Health: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'The NVR SMART summary reports a disk fault.'
+                  tags:
+                    - tag: scope
+                      value: availability
+                - uuid: 889c53f7dee44ddab9945d0d7c4f68e7
+                  expression: 'last(/Hikvision NVR by web API/hikvision_nvr.storage.hdd[{#HDD_ID}.smart.overall_health.code])=1'
+                  name: 'Hikvision: HDD {#HDD_ID} SMART reports bad sectors'
+                  event_name: 'Hikvision: HDD {#HDD_ID} "{#HDD_NAME}" SMART reports bad sectors'
+                  opdata: 'Health: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  description: 'The NVR SMART summary reports bad sectors on the disk.'
+                  tags:
+                    - tag: scope
+                      value: availability
+            - uuid: 8169fd7919974120ac780a60aba86162
+              name: 'HDD {#HDD_ID}: SMART overall health'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.overall_health]'
+              value_type: TEXT
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      if (!data.smart) throw 'SMART data not available';
+                      var result = data.smart.allEvaluaingStatus;
+                      if (result === undefined || result === null) result = data.smart.allEvaluatingStatus;
+                      if (result === undefined || result === null || String(result) === '') throw 'SMART overall health not available';
+                      return String(result);
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: 5cffe8ebd0bf4121a7f1a87b24a31153
+              name: 'HDD {#HDD_ID}: SMART Current pending sector count'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.pending_sectors]'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var attributes = data.attributes || [];
+                      var requested = String('197');
+                      for (var i = 0; i < attributes.length; i++) {
+                          var attribute = attributes[i] || {};
+                          if (String(attribute.attributeID) !== requested) continue;
+                          var raw = attribute.rawValue;
+                          if (raw === undefined || raw === null) throw 'SMART raw value not available';
+                          var match = String(raw).match(/\d+/);
+                          if (!match) throw 'SMART raw value is not numeric';
+                          return parseInt(match[0], 10);
+                      }
+                      throw 'SMART attribute not reported';
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: b48eb4feaf3244f78fc39c0cbbe3f301
+              name: 'HDD {#HDD_ID}: SMART power-on days'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.power_on_days]'
+              units: d
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      if (!data.smart) throw 'SMART data not available';
+                      var result = parseInt(data.smart.powerOnDay, 10);
+                      if (!isFinite(result) || result < 0) throw 'SMART power-on days not available';
+                      return result;
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: 267e7e40d3284efc983815c5baed4bc2
+              name: 'HDD {#HDD_ID}: Get SMART status'
+              type: HTTP_AGENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              history: '0'
+              value_type: TEXT
+              authtype: DIGEST
+              username: '{$HIKVISION_ISAPI.USER}'
+              password: '{$HIKVISION_ISAPI.PASSWORD}'
+              description: 'Raw and normalized response from the Hikvision HDD SMART status endpoint.'
+              preprocessing:
+                - type: CHECK_NOT_SUPPORTED
+                  parameters:
+                    - '-1'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+                - type: XML_TO_JSON
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: '{"html":{"head":{"title":"Connection error"}}}'
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var title = '';
+                      if (data.html && data.html.head && data.html.head.title) {
+                          title = String(data.html.head.title).toLowerCase();
+                          if (title.indexOf('unauthorized') !== -1 || title.indexOf('forbidden') !== -1) {
+                              return JSON.stringify({_endpoint_status: 1, _error: title});
+                          }
+                          return JSON.stringify({_endpoint_status: 2, _error: title || 'HTTP response error'});
+                      }
+                      var smart = data.SMARTTestStatus || data.SmartTestStatus || data.smartTestStatus;
+                      if (!smart) {
+                          if (data.ResponseStatus || data.responseStatus) {
+                              return JSON.stringify({_endpoint_status: 3, response: data.ResponseStatus || data.responseStatus});
+                          }
+                          return JSON.stringify({_endpoint_status: 3, response: data});
+                      }
+                      var attributes = [];
+                      if (smart.TestResultList && smart.TestResultList.TestResult) {
+                          attributes = smart.TestResultList.TestResult;
+                      }
+                      if (!Array.isArray(attributes)) {
+                          attributes = attributes ? [attributes] : [];
+                      }
+                      return JSON.stringify({
+                          _endpoint_status: 0,
+                          smart: smart,
+                          attributes: attributes
+                      });
+              url: '{$HIKVISION_ISAPI.SCHEME}://{$HIKVISION_ISAPI.HOST}:{$HIKVISION_ISAPI.PORT}/ISAPI/ContentMgmt/Storage/hdd/{#HDD_ID}/SMARTTest/status'
+              status_codes: '200,401,403,404'
+              tags:
+                - tag: component
+                  value: hdd
+                - tag: component
+                  value: raw
+            - uuid: bb64464c39dd4eab8c06edbf734ba848
+              name: 'HDD {#HDD_ID}: SMART Reallocated sector count'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.reallocated_sectors]'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var attributes = data.attributes || [];
+                      var requested = String('5');
+                      for (var i = 0; i < attributes.length; i++) {
+                          var attribute = attributes[i] || {};
+                          if (String(attribute.attributeID) !== requested) continue;
+                          var raw = attribute.rawValue;
+                          if (raw === undefined || raw === null) throw 'SMART raw value not available';
+                          var match = String(raw).match(/\d+/);
+                          if (!match) throw 'SMART raw value is not numeric';
+                          return parseInt(match[0], 10);
+                      }
+                      throw 'SMART attribute not reported';
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: bb758480c750490daf71e5749e715e88
+              name: 'HDD {#HDD_ID}: SMART temperature'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.temperature]'
+              value_type: FLOAT
+              units: °C
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      if (!data.smart) throw 'SMART data not available';
+                      var raw = data.smart.temprature;
+                      if (raw === undefined || raw === null) raw = data.smart.temperature;
+                      var result = parseFloat(raw);
+                      if (!isFinite(result)) throw 'SMART temperature not available';
+                      return result;
+              master_item:
+                key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.raw]'
+              tags:
+                - tag: component
+                  value: hdd
+                - tag: component
+                  value: temperature
+              trigger_prototypes:
+                - uuid: eeb574a9527b4a8f98d0aef068f2db73
+                  expression: 'min(/Hikvision NVR by web API/hikvision_nvr.storage.hdd[{#HDD_ID}.smart.temperature],15m)>{$HIKVISION.HDD.SMART.TEMP.CRIT}'
+                  name: 'Hikvision: HDD {#HDD_ID} SMART temperature is critically high'
+                  event_name: 'Hikvision: HDD {#HDD_ID} "{#HDD_NAME}" SMART temperature is above {$HIKVISION.HDD.SMART.TEMP.CRIT} °C'
+                  opdata: 'Temperature: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'The HDD SMART temperature has remained above the critical threshold.'
+                  tags:
+                    - tag: scope
+                      value: performance
+                - uuid: a6d7eec5eadf44148b0d5ae0fb246735
+                  expression: 'min(/Hikvision NVR by web API/hikvision_nvr.storage.hdd[{#HDD_ID}.smart.temperature],15m)>{$HIKVISION.HDD.SMART.TEMP.WARN}'
+                  name: 'Hikvision: HDD {#HDD_ID} SMART temperature is high'
+                  event_name: 'Hikvision: HDD {#HDD_ID} "{#HDD_NAME}" SMART temperature is above {$HIKVISION.HDD.SMART.TEMP.WARN} °C'
+                  opdata: 'Temperature: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'The HDD SMART temperature has remained above the warning threshold.'
+                  dependencies:
+                    - name: 'Hikvision: HDD {#HDD_ID} SMART temperature is critically high'
+                      expression: 'min(/Hikvision NVR by web API/hikvision_nvr.storage.hdd[{#HDD_ID}.smart.temperature],15m)>{$HIKVISION.HDD.SMART.TEMP.CRIT}'
+                  tags:
+                    - tag: scope
+                      value: performance
+            - uuid: 5e8c5fe17fd345b5a38015f77c166697
+              name: 'HDD {#HDD_ID}: Status code'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.status.code]'
+              valuemap:
+                name: 'HDD status code'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.hdds[?(@.id == "{#HDD_ID}")].status.first()'
+                  error_handler: CUSTOM_VALUE
+                  error_handler_params: unknown
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var status = String(value).toLowerCase();
+                      if (status === 'ok' || status === 'normal') {
+                          return 1;
+                      }
+                      if (status === '' || status === 'unknown') {
+                          return 2;
+                      }
+                      return 0;
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              master_item:
+                key: hikvision_nvr.get_storage
+              tags:
+                - tag: component
+                  value: hdd
+              trigger_prototypes:
+                - uuid: 680ff4d96c8f4764a9ad02e715d8a66e
+                  expression: 'last(/Hikvision NVR by web API/hikvision_nvr.storage.hdd[{#HDD_ID}.status.code])=0'
+                  name: 'Hikvision: HDD {#HDD_ID} status is not OK'
+                  event_name: 'Hikvision: HDD {#HDD_ID} "{#HDD_NAME}" status is not OK'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'The NVR reports an abnormal status for this disk.'
+                  tags:
+                    - tag: scope
+                      value: availability
+            - uuid: 887cb3c4ff184f99b4fe10073d5b4fc6
+              name: 'HDD {#HDD_ID}: Status'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.status]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.hdds[?(@.id == "{#HDD_ID}")].status.first()'
+                  error_handler: DISCARD_VALUE
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              master_item:
+                key: hikvision_nvr.get_storage
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: f61b72736a944d8395890dbe8364e700
+              name: 'HDD {#HDD_ID}: Type'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.type]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.hdds[?(@.id == "{#HDD_ID}")].hddType.first()'
+                  error_handler: DISCARD_VALUE
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1d
+              master_item:
+                key: hikvision_nvr.get_storage
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: 9066b22a39a54b88adb581613721cbea
+              name: 'HDD {#HDD_ID}: Used space'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.usedspace]'
+              value_type: FLOAT
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.hdds[?(@.id == "{#HDD_ID}")].first()'
+                  error_handler: DISCARD_VALUE
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var disk = JSON.parse(value);
+                      var capacity = parseFloat(disk.capacity);
+                      var free = parseFloat(disk.freeSpace);
+                      if (!isFinite(capacity) || !isFinite(free)) {
+                          throw 'Invalid disk capacity data';
+                      }
+                      return Math.max(0, capacity - free) * 1048576;
+              master_item:
+                key: hikvision_nvr.get_storage
+              tags:
+                - tag: component
+                  value: hdd
+            - uuid: de8db1184b724d09905dc851309d6324
+              name: 'HDD {#HDD_ID}: Utilization'
+              type: DEPENDENT
+              key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.util]'
+              value_type: FLOAT
+              units: '%'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.hdds[?(@.id == "{#HDD_ID}")].first()'
+                  error_handler: DISCARD_VALUE
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var disk = JSON.parse(value);
+                      var capacity = parseFloat(disk.capacity);
+                      var free = parseFloat(disk.freeSpace);
+                      if (!isFinite(capacity) || !isFinite(free) || capacity <= 0) {
+                          throw 'Invalid disk capacity data';
+                      }
+                      return Math.max(0, Math.min(100, (capacity - free) * 100 / capacity));
+              master_item:
+                key: hikvision_nvr.get_storage
+              tags:
+                - tag: component
+                  value: hdd
+              trigger_prototypes:
+                - uuid: 641e9d86bae64580aaa47d964179b8b6
+                  expression: 'min(/Hikvision NVR by web API/hikvision_nvr.storage.hdd[{#HDD_ID}.util],15m)>{$HIKVISION.HDD.UTIL.MAX}'
+                  name: 'Hikvision: HDD {#HDD_ID} utilization is high'
+                  event_name: 'Hikvision: HDD {#HDD_ID} "{#HDD_NAME}" utilization is above {$HIKVISION.HDD.UTIL.MAX}%'
+                  opdata: 'Utilization: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  description: |
+                    Storage utilization exceeds {$HIKVISION.HDD.UTIL.MAX}%.
+                    The default value of 100 disables this alert for NVR configurations that intentionally fill the recording volume and overwrite old footage.
+                  tags:
+                    - tag: scope
+                      value: capacity
+          graph_prototypes:
+            - uuid: 4e50fbdfe8c7440d9c353abbf14b1068
+              name: 'HDD {#HDD_ID} - {#HDD_NAME}'
+              show_work_period: 'NO'
+              show_triggers: 'NO'
+              type: PIE
+              show_3d: 'YES'
+              graph_items:
+                - color: FF8000
+                  calc_fnc: LAST
+                  item:
+                    host: 'Hikvision NVR by web API'
+                    key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.usedspace]'
+                - sortorder: '1'
+                  color: 199C0D
+                  calc_fnc: LAST
+                  item:
+                    host: 'Hikvision NVR by web API'
+                    key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.freespace]'
+            - uuid: 5a6b4f4cf2d446a09e9120dc0e848164
+              name: 'HDD {#HDD_ID} SMART temperature'
+              show_work_period: 'NO'
+              graph_items:
+                - color: F63100
+                  item:
+                    host: 'Hikvision NVR by web API'
+                    key: 'hikvision_nvr.storage.hdd[{#HDD_ID}.smart.temperature]'
+          master_item:
+            key: hikvision_nvr.get_storage
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  var out = [];
+                  var hdds = data.hdds || [];
+                  if (!Array.isArray(hdds)) {
+                      hdds = [hdds];
+                  }
+                  hdds.forEach(function (disk) {
+                      out.push({
+                          "{#HDD_ID}": String(disk.id),
+                          "{#HDD_NAME}": disk.hddName || ('HDD ' + disk.id),
+                      });
+                  });
+                  return JSON.stringify(out);
+      tags:
+        - tag: class
+          value: hardware
+        - tag: target
+          value: cctv
+        - tag: target
+          value: hikvision
+      macros:
+        - macro: '{$CPU.UTIL.CRIT}'
+          value: '90'
+          description: 'Critical threshold for CPU utilization in percent.'
+        - macro: '{$HIKVISION.HDD.SMART.TEMP.CRIT}'
+          value: '60'
+          description: 'Critical threshold for HDD SMART temperature in degrees Celsius.'
+        - macro: '{$HIKVISION.HDD.SMART.TEMP.WARN}'
+          value: '50'
+          description: 'Warning threshold for HDD SMART temperature in degrees Celsius.'
+        - macro: '{$HIKVISION.HDD.UTIL.MAX}'
+          value: '100'
+          description: 'Storage utilization threshold in percent. The default value of 100 disables the alert.'
+        - macro: '{$HIKVISION_ISAPI.HOST}'
+          description: 'Hostname or IP address of the Hikvision ISAPI host.'
+        - macro: '{$HIKVISION_ISAPI.PASSWORD}'
+          type: SECRET_TEXT
+        - macro: '{$HIKVISION_ISAPI.PORT}'
+          value: '80'
+          description: 'Hikvision ISAPI HTTP or HTTPS port.'
+        - macro: '{$HIKVISION_ISAPI.SCHEME}'
+          value: http
+          description: 'Connection scheme: http or https.'
+        - macro: '{$HIKVISION_ISAPI.USER}'
+          value: admin
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+        - macro: '{$MEMORY.UTIL.MAX}'
+          value: '90'
+          description: 'Critical threshold for memory utilization in percent.'
+      dashboards:
+        - uuid: 753827277beb407bacc80810078138d2
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'Device name'
+                  width: '30'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.device_name
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Uptime
+                  'y': '3'
+                  width: '22'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.uptime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Serial number'
+                  'y': '6'
+                  width: '47'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.serial_number
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '30'
+                - type: gauge
+                  name: 'CPU utilization'
+                  'y': '9'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'CPU utilization in %'
+                    - type: INTEGER
+                      name: desc_size
+                      value: '8'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.cpu.util
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: svggraph
+                  name: 'HDD utilization'
+                  'y': '13'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '2'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'HDD *: Utilization'
+                    - type: INTEGER
+                      name: ds.0.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.0.stacked
+                      value: '1'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_max
+                      value: '100'
+                    - type: STRING
+                      name: lefty_min
+                      value: '0'
+                    - type: STRING
+                      name: lefty_static_units
+                      value: '%'
+                    - type: INTEGER
+                      name: lefty_units
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: IOOCH
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'Memory utilization'
+                  x: '18'
+                  'y': '9'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Memory utilization in %'
+                    - type: INTEGER
+                      name: desc_size
+                      value: '8'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.memory.util
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: item
+                  name: 'Firmware version'
+                  x: '22'
+                  'y': '3'
+                  width: '11'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.firmware_version
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: Model
+                  x: '30'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.model
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Firmware build date'
+                  x: '33'
+                  'y': '3'
+                  width: '14'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.firmware_released_date
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: svggraph
+                  name: 'HDD temperature'
+                  x: '36'
+                  'y': '9'
+                  width: '36'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*: SMART temperature'
+                    - type: INTEGER
+                      name: ds.0.missingdatafunc
+                      value: '3'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: BXCXJ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: 'Encoder version'
+                  x: '47'
+                  'y': '3'
+                  width: '11'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.encoder_version
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: honeycomb
+                  name: 'HDD Status'
+                  x: '47'
+                  'y': '6'
+                  width: '25'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'HDD*Status code'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Status code$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: EXLKG
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 607D8B
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                - type: item
+                  name: 'Login status'
+                  x: '54'
+                  width: '9'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'Login status'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.get_storage.login_status
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF5722
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'Encoder build date'
+                  x: '58'
+                  'y': '3'
+                  width: '14'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: hikvision_nvr.encoder_released_date
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: Availability
+                  x: '63'
+                  width: '9'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: Availability
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Hikvision NVR by web API'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+            - name: Cameras
+              widgets:
+                - type: honeycomb
+                  name: 'Camera Name'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: 26C6DA
+                    - type: STRING
+                      name: items.0
+                      value: 'Camera*Name'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Name$","\1")}'
+                    - type: STRING
+                      name: primary_label_color
+                      value: 13191C
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '33'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: DYLOV
+                    - type: STRING
+                      name: secondary_label
+                      value: '{ITEM.LASTVALUE}'
+                    - type: STRING
+                      name: secondary_label_color
+                      value: 13191C
+                    - type: INTEGER
+                      name: secondary_label_size
+                      value: '22'
+                    - type: INTEGER
+                      name: secondary_label_size_type
+                      value: '1'
+                    - type: INTEGER
+                      name: secondary_label_type
+                      value: '0'
+                - type: honeycomb
+                  name: 'Camera Status'
+                  'y': '5'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Camera*Online status code'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Online status code$","\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '33'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: JLHVA
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_size
+                      value: '25'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 78909C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                - type: honeycomb
+                  name: 'Camera Connection'
+                  'y': '10'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Camera *: Connection status code'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*):\s*Connection status code$","\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '33'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: ZOSWO
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_size
+                      value: '20'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFEB3B
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                    - type: STRING
+                      name: thresholds.6.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.6.threshold
+                      value: '7'
+                    - type: STRING
+                      name: thresholds.7.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.7.threshold
+                      value: '8'
+                    - type: STRING
+                      name: thresholds.8.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.8.threshold
+                      value: '9'
+                    - type: STRING
+                      name: thresholds.9.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.9.threshold
+                      value: '10'
+                    - type: STRING
+                      name: thresholds.10.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.10.threshold
+                      value: '11'
+                    - type: STRING
+                      name: thresholds.11.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.11.threshold
+                      value: '12'
+                    - type: STRING
+                      name: thresholds.12.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.12.threshold
+                      value: '13'
+                    - type: STRING
+                      name: thresholds.13.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.13.threshold
+                      value: '14'
+                    - type: STRING
+                      name: thresholds.14.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.14.threshold
+                      value: '15'
+                    - type: STRING
+                      name: thresholds.15.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.15.threshold
+                      value: '16'
+                    - type: STRING
+                      name: thresholds.16.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.16.threshold
+                      value: '17'
+                    - type: STRING
+                      name: thresholds.17.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.17.threshold
+                      value: '18'
+                    - type: STRING
+                      name: thresholds.18.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.18.threshold
+                      value: '19'
+                    - type: STRING
+                      name: thresholds.19.color
+                      value: 78909C
+                    - type: STRING
+                      name: thresholds.19.threshold
+                      value: '255'
+      valuemaps:
+        - uuid: 883d6bced2dd480c8202ed56e31f3bf0
+          name: 'Camera connection status code'
+          mappings:
+            - value: '1'
+              newvalue: Connected
+            - value: '2'
+              newvalue: Connecting
+            - value: '3'
+              newvalue: 'System bandwidth exceeded'
+            - value: '4'
+              newvalue: 'Domain error'
+            - value: '5'
+              newvalue: 'IPC stream failure'
+            - value: '6'
+              newvalue: 'Channel number error'
+            - value: '7'
+              newvalue: 'IP conflict with recorder'
+            - value: '8'
+              newvalue: 'IP conflict with another camera'
+            - value: '9'
+              newvalue: 'Invalid username or password'
+            - value: '10'
+              newvalue: 'Network unreachable'
+            - value: '11'
+              newvalue: 'Unknown camera error'
+            - value: '12'
+              newvalue: 'Not exist'
+            - value: '13'
+              newvalue: 'Stream type not supported'
+            - value: '14'
+              newvalue: 'Resolution not supported'
+            - value: '15'
+              newvalue: 'Network error'
+            - value: '16'
+              newvalue: 'Authentication error'
+            - value: '17'
+              newvalue: 'Insufficient bandwidth'
+            - value: '18'
+              newvalue: 'IP channel conflict'
+            - value: '19'
+              newvalue: Offline
+            - value: '255'
+              newvalue: Unknown
+        - uuid: ccdf7095c5ae47f797a295b30a91a2ac
+          name: 'Camera status code'
+          mappings:
+            - value: '0'
+              newvalue: Offline
+            - value: '1'
+              newvalue: Online
+            - value: '2'
+              newvalue: Unknown
+        - uuid: 95464609c36146029e8c4de06fb0f2b2
+          name: 'HDD status code'
+          mappings:
+            - value: '0'
+              newvalue: Problem
+            - value: '1'
+              newvalue: OK
+            - value: '2'
+              newvalue: Unknown
+        - uuid: 046ed23389b541dfa664607b1c0e475e
+          name: 'Login status'
+          mappings:
+            - value: '0'
+              newvalue: OK
+            - value: '1'
+              newvalue: Unauthorized
+            - value: '2'
+              newvalue: 'Connection error'
+        - uuid: 87933b590fb14a76bf975167676a75ab
+          name: 'Online status'
+          mappings:
+            - value: 'true'
+              newvalue: Online
+            - value: 'false'
+              newvalue: Offline
+            - value: unknown
+              newvalue: Unknown
+        - uuid: d8cde577c4b24c2fa72cad5e0959d7b7
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 8e47254018f6488eb952aa2edcf0bdd0
+          name: 'SMART endpoint status'
+          mappings:
+            - value: '0'
+              newvalue: Available
+            - value: '1'
+              newvalue: Unauthorized
+            - value: '2'
+              newvalue: 'Connection or response error'
+            - value: '3'
+              newvalue: 'Unsupported or rejected'
+        - uuid: e1bbad6196e1475395bc455b303a29be
+          name: 'SMART overall health code'
+          mappings:
+            - value: '0'
+              newvalue: Functional
+            - value: '1'
+              newvalue: 'Bad sectors'
+            - value: '2'
+              newvalue: Fault
+            - value: '255'
+              newvalue: Unknown
+  triggers:
+    - uuid: 947aebd95def4c5b96e793da92a891f4
+      expression: 'last(/Hikvision NVR by web API/hikvision_nvr.get_info.login_status)=1 or last(/Hikvision NVR by web API/hikvision_nvr.get_status.login_status)=1 or last(/Hikvision NVR by web API/hikvision_nvr.get_channels.login_status)=1 or last(/Hikvision NVR by web API/hikvision_nvr.get_storage.login_status)=1'
+      name: 'Hikvision: ISAPI authentication failed'
+      priority: HIGH
+      description: 'At least one required Hikvision ISAPI endpoint rejected the configured credentials.'
+      dependencies:
+        - name: 'ICMP Ping: Unavailable by ICMP ping'
+          expression: 'max(/Hikvision NVR by web API/icmpping,#3)=0'
+      tags:
+        - tag: scope
+          value: availability
+    - uuid: aa577cf1be954f3f974a7c6d92679ffb
+      expression: 'last(/Hikvision NVR by web API/hikvision_nvr.get_info.login_status)=2 or last(/Hikvision NVR by web API/hikvision_nvr.get_status.login_status)=2 or last(/Hikvision NVR by web API/hikvision_nvr.get_channels.login_status)=2 or last(/Hikvision NVR by web API/hikvision_nvr.get_storage.login_status)=2'
+      name: 'Hikvision: ISAPI web API is unavailable'
+      priority: AVERAGE
+      description: 'At least one required Hikvision ISAPI endpoint could not be queried or returned an invalid response.'
+      dependencies:
+        - name: 'ICMP Ping: Unavailable by ICMP ping'
+          expression: 'max(/Hikvision NVR by web API/icmpping,#3)=0'
+      tags:
+        - tag: scope
+          value: availability
+  graphs:
+    - uuid: 9c08940969a4499ebb15c83dbeef6583
+      name: 'Hikvision NVR: CPU utilization'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Hikvision NVR by web API'
+            key: hikvision_nvr.cpu.util
+    - uuid: fb76fcadb28946159d4735708bfc4ed3
+      name: 'Hikvision NVR: Memory'
+      graph_items:
+        - color: 0080FF
+          calc_fnc: MIN
+          item:
+            host: 'Hikvision NVR by web API'
+            key: hikvision_nvr.memory.usage
+        - sortorder: '1'
+          color: 199C0D
+          calc_fnc: MIN
+          item:
+            host: 'Hikvision NVR by web API'
+            key: hikvision_nvr.memory.available
+    - uuid: 2ea92a03e4de42889aac16e915e272d1
+      name: 'ICMP response time'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Hikvision NVR by web API'
+            key: icmppingsec
