@@ -3517,7 +3517,7 @@ zabbix_export:
               type: DEPENDENT
               key: 'santricity.storage.systems.id.drives.ssd.health.[{#DRIVEWWN},temperatureInCelsius]'
               value_type: FLOAT
-              units: Â°C
+              units: �C
               description: 'Collects temperature for drive {#DRIVELABEL}.'
               preprocessing:
                 - type: JAVASCRIPT
