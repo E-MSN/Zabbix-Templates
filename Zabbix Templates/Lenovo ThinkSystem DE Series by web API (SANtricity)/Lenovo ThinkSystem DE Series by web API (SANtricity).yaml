@@ -3343,7 +3343,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
@@ -3517,51 +3517,41 @@ zabbix_export:
               type: DEPENDENT
               key: 'santricity.storage.systems.id.drives.ssd.health.[{#DRIVEWWN},temperatureInCelsius]'
               value_type: FLOAT
-              units: °C
+              units: Â°C
               description: 'Collects temperature for drive {#DRIVELABEL}.'
               preprocessing:
                 - type: JAVASCRIPT
                   parameters:
                     - |
                       var root = JSON.parse(value);
-                      
                       var driveWwn = '{#DRIVEWWN}'.toLowerCase();
                       var serialNumber = '{#SERIALNUMBER}';
                        var best = null;
                       var bestTime = 0;
-                      
                       if (!root.collections || !Array.isArray(root.collections)) {
                           throw  'No collections';
                       }
-                      
                       for (var c = 0; c < root.collections.length; c++) {
                           var collection = root.collections[c];
-                       
                           if (!collection.ssdDriveWearStatistics || !Array.isArray(collection.ssdDriveWearStatistics)) {
                                continue;
                           }
-                      
                           for (var i = 0; i < collection.ssdDriveWearStatistics.length; i++) {
                               var ssd  = collection.ssdDriveWearStatistics[i];
-                      
                               var currentWwn = '';
                               if (ssd.driveWwn !== undefined  && ssd.driveWwn !== null) {
                                   currentWwn = String(ssd.driveWwn).toLowerCase();
                               }
-                      
                                var currentSerial = '';
                               if (ssd.serialNumber !== undefined && ssd.serialNumber !== null) {
                                    currentSerial = String(ssd.serialNumber);
                               }
-                      
                               if (currentWwn !== driveWwn && currentSerial  !== serialNumber) {
                                   continue;
                               }
-                      
                               if (ssd.temperatureInCelsius === undefined  || ssd.temperatureInCelsius === null) {
                                   continue;
                               }
-                      
                               var ts = 0;
                               if  (ssd.timestamp !== undefined && ssd.timestamp !== null) {
                                   ts = Date.parse(ssd.timestamp);
@@ -3569,23 +3559,19 @@ zabbix_export:
                                       ts = 0;
                                   }
                               }
-                      
                               if (best === null ||  ts >= bestTime) {
                                   best = ssd;
                                   bestTime = ts;
                               }
                           }
                       }
-                      
                       if (best ===  null) {
                           throw 'No SSD temperature for drive';
                       }
-                      
                       var value = Number(best.temperatureInCelsius);
                       if  (!isFinite(value) || value <= 0) {
                           throw 'Invalid SSD temperature: ' + best.temperatureInCelsius;
                       }
-                      
                        return value;
               master_item:
                 key: santricity.storage.systems.id.drives.drive.health.history
@@ -3648,27 +3634,21 @@ zabbix_export:
                   if (!Array.isArray(drives)) {
                       drives = [drives];
                   }
-                  
                   var data = [];
-                  
                   for (var i = 0; i < drives.length; i++) {
                       var d = drives[i];
-                  
                       var mediaType = '';
                       if (d.driveMediaType !== undefined && d.driveMediaType !== null) {
                           mediaType = String(d.driveMediaType).toLowerCase();
                       }
-                  
                       if (mediaType !== 'ssd') {
                           continue;
                       }
-                  
                       d.driveWwn = '';
                       d.driveLabel = '';
                       d.driveSlot = '';
                       d.drivePosition = '';
                       d.driveTrayRef = '';
-                  
                       if (d.worldWideName !== undefined && d.worldWideName !== null) {
                           d.driveWwn = d.worldWideName;
                       } else if (d.driveRef !== undefined && d.driveRef !== null) {
@@ -3676,32 +3656,25 @@ zabbix_export:
                       } else if (d.id !== undefined && d.id !== null) {
                           d.driveWwn = d.id;
                       }
-                  
                       if (d.physicalLocation) {
                           if (d.physicalLocation.label !== undefined && d.physicalLocation.label !== null) {
                               d.driveLabel = d.physicalLocation.label;
                           }
-                  
                           if (d.physicalLocation.slot !== undefined && d.physicalLocation.slot !== null) {
                               d.driveSlot = d.physicalLocation.slot;
                           }
-                  
                           if (d.physicalLocation.locationPosition !== undefined && d.physicalLocation.locationPosition !== null) {
                               d.drivePosition = d.physicalLocation.locationPosition;
                           }
-                  
                           if (d.physicalLocation.trayRef !== undefined && d.physicalLocation.trayRef !== null) {
                               d.driveTrayRef = d.physicalLocation.trayRef;
                           }
                       }
-                  
                       if (d.driveLabel === '') {
                           d.driveLabel = d.driveSlot;
                       }
-                  
                       data.push(d);
                   }
-                  
                   return JSON.stringify(data);
         - uuid: 8e07633219da496ab05f368c120251c0
           name: 'Firmware Discovery'
@@ -3748,12 +3721,12 @@ zabbix_export:
               parameters:
                 - |
                   json_data = value
-                     json_data = json_data.replace(/"([^"]*)":/g, function(v) { return v.toUpperCase(); } );
-                     json_data = json_data.replace(/"(?=[A-Z])/g,'"{#');
-                     json_data = json_data.replace(/"(?=:)/g,'}"' );
-                     json_data = json_data.replace(/\[(?=\[)/g,'' );
-                     json_data = json_data.replace(/(\])(?!.*\1)/g,'' );
-                     return(json_data);
+                  json_data = json_data.replace(/"([^"]*)":/g, function(v) { return v.toUpperCase(); } );
+                  json_data = json_data.replace(/"(?=[A-Z])/g,'"{#');
+                  json_data = json_data.replace(/"(?=:)/g,'}"' );
+                  json_data = json_data.replace(/\[(?=\[)/g,'' );
+                  json_data = json_data.replace(/(\])(?!.*\1)/g,'' );
+                  return(json_data);
         - uuid: 5951e05c7fc84208936e746d4135ea19
           name: 'Batteries Discovery'
           type: DEPENDENT
@@ -3836,7 +3809,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
@@ -4102,7 +4075,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
@@ -4305,7 +4278,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
@@ -4421,7 +4394,6 @@ zabbix_export:
                   if (inventory.trays && Array.isArray(inventory.trays)) {
                       for (var t = 0; t < inventory.trays.length; t++) {
                           var tray = inventory.trays[t];
-                  
                           if (tray.trayRef !== undefined && tray.trayId !== undefined) {
                               trayMap[tray.trayRef] = tray.trayId;
                           }
@@ -4474,7 +4446,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
@@ -4644,7 +4616,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
@@ -4865,11 +4837,11 @@ zabbix_export:
               parameters:
                 - |
                   json_data = value
-                     json_data = json_data.replace(/"([^"]*)":/g, function(v) { return v.toUpperCase(); } );
-                     json_data = json_data.replace(/":/g,'}":' );
-                     json_data = json_data.replace(/,"(?=[A-Z])/g, ',"{#');
-                     json_data = json_data.replace(/{"(?=[A-Z])/g, '{"{#');
-                     return(json_data);
+                  json_data = json_data.replace(/"([^"]*)":/g, function(v) { return v.toUpperCase(); } );
+                  json_data = json_data.replace(/":/g,'}":' );
+                  json_data = json_data.replace(/,"(?=[A-Z])/g, ',"{#');
+                  json_data = json_data.replace(/{"(?=[A-Z])/g, '{"{#');
+                  return(json_data);
         - uuid: bde2d05f2d464063b42610e4beaba834
           name: 'Ethernet Interfaces Discovery'
           type: DEPENDENT
@@ -4972,24 +4944,19 @@ zabbix_export:
                   parameters:
                     - |
                       var input = JSON.parse(value);
-                      
                       var groupedData = {};
-                      
                       for (var i = 0; i < input.length; i++) {
                           var  innerArray = input[i];
-                      
                           for (var j = 0; j < innerArray.length; j++) {
                               var item = innerArray[j];
-                               var controllerRef = item.ethernet.controllerRef;
+                              var controllerRef = item.ethernet.controllerRef;
                               var interfaceRef = item.ethernet.id;
-                      
-                               if (!groupedData[controllerRef]) {
+                              if (!groupedData[controllerRef]) {
                                   groupedData[controllerRef] = {};
                               }
                               groupedData[controllerRef][interfaceRef]  = item.ethernet;
                           }
                       }
-                      
                       return JSON.stringify(groupedData, null, 2);
                 - type: JSONPATH
                   parameters:
@@ -5019,24 +4986,19 @@ zabbix_export:
                   parameters:
                     - |
                       var input = JSON.parse(value);
-                      
                       var groupedData = {};
-                      
                       for (var i = 0; i < input.length; i++) {
                           var  innerArray = input[i];
-                      
                           for (var j = 0; j < innerArray.length; j++) {
                               var item = innerArray[j];
-                               var controllerRef = item.ethernet.controllerRef;
+                              var controllerRef = item.ethernet.controllerRef;
                               var interfaceRef = item.ethernet.id;
-                      
-                               if (!groupedData[controllerRef]) {
+                              if (!groupedData[controllerRef]) {
                                   groupedData[controllerRef] = {};
                               }
                               groupedData[controllerRef][interfaceRef]  = item.ethernet;
                           }
                       }
-                      
                       return JSON.stringify(groupedData, null, 2);
                 - type: JSONPATH
                   parameters:
@@ -5046,7 +5008,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
@@ -5116,24 +5078,19 @@ zabbix_export:
                   parameters:
                     - |
                       var input = JSON.parse(value);
-                      
                       var groupedData = {};
-                      
                       for (var i = 0; i < input.length; i++) {
                           var  innerArray = input[i];
-                      
                           for (var j = 0; j < innerArray.length; j++) {
                               var item = innerArray[j];
-                               var controllerRef = item.ethernet.controllerRef;
+                              var controllerRef = item.ethernet.controllerRef;
                               var interfaceRef = item.ethernet.id;
-                      
-                               if (!groupedData[controllerRef]) {
-                                  groupedData[controllerRef] = {};
+                              if (!groupedData[controllerRef]) {
+                                 groupedData[controllerRef] = {};
                               }
                               groupedData[controllerRef][interfaceRef]  = item.ethernet;
                           }
                       }
-                      
                       return JSON.stringify(groupedData, null, 2);
                 - type: JSONPATH
                   parameters:
@@ -5181,24 +5138,19 @@ zabbix_export:
                   parameters:
                     - |
                       var input = JSON.parse(value);
-                      
                       var groupedData = {};
-                      
                       for (var i = 0; i < input.length; i++) {
                           var  innerArray = input[i];
-                      
                           for (var j = 0; j < innerArray.length; j++) {
                               var item = innerArray[j];
-                               var controllerRef = item.ethernet.controllerRef;
+                              var controllerRef = item.ethernet.controllerRef;
                               var interfaceRef = item.ethernet.id;
-                      
-                               if (!groupedData[controllerRef]) {
+                              if (!groupedData[controllerRef]) {
                                   groupedData[controllerRef] = {};
                               }
                               groupedData[controllerRef][interfaceRef]  = item.ethernet;
                           }
                       }
-                      
                       return JSON.stringify(groupedData, null, 2);
                 - type: JSONPATH
                   parameters:
@@ -6019,7 +5971,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
@@ -6237,7 +6189,7 @@ zabbix_export:
                     - |
                       var v = String(value).trim();
                       v = v.replace(/^\[/, '').replace(/\]$/, '').replace(/^"|"$/g, '').trim();
-                       var map = {
+                      var map = {
                         '__UNDEFINED': 0,
                         'unknown': 1,
                         'removed': 2,
