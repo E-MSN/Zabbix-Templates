@@ -10,7 +10,7 @@ zabbix_export:
       description: 'Monitors Lenovo ThinkSystem DE Series arrays through the SANtricity Web Services API.'
       vendor:
         name: E-MSN
-        version: 7.4-11
+        version: 7.4-12
       groups:
         - name: 'Templates/NAS & SAN'
       items:
@@ -181,17 +181,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Systems ID'
-          triggers:
-            - uuid: 0cdde1a9c7254ac597cdd006f6ee3ed7
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems,900s)=1'
-              name: 'No Data Retrieved from "Storage Systems ID" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for storage system IDs is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 812042426dc045dd9778ff0111e9d3d7
           name: 'Certificate Status'
           type: DEPENDENT
@@ -236,9 +225,9 @@ zabbix_export:
           triggers:
             - uuid: 97e6a4a34f774eb3963706b21e68c7a7
               expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.about,900s)=1'
-              name: 'No Data Retrieved from "About" in last 15 minutes'
+              name: 'SANtricity API: No data retrieved in last 15 minutes'
               priority: HIGH
-              description: 'Alerts when SANtricity API data for array identity and version details is not updated.'
+              description: 'Alerts when the SANtricity API "About" endpoint has not returned data for 15 minutes, indicating a possible API connectivity, authentication, or configuration issue.'
               manual_close: 'YES'
               dependencies:
                 - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
@@ -272,16 +261,6 @@ zabbix_export:
               priority: AVERAGE
               description: 'Alerts when the SANtricity admin password is not configured.'
               manual_close: 'YES'
-            - uuid: 1a715bdec50147d7be43550484905565
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.admin.password.status,900s)=1'
-              name: 'No Data Retrieved from "Passwords" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for password status is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: cce9b8afb06e423db90dd8ce456c10ea
           name: 'SANtricity: Get Passwords Numeric raw data'
           type: HTTP_AGENT
@@ -334,17 +313,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage System Analysed Statistics'
-          triggers:
-            - uuid: cf86252b7d65492384a560c6315dfeca
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.analysed.statstics,900s)=1'
-              name: 'No Data Retrieved from "Analysed System Statistics" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for system performance statistics is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 7e75ec396f1548f0abb9dc6a8622e4c4
           name: 'SANtricity: Get Analysed Volume Statistics raw data'
           type: HTTP_AGENT
@@ -361,17 +329,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Analysed Volume Statistics'
-          triggers:
-            - uuid: ebfc8e9730934ec8a80286f058516a6e
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.analysed.volume.statistics,900s)=1'
-              name: 'No Data Retrieved from "Analysed Volume Statistics" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for volume performance statistics is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 932ccdfdb53749a5bd3d6ceb564b7a93
           name: 'SANtricity: Get Controller Statistics raw data'
           type: HTTP_AGENT
@@ -392,17 +349,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Analysed Controller Statistics'
-          triggers:
-            - uuid: 8415b768cb5b4444a4a43986bbb68e89
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.analyzed.controller.statistics,900s)=1'
-              name: 'No Data Retrieved from "Controller Statistics" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for controller performance statistics is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 37c67543586e426bb160cc89f08f01e1
           name: 'SANtricity: Get Controllers raw data'
           type: HTTP_AGENT
@@ -419,17 +365,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Controllers'
-          triggers:
-            - uuid: f0f00b22b1d24681bd20ac350040b81b
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.controllers,900s)=1'
-              name: 'No Data Retrieved from "Storage Controllers" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for storage controllers is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 6c4d32eb1cbd420782ee43c15e0a8efa
           name: 'SANtricity: Get Temperature Information raw data'
           type: HTTP_AGENT
@@ -451,18 +386,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Drives Temperature'
-          triggers:
-            - uuid: 6fcf2e8a5ccf4c5aa68403f5b8598a0a
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.diagnostic.temperature,900s)=1'
-              name: 'No Data Retrieved from "Storage Drives Temperature" in last 15 minutes'
-              status: DISABLED
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for drive temperature diagnostics is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 350d888af7cf47389541c430f2650cb6
           name: 'SANtricity: Get Drives raw data'
           type: HTTP_AGENT
@@ -485,17 +408,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Drives'
-          triggers:
-            - uuid: 5bb164a0877a409fb7355226a115051b
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.drives,900s)=1'
-              name: 'No Data Retrieved from "Drives" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for drives is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 2ab27f2a84344ce1bff6490400432f18
           name: 'SANtricity: Get Drive Health History raw data'
           type: HTTP_AGENT
@@ -512,17 +424,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage SSD Drive Health'
-          triggers:
-            - uuid: 5401dde1faff430889b16a5b6eae76b5
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.drives.drive.health.history,900s)=1'
-              name: 'No Data Retrieved from "Drive Health History" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for SSD health history is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: ecd8786da8ab4a91ba0c112fca4477a7
           name: 'SANtricity: Get Versions raw data'
           type: HTTP_AGENT
@@ -543,17 +444,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Hardware'
-          triggers:
-            - uuid: 487c44c7dbea4fd6826b4ef38c30cf46
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.firmware,900s)=1'
-              name: 'No Data Retrieved from "Storage Firmware" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for firmware versions is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 9482eac7f939406985823d91ed6276cd
           name: 'SANtricity: Get Hardware Inventory raw data'
           type: HTTP_AGENT
@@ -574,17 +464,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Hardware'
-          triggers:
-            - uuid: e3489caa7b434799b3d12b730a171ab8
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.hardware.inventory,900s)=1'
-              name: 'No Data Retrieved from "Hardware Inventory" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for hardware inventory is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 5343179d3e444209a9a3a903dde6e16a
           name: 'SANtricity: Get Hot Spares raw data'
           type: HTTP_AGENT
@@ -602,23 +481,12 @@ zabbix_export:
                 - 'return(''['' + value + '']'')'
             - type: JSONPATH
               parameters:
-                - '$..hotSpareDriveCoverage.[*]'
+                - '$[0].hotSpareDriveCoverage'
           timeout: 7s
           url: '{$SANTRICITY.SCHEME}://{$SANTRICITY.IP}:{$SANTRICITY.PORT}/devmgr/v2/storage-systems/{$SANTRICITY.SYSTEM.ID}/hot-spares'
           tags:
             - tag: Application
               value: 'Storage Hot Spare Drives'
-          triggers:
-            - uuid: 820cff1ed52640b98946153ecb8c5f29
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.hotspare,900s)=1'
-              name: 'No Data Retrieved from "Hot Spares" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for hot spare drives is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 9d53a5620a6d4f4391169090314f4ce8
           name: 'SANtricity: Get Interface Statistics raw data'
           type: HTTP_AGENT
@@ -635,17 +503,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Interfaces'
-          triggers:
-            - uuid: 888c1c0bf36548af8e979f6c6995adbf
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.interface.statistics,900s)=1'
-              name: 'No Data Retrieved from "Interface Statistics" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for host interface statistics is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: a5873a88fdf94507b6d01795d9839051
           name: 'SANtricity: Get Interfaces FC raw data'
           type: HTTP_AGENT
@@ -662,17 +519,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Interfaces'
-          triggers:
-            - uuid: 483ab08f132e471183790e1cfd14eb61
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.interfaces.fc,900s)=1'
-              name: 'No Data Retrieved from "Interfaces FC" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for FC interfaces is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 6bd9b16c26e64a9981a58d790c7fd932
           name: 'SANtricity: Get Interfaces SAS raw data'
           type: HTTP_AGENT
@@ -689,17 +535,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Interfaces'
-          triggers:
-            - uuid: 617acadba8d348b9929193141216e299
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.interfaces.sas,900s)=1'
-              name: 'No Data Retrieved from "Interfaces SAS" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for SAS interfaces is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: ccadcb060c9046a5af50c489c8ea9965
           name: 'SANtricity: Get Lockdown Status raw data'
           type: HTTP_AGENT
@@ -721,17 +556,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Lockdown Status'
-          triggers:
-            - uuid: 9349fa8270464236b4d519cc7f44f279
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.lockdown.status,900s)=1'
-              name: 'No Data Retrieved from "Storage Lockdown Status" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for lockdown status is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 5584e46a325c4495acb13e1574395a21
           name: 'SANtricity: Get Lockdown Status numeric'
           type: HTTP_AGENT
@@ -971,17 +795,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Pools'
-          triggers:
-            - uuid: 2d2d55ac6a2145cea762a2e62b290c61
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.storage.pool,900s)=1'
-              name: 'No Data Retrieved from "Storage Pools" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for storage pools is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 837901f71ac64944af0c7f550fd8f4fd
           name: 'SANtricity: Get System Config'
           type: HTTP_AGENT
@@ -1002,17 +815,6 @@ zabbix_export:
           tags:
             - tag: Application
               value: 'Storage Systems Config'
-          triggers:
-            - uuid: f68e2b68262d4485aac122efccc801f6
-              expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.system.config,900s)=1'
-              name: 'No Data Retrieved from "Storage Systems Config" in last 15 minutes'
-              priority: HIGH
-              description: 'Alerts when SANtricity API data for system configuration is not updated.'
-              manual_close: 'YES'
-              dependencies:
-                - name: 'Cannot Connect to Web API {$SANTRICITY.IP}'
-                  expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#3)>=3'
-                  recovery_expression: 'sum(/Lenovo ThinkSystem DE Series by web API - SANtricity/web.test.fail[SANtricity API check],#6)=0'
         - uuid: 5671d77f067742908e969be64d700a2f
           name: 'Storage Systems ID Numbers'
           type: DEPENDENT
@@ -3715,7 +3517,7 @@ zabbix_export:
               type: DEPENDENT
               key: 'santricity.storage.systems.id.drives.ssd.health.[{#DRIVEWWN},temperatureInCelsius]'
               value_type: FLOAT
-              units: °C
+              units: Â°C
               description: 'Collects temperature for drive {#DRIVELABEL}.'
               preprocessing:
                 - type: JAVASCRIPT
@@ -4108,13 +3910,13 @@ zabbix_export:
               trigger_prototypes:
                 - uuid: fa589d52f0f04fb6b88e6e6d4203f3dd
                   expression: 'find(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.hardware.inventory.[{#BATTERYREF}.{#SLOT},batteryStatus],#1,"regexp","^(learning|maintenanceCharging)$")=1'
-                  name: 'Battery in slot {#SLOT} status is {ITEM.LASTVALUE1}'
+                  name: 'Battery in slot {#SLOT} status is {ITEM.VALUE1}'
                   priority: INFO
                   description: 'Alerts when a battery status requires attention.'
                   manual_close: 'YES'
                 - uuid: ce76060d8fdf40ba8001bdf23f4f99be
                   expression: 'find(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.hardware.inventory.[{#BATTERYREF}.{#SLOT},batteryStatus],#1,"regexp","^(optimal|learning|maintenanceCharging)$")=0'
-                  name: 'Check SAN battery in slot {#SLOT} - Status is {ITEM.LASTVALUE1}'
+                  name: 'Check SAN battery in slot {#SLOT} - Status is {ITEM.VALUE1}'
                   priority: HIGH
                   description: 'Alerts when a battery status is abnormal.'
           master_item:
@@ -5362,9 +5164,6 @@ zabbix_export:
                   priority: AVERAGE
                   description: 'Alerts when an Ethernet interface link is down.'
                   manual_close: 'YES'
-                  dependencies:
-                    - name: 'No Data Retrieved from "Hardware Inventory" in last 15 minutes'
-                      expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.hardware.inventory,900s)=1'
                   tags:
                     - tag: component
                       value: health
@@ -5624,9 +5423,6 @@ zabbix_export:
                   priority: AVERAGE
                   description: 'Alerts when an FC interface link is down.'
                   manual_close: 'YES'
-                  dependencies:
-                    - name: 'No Data Retrieved from "Interfaces FC" in last 15 minutes'
-                      expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.interfaces.fc,900s)=1'
                   tags:
                     - tag: component
                       value: health
@@ -5901,9 +5697,6 @@ zabbix_export:
                   priority: AVERAGE
                   description: 'Alerts when a SAS interface reports an unknown speed.'
                   manual_close: 'YES'
-                  dependencies:
-                    - name: 'No Data Retrieved from "Interfaces SAS" in last 15 minutes'
-                      expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.interfaces.sas,900s)=1'
                   tags:
                     - tag: component
                       value: health
@@ -5974,9 +5767,6 @@ zabbix_export:
                   priority: AVERAGE
                   description: 'Alerts when a SAS interface reports non-operational PHYs.'
                   manual_close: 'YES'
-                  dependencies:
-                    - name: 'No Data Retrieved from "Interfaces SAS" in last 15 minutes'
-                      expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.interfaces.sas,900s)=1'
                   tags:
                     - tag: component
                       value: health
@@ -6127,9 +5917,6 @@ zabbix_export:
                   priority: AVERAGE
                   description: 'Alerts when a SAS interface status is abnormal.'
                   manual_close: 'YES'
-                  dependencies:
-                    - name: 'No Data Retrieved from "Interfaces SAS" in last 15 minutes'
-                      expression: 'nodata(/Lenovo ThinkSystem DE Series by web API - SANtricity/santricity.storage.systems.id.interfaces.sas,900s)=1'
                   tags:
                     - tag: component
                       value: health
