@@ -1,0 +1,2192 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: f175c6ddd9a34a5a8a78b10197eba736
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: 66a923e094d246c4a486e06e068a050c
+      template: 'Cisco Wireless LAN Controller by SNMP'
+      name: 'Cisco Wireless LAN Controller by SNMP'
+      description: |
+        Template for Cisco AireOS Wireless LAN Controller.
+        
+        MIBs used:
+        - SNMPv2-MIB
+        - IF-MIB
+        - AIRESPACE-SWITCHING-MIB
+        - AIRESPACE-WIRELESS-MIB
+        - CISCO-LWAPP-CDP-MIB
+      vendor:
+        name: E-MSN
+        version: 7.4-3
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: ad054d907e4a4ede9991c959bca0112b
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          delay: '60'
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: 464e3694058041b2aad595f923d91fbf
+              expression: 'max(/Cisco Wireless LAN Controller by SNMP/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: ef84b9c198ce453294d331bcdce08347
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: e5c06d99cfda41f393f9cde9614a2c0a
+              expression: 'min(/Cisco Wireless LAN Controller by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Cisco Wireless LAN Controller by SNMP/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'ICMP packets loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Cisco Wireless LAN Controller by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 410bfd45f410429facc02d02822bb07f
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: Application
+              value: Status
+          triggers:
+            - uuid: 31de7e9a6a504d2ba836b6fabf14c918
+              expression: 'avg(/Cisco Wireless LAN Controller by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'min(/Cisco Wireless LAN Controller by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Cisco Wireless LAN Controller by SNMP/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Cisco Wireless LAN Controller by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: 8afb04fd8c484b6ebb489d9beefab1d7
+          name: 'WLC: SNMP walk controller interfaces'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.2.1.2.2.1.8,1.3.6.1.2.1.2.2.1.7,1.3.6.1.2.1.31.1.1.1.18,1.3.6.1.2.1.31.1.1.1.1,1.3.6.1.2.1.2.2.1.2,1.3.6.1.2.1.2.2.1.3,1.3.6.1.2.1.31.1.1.1.6,1.3.6.1.2.1.31.1.1.1.10,1.3.6.1.2.1.2.2.1.14,1.3.6.1.2.1.2.2.1.20,1.3.6.1.2.1.2.2.1.19,1.3.6.1.2.1.2.2.1.13,1.3.6.1.2.1.31.1.1.1.15]'
+          key: net.if.walk
+          history: '0'
+          value_type: TEXT
+          description: 'IF-MIB controller interface discovery and 64-bit traffic counters.'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: b381c539774e459b8083ec881a36478d
+          name: 'System contact'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.2.1.1.4.0]'
+          key: system.contact
+          delay: 15m
+          value_type: CHAR
+          inventory_link: CONTACT
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: 74898a984ae94a2ab7b7f251fb8fc476
+          name: 'System location'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.2.1.1.6.0]'
+          key: system.location
+          delay: 15m
+          value_type: CHAR
+          inventory_link: LOCATION
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: 82bfeee4903d461c8f02618987a2af2f
+          name: 'System name'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.2.1.1.5.0]'
+          key: system.name
+          delay: 15m
+          value_type: CHAR
+          inventory_link: NAME
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 12h
+          tags:
+            - tag: component
+              value: system
+        - uuid: 533ec0b6955048469ec2fae604d62163
+          name: 'System uptime'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.2.1.1.3.0]'
+          key: system.net.uptime
+          trends: '0'
+          units: uptime
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 37f11403df0444b0bf364f989fbe2b8f
+              expression: 'last(/Cisco Wireless LAN Controller by SNMP/system.net.uptime)<10m'
+              name: 'Cisco WLC: Controller has been restarted'
+              priority: WARNING
+              description: 'The SNMP sysUpTime indicates that the controller restarted less than 10 minutes ago.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 0bbe2e713c8d43338c293d13b0c7f463
+          name: 'WLC: AP capacity utilization'
+          type: CALCULATED
+          key: wlc.ap.capacity
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: 'last(//wlc.ap.count)/last(//wlc.ap.max)*100'
+          tags:
+            - tag: component
+              value: access-point
+          triggers:
+            - uuid: 4bf2fccea3ba4da19240229212461cd2
+              expression: 'min(/Cisco Wireless LAN Controller by SNMP/wlc.ap.capacity,15m)>{$WLC.AP.CAPACITY.WARN}'
+              name: 'Cisco WLC: AP capacity utilization is high'
+              event_name: 'Cisco WLC: AP capacity utilization is high (>{$WLC.AP.CAPACITY.WARN}%)'
+              opdata: 'Capacity: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: capacity
+        - uuid: e6eee488715e417895d9eb3d3b769de9
+          name: 'WLC: Associated APs'
+          type: DEPENDENT
+          key: wlc.ap.count
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#APNAME}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.3
+                - '0'
+            - type: JAVASCRIPT
+              parameters:
+                - 'return JSON.parse(value).length;'
+          master_item:
+            key: wlc.ap.walk
+          tags:
+            - tag: component
+              value: access-point
+          triggers:
+            - uuid: fa41d024b3c24f858053638589d4ab20
+              expression: '{$WLC.AP.MIN}>0 and last(/Cisco Wireless LAN Controller by SNMP/wlc.ap.count)<{$WLC.AP.MIN}'
+              name: 'Cisco WLC: Number of associated APs is below expected minimum'
+              event_name: 'Cisco WLC: Associated AP count below {$WLC.AP.MIN}'
+              opdata: 'Associated APs: {ITEM.LASTVALUE1}'
+              priority: HIGH
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 94dcf6e07187455bbdcfef557fe2de9f
+          name: 'WLC: Maximum supported APs'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.14179.1.1.1.18.0]'
+          key: wlc.ap.max
+          delay: 1h
+          tags:
+            - tag: component
+              value: controller
+        - uuid: 26e76e3031204e0792992ad695e84532
+          name: 'WLC: SNMP walk access points'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.4.1.14179.2.2.1.1.2,1.3.6.1.4.1.14179.2.2.1.1.3,1.3.6.1.4.1.14179.2.2.1.1.4,1.3.6.1.4.1.14179.2.2.1.1.6,1.3.6.1.4.1.14179.2.2.1.1.8,1.3.6.1.4.1.14179.2.2.1.1.16,1.3.6.1.4.1.14179.2.2.1.1.17,1.3.6.1.4.1.14179.2.2.1.1.19]'
+          key: wlc.ap.walk
+          delay: 2m
+          history: '0'
+          value_type: TEXT
+          description: 'AIRESPACE-WIRELESS-MIB access point inventory and state.'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: f13195dc24c74413b845b884d3693f38
+          name: 'WLC: SNMP walk AP CDP neighbours'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.4.1.9.9.623.1.3.1.1.2,1.3.6.1.4.1.9.9.623.1.3.1.1.6,1.3.6.1.4.1.9.9.623.1.3.1.1.8,1.3.6.1.4.1.9.9.623.1.3.1.1.9,1.3.6.1.4.1.9.9.623.1.3.1.1.12]'
+          key: wlc.cdp.walk
+          delay: 15m
+          history: '0'
+          value_type: TEXT
+          description: 'CISCO-LWAPP-CDP-MIB AP-to-switch neighbour information.'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: a05a30f4b7fe406bb9809012c81992d4
+          name: 'WLC: Total WLAN clients'
+          type: DEPENDENT
+          key: wlc.clients.total
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#CLIENTS}'
+                - 1.3.6.1.4.1.14179.2.1.1.1.38
+                - '0'
+            - type: JAVASCRIPT
+              parameters:
+                - 'var a=JSON.parse(value), s=0; for (var i=0;i<a.length;i++) { s += Number(a[i][''{#CLIENTS}''] || 0); } return s;'
+          master_item:
+            key: wlc.wlan.walk
+          tags:
+            - tag: component
+              value: wlan
+        - uuid: fc92dbe5dbbf4dff8f6911f12cbadb50
+          name: 'WLC: CPU utilization'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.14179.1.1.5.1.0]'
+          key: wlc.cpu.util
+          units: '%'
+          tags:
+            - tag: component
+              value: controller
+          triggers:
+            - uuid: cf660c7ed13b4126909326fb4062509c
+              expression: 'min(/Cisco Wireless LAN Controller by SNMP/wlc.cpu.util,5m)>{$WLC.CPU.WARN}'
+              name: 'Cisco WLC: High CPU utilization'
+              event_name: 'Cisco WLC: High CPU utilization (>{$WLC.CPU.WARN}% for 5m)'
+              opdata: 'CPU: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 2f840a948e20411e87f32133e229d286
+          name: 'WLC: Free memory'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.14179.1.1.5.3.0]'
+          key: wlc.memory.free
+          delay: 5m
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: component
+              value: controller
+        - uuid: 69a231b8fb63415ca6d6fd4f7c507809
+          name: 'WLC: Total memory'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.14179.1.1.5.2.0]'
+          key: wlc.memory.total
+          delay: 5m
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: component
+              value: controller
+        - uuid: e64af9fe104b45fcb775571839982984
+          name: 'WLC: Memory utilization'
+          type: CALCULATED
+          key: wlc.memory.util
+          delay: 5m
+          value_type: FLOAT
+          units: '%'
+          params: '(last(//wlc.memory.total)-last(//wlc.memory.free))/last(//wlc.memory.total)*100'
+          tags:
+            - tag: component
+              value: controller
+          triggers:
+            - uuid: 43f8f825d2484089b5c6f1366e87f133
+              expression: 'min(/Cisco Wireless LAN Controller by SNMP/wlc.memory.util,5m)>{$WLC.MEMORY.WARN}'
+              name: 'Cisco WLC: High memory utilization'
+              event_name: 'Cisco WLC: High memory utilization (>{$WLC.MEMORY.WARN}% for 5m)'
+              opdata: 'Memory: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 4aa9f0a5ec504941a86882d9e88453d4
+          name: 'WLC: Model'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.14179.1.1.1.3.0]'
+          key: wlc.model
+          delay: 1h
+          value_type: CHAR
+          inventory_link: MODEL
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: component
+              value: controller
+        - uuid: e5b74c5e8ca04fd5867e5912421e52a9
+          name: 'WLC: SNMP walk AP radios'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.4.1.14179.2.2.2.1.4,1.3.6.1.4.1.14179.2.2.2.1.6,1.3.6.1.4.1.14179.2.2.2.1.12,1.3.6.1.4.1.14179.2.2.2.1.15,1.3.6.1.4.1.14179.2.2.2.1.34,1.3.6.1.4.1.14179.2.2.13.1.1,1.3.6.1.4.1.14179.2.2.13.1.2,1.3.6.1.4.1.14179.2.2.13.1.3,1.3.6.1.4.1.14179.2.2.13.1.4,1.3.6.1.4.1.14179.2.2.13.1.24]'
+          key: wlc.radio.walk
+          delay: 2m
+          history: '0'
+          value_type: TEXT
+          description: 'AIRESPACE-WIRELESS-MIB radio state, channel, clients and utilization.'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: 89adfebb63c64ac68d21f07ccee0d6c2
+          name: 'WLC: Serial number'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.14179.1.1.1.4.0]'
+          key: wlc.serial
+          delay: 1h
+          value_type: CHAR
+          inventory_link: SERIALNO_A
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: component
+              value: controller
+        - uuid: fe27927482ca414e87e4efce86406298
+          name: 'WLC: AireOS version'
+          type: SNMP_AGENT
+          snmp_oid: 'get[1.3.6.1.4.1.14179.1.1.1.14.0]'
+          key: wlc.software
+          delay: 1h
+          value_type: CHAR
+          inventory_link: SOFTWARE
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: component
+              value: controller
+          triggers:
+            - uuid: 4595587c2f0347d9884651f0e4d1b2f8
+              expression: 'last(/Cisco Wireless LAN Controller by SNMP/wlc.software,#1)<>last(/Cisco Wireless LAN Controller by SNMP/wlc.software,#2) and length(last(/Cisco Wireless LAN Controller by SNMP/wlc.software))>0'
+              name: 'Cisco WLC: AireOS version has changed'
+              priority: INFO
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: notice
+        - uuid: d2b5afa85ba64fc2bb3956cc03f45acb
+          name: 'WLC: SNMP walk WLANs'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.4.1.14179.2.1.1.1.2,1.3.6.1.4.1.14179.2.1.1.1.6,1.3.6.1.4.1.14179.2.1.1.1.38,1.3.6.1.4.1.14179.2.1.1.1.42]'
+          key: wlc.wlan.walk
+          delay: 2m
+          history: '0'
+          value_type: TEXT
+          description: 'AIRESPACE-WIRELESS-MIB WLAN/SSID state and client counters.'
+          tags:
+            - tag: component
+              value: raw
+        - uuid: 573b6109cbbe48c2bac27857c6301284
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          valuemap:
+            name: zabbix.host.available
+          tags:
+            - tag: component
+              value: health
+          triggers:
+            - uuid: eea2bf24ace74dedbe9c47d2e822ad0f
+              expression: 'max(/Cisco Wireless LAN Controller by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'Cisco WLC: No SNMP data collection'
+              opdata: 'Current state: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: fa0e3534230e4361b30ccb786c632d08
+          name: 'Controller network interface discovery'
+          type: DEPENDENT
+          key: net.if.discovery
+          filter:
+            evaltype: AND
+            conditions:
+              - macro: '{#IFNAME}'
+                value: '{$WLC.IF.IFNAME.MATCHES}'
+              - macro: '{#IFNAME}'
+                value: '{$WLC.IF.IFNAME.NOT_MATCHES}'
+                operator: NOT_MATCHES_REGEX
+          description: 'Discovers the WLC network interfaces from IF-MIB.'
+          item_prototypes:
+            - uuid: 4263707a67e8414c9fa0b8635c1acb1f
+              name: 'Interface {#IFNAME}: Inbound discards'
+              type: DEPENDENT
+              key: 'net.if.in.discards[ifInDiscards.{#SNMPINDEX}]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.13.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: aad3e3520dfc4d649a7f66e0bdc83fca
+              name: 'Interface {#IFNAME}: Inbound errors'
+              type: DEPENDENT
+              key: 'net.if.in.errors[ifInErrors.{#SNMPINDEX}]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.14.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 0bee467cf15847fb9d58893d826ff6f5
+              name: 'Interface {#IFNAME}: Bits received'
+              type: DEPENDENT
+              key: 'net.if.in[ifHCInOctets.{#SNMPINDEX}]'
+              units: bps
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.31.1.1.1.6.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 9543fa49be954ae7866b02c52fb4b17c
+              name: 'Interface {#IFNAME}: Outbound discards'
+              type: DEPENDENT
+              key: 'net.if.out.discards[ifOutDiscards.{#SNMPINDEX}]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.19.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 0e269e624b1644fda738d8f6487cf9fe
+              name: 'Interface {#IFNAME}: Outbound errors'
+              type: DEPENDENT
+              key: 'net.if.out.errors[ifOutErrors.{#SNMPINDEX}]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.20.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: a4c003a0d3fc481e800f76f1a29535c4
+              name: 'Interface {#IFNAME}: Bits sent'
+              type: DEPENDENT
+              key: 'net.if.out[ifHCOutOctets.{#SNMPINDEX}]'
+              units: bps
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.31.1.1.1.10.{#SNMPINDEX}'
+                    - '0'
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 6500d01ff64d48bca49596c084fa68bb
+              name: 'Interface {#IFNAME}: Speed'
+              type: CALCULATED
+              key: 'net.if.speed.connected[{#SNMPINDEX}]'
+              trends: '0'
+              units: bps
+              params: |
+                last(//net.if.speed[ifHighSpeed.{#SNMPINDEX}])*
+                (last(//net.if.status[ifOperStatus.{#SNMPINDEX}])=1)
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: 7739c0b0a1294465b7360d06c4439811
+              name: 'Interface {#IFNAME}: Reported speed'
+              type: DEPENDENT
+              key: 'net.if.speed[ifHighSpeed.{#SNMPINDEX}]'
+              trends: '0'
+              units: bps
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.31.1.1.1.15.{#SNMPINDEX}'
+                    - '0'
+                - type: MULTIPLIER
+                  parameters:
+                    - '1000000'
+                - type: DISCARD_UNCHANGED_HEARTBEAT
+                  parameters:
+                    - 1h
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+            - uuid: f009a9df46254ccc92466db1966c2e36
+              name: 'Interface {#IFNAME}: Operational status'
+              type: DEPENDENT
+              key: 'net.if.status[ifOperStatus.{#SNMPINDEX}]'
+              trends: '0'
+              valuemap:
+                name: 'IF-MIB::ifOperStatus'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.2.1.2.2.1.8.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: net.if.walk
+              tags:
+                - tag: component
+                  value: network
+                - tag: interface
+                  value: '{#IFNAME}'
+              trigger_prototypes:
+                - uuid: b293cd4e963f4bccaeccd3083ea683ad
+                  expression: '{$IFCONTROL:"{#IFNAME}"}=1 and last(/Cisco Wireless LAN Controller by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])=2 and (last(/Cisco Wireless LAN Controller by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#1)<>last(/Cisco Wireless LAN Controller by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}],#2))'
+                  recovery_mode: RECOVERY_EXPRESSION
+                  recovery_expression: 'last(/Cisco Wireless LAN Controller by SNMP/net.if.status[ifOperStatus.{#SNMPINDEX}])<>2 or {$IFCONTROL:"{#IFNAME}"}=0'
+                  name: 'Cisco WLC: Interface {#IFNAME} link down'
+                  opdata: 'Current state: {ITEM.LASTVALUE1}'
+                  priority: AVERAGE
+                  manual_close: 'YES'
+                  tags:
+                    - tag: scope
+                      value: availability
+          graph_prototypes:
+            - uuid: 74faa7c374b340109e23c9f81009e240
+              name: 'Interface {#IFNAME}: Network traffic'
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 199C0D
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'net.if.in[ifHCInOctets.{#SNMPINDEX}]'
+                - sortorder: '1'
+                  drawtype: BOLD_LINE
+                  color: F63100
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'net.if.out[ifHCOutOctets.{#SNMPINDEX}]'
+                - sortorder: '2'
+                  color: F7941D
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'net.if.in.errors[ifInErrors.{#SNMPINDEX}]'
+                - sortorder: '3'
+                  color: 6C59DC
+                  yaxisside: RIGHT
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'net.if.out.errors[ifOutErrors.{#SNMPINDEX}]'
+          master_item:
+            key: net.if.walk
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#IFOPERSTATUS}'
+                - 1.3.6.1.2.1.2.2.1.8
+                - '0'
+                - '{#IFADMINSTATUS}'
+                - 1.3.6.1.2.1.2.2.1.7
+                - '0'
+                - '{#IFALIAS}'
+                - 1.3.6.1.2.1.31.1.1.1.18
+                - '0'
+                - '{#IFNAME}'
+                - 1.3.6.1.2.1.31.1.1.1.1
+                - '0'
+                - '{#IFDESCR}'
+                - 1.3.6.1.2.1.2.2.1.2
+                - '0'
+                - '{#IFTYPE}'
+                - 1.3.6.1.2.1.2.2.1.3
+                - '0'
+        - uuid: f0318d43d14f4e8694189b90bd32c33b
+          name: 'AP CDP neighbour discovery'
+          type: DEPENDENT
+          key: wlc.ap.cdp.discovery
+          description: 'Discovers the wired switch/port seen by each AP through CISCO-LWAPP-CDP-MIB.'
+          item_prototypes:
+            - uuid: 7b893f32c0b042d494568fe8cea3db91
+              name: 'AP {#APNAME}: CDP neighbour IP'
+              type: DEPENDENT
+              key: 'wlc.ap.cdp.ip[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.9.9.623.1.3.1.1.8.{#SNMPINDEX}'
+                    - '0'
+                - type: JAVASCRIPT
+                  parameters:
+                    - 'var s=value.trim().replace(/^0x/i,'''').replace(/[^0-9A-Fa-f]/g,'''');if (s.length===8) { return [0,2,4,6].map(function(i){return parseInt(s.substr(i,2),16);}).join(''.'');}return value;'
+              master_item:
+                key: wlc.cdp.walk
+              tags:
+                - tag: component
+                  value: topology
+            - uuid: 4a0130470298433190a35dd450b97998
+              name: 'AP {#APNAME}: CDP neighbour name'
+              type: DEPENDENT
+              key: 'wlc.ap.cdp.name[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.9.9.623.1.3.1.1.6.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.cdp.walk
+              tags:
+                - tag: component
+                  value: topology
+            - uuid: 7d7b863e5d634fc992ff6862ac21a5e0
+              name: 'AP {#APNAME}: CDP neighbour platform'
+              type: DEPENDENT
+              key: 'wlc.ap.cdp.platform[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.9.9.623.1.3.1.1.12.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.cdp.walk
+              tags:
+                - tag: component
+                  value: topology
+            - uuid: 1551729279fa465594ef5510c55e7507
+              name: 'AP {#APNAME}: CDP switch port'
+              type: DEPENDENT
+              key: 'wlc.ap.cdp.port[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.9.9.623.1.3.1.1.9.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.cdp.walk
+              tags:
+                - tag: component
+                  value: topology
+          master_item:
+            key: wlc.cdp.walk
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#APNAME}'
+                - 1.3.6.1.4.1.9.9.623.1.3.1.1.2
+                - '0'
+                - '{#NEIGHBOR}'
+                - 1.3.6.1.4.1.9.9.623.1.3.1.1.6
+                - '0'
+                - '{#NEIGHBORIP}'
+                - 1.3.6.1.4.1.9.9.623.1.3.1.1.8
+                - '0'
+                - '{#NEIGHBORPORT}'
+                - 1.3.6.1.4.1.9.9.623.1.3.1.1.9
+                - '0'
+                - '{#NEIGHBORPLATFORM}'
+                - 1.3.6.1.4.1.9.9.623.1.3.1.1.12
+                - '0'
+        - uuid: 68198bd226614cd4b17bff4515b205d7
+          name: 'Access point discovery'
+          type: DEPENDENT
+          key: wlc.ap.discovery
+          description: 'Discovers APs from AIRESPACE-WIRELESS-MIB::bsnAPTable.'
+          item_prototypes:
+            - uuid: 464b922f418d451b837b716fd65a4012
+              name: 'AP {#APNAME}: IP address'
+              type: DEPENDENT
+              key: 'wlc.ap.ip[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.1.1.19.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.ap.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: da8f50e43d9744c08eb3518a90fc568b
+              name: 'AP {#APNAME}: Location'
+              type: DEPENDENT
+              key: 'wlc.ap.location[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.1.1.4.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.ap.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: fe678ecc0f0a4e75b2aa226c6a15d5a2
+              name: 'AP {#APNAME}: Model'
+              type: DEPENDENT
+              key: 'wlc.ap.model[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.1.1.16.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.ap.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: e90ff945a83c434e82122506e21c5dbd
+              name: 'AP {#APNAME}: 2.4 GHz: Administrative status'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.admin[{#SNMPINDEX},0]'
+              valuemap:
+                name: 'Cisco WLC radio admin status'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.2.1.34.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 45027dbb25a447f58963d19079b4a2d7
+              name: 'AP {#APNAME}: 5 GHz: Administrative status'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.admin[{#SNMPINDEX},1]'
+              valuemap:
+                name: 'Cisco WLC radio admin status'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.2.1.34.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 53013db264a14897923817f5dea3f240
+              name: 'AP {#APNAME}: 2.4 GHz: Channel utilization'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.channelutil[{#SNMPINDEX},0]'
+              units: '%'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.3.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+              trigger_prototypes:
+                - uuid: daab38b29b2645c8ad8a148e8a4ec258
+                  expression: 'min(/Cisco Wireless LAN Controller by SNMP/wlc.ap.radio.channelutil[{#SNMPINDEX},0],5m)>{$WLC.RADIO.CHANNEL.WARN}'
+                  name: 'Cisco WLC: AP {#APNAME} 2.4 GHz channel utilization is high'
+                  event_name: 'Cisco WLC: AP {#APNAME} 2.4 GHz channel utilization is high (>{$WLC.RADIO.CHANNEL.WARN}%)'
+                  opdata: 'Channel utilization: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  tags:
+                    - tag: scope
+                      value: performance
+            - uuid: 9ef83b782a9f42c58742ff7020806484
+              name: 'AP {#APNAME}: 5 GHz: Channel utilization'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.channelutil[{#SNMPINDEX},1]'
+              units: '%'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.3.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+              trigger_prototypes:
+                - uuid: 4895b64332524864971b79e56086e4cd
+                  expression: 'min(/Cisco Wireless LAN Controller by SNMP/wlc.ap.radio.channelutil[{#SNMPINDEX},1],5m)>{$WLC.RADIO.CHANNEL.WARN}'
+                  name: 'Cisco WLC: AP {#APNAME} 5 GHz channel utilization is high'
+                  event_name: 'Cisco WLC: AP {#APNAME} 5 GHz channel utilization is high (>{$WLC.RADIO.CHANNEL.WARN}%)'
+                  opdata: 'Channel utilization: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  tags:
+                    - tag: scope
+                      value: performance
+            - uuid: f2320b781fdc48f7a07fb2fed5085428
+              name: 'AP {#APNAME}: 2.4 GHz: Channel'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.channel[{#SNMPINDEX},0]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.2.1.4.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 0df0aedc74b948f59a2aa70965db1ed3
+              name: 'AP {#APNAME}: 5 GHz: Channel'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.channel[{#SNMPINDEX},1]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.2.1.4.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 8fa440c836fd40e58a0e079ff6112fad
+              name: 'AP {#APNAME}: 2.4 GHz: Associated clients'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.clients[{#SNMPINDEX},0]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.4.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 64677e3721094576a011f4b8bac6ec8d
+              name: 'AP {#APNAME}: 5 GHz: Associated clients'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.clients[{#SNMPINDEX},1]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.4.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: d0fdc71b1b824c73b5bfd5cb40d8292a
+              name: 'AP {#APNAME}: 2.4 GHz: Operational status'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.oper[{#SNMPINDEX},0]'
+              valuemap:
+                name: 'Cisco WLC radio operational status'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.2.1.12.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 4b3c26787409473ca313fbfd6283f4a1
+              name: 'AP {#APNAME}: 5 GHz: Operational status'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.oper[{#SNMPINDEX},1]'
+              valuemap:
+                name: 'Cisco WLC radio operational status'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.2.1.12.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: dd6de3d5c6d44532bd28c984ab635339
+              name: 'AP {#APNAME}: 2.4 GHz: Poor SNR clients'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.poorsnr[{#SNMPINDEX},0]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.24.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+              trigger_prototypes:
+                - uuid: be07ceeef47246788dc76e6ed7535a86
+                  expression: 'min(/Cisco Wireless LAN Controller by SNMP/wlc.ap.radio.poorsnr[{#SNMPINDEX},0],5m)>{$WLC.RADIO.POORSNR.WARN}'
+                  name: 'Cisco WLC: AP {#APNAME} 2.4 GHz has many poor-SNR clients'
+                  event_name: 'Cisco WLC: AP {#APNAME} 2.4 GHz poor-SNR clients > {$WLC.RADIO.POORSNR.WARN}'
+                  opdata: 'Poor-SNR clients: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  tags:
+                    - tag: scope
+                      value: performance
+            - uuid: 69df63347f254e3aaa00c3de9a6f7208
+              name: 'AP {#APNAME}: 5 GHz: Poor SNR clients'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.poorsnr[{#SNMPINDEX},1]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.24.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+              trigger_prototypes:
+                - uuid: cc5c4295d9f649549ed7d9b19a8960a8
+                  expression: 'min(/Cisco Wireless LAN Controller by SNMP/wlc.ap.radio.poorsnr[{#SNMPINDEX},1],5m)>{$WLC.RADIO.POORSNR.WARN}'
+                  name: 'Cisco WLC: AP {#APNAME} 5 GHz has many poor-SNR clients'
+                  event_name: 'Cisco WLC: AP {#APNAME} 5 GHz poor-SNR clients > {$WLC.RADIO.POORSNR.WARN}'
+                  opdata: 'Poor-SNR clients: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  tags:
+                    - tag: scope
+                      value: performance
+            - uuid: f00db59ee99d43d292cebe37288939be
+              name: 'AP {#APNAME}: 2.4 GHz: Rx utilization'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.rxutil[{#SNMPINDEX},0]'
+              units: '%'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.1.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 52fa026daa9e439489d29fbca21f9c3f
+              name: 'AP {#APNAME}: 5 GHz: Rx utilization'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.rxutil[{#SNMPINDEX},1]'
+              units: '%'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.1.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: dec73673623240da99cb5c0395c61d53
+              name: 'AP {#APNAME}: 2.4 GHz: Tx power level'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.txpower[{#SNMPINDEX},0]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.2.1.6.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: d57ed8118d1b42219e8e9ed6a4c43faa
+              name: 'AP {#APNAME}: 5 GHz: Tx power level'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.txpower[{#SNMPINDEX},1]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.2.1.6.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 03f5ee1be4ef4c2c998b07fb8943e6f1
+              name: 'AP {#APNAME}: 2.4 GHz: Tx utilization'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.txutil[{#SNMPINDEX},0]'
+              units: '%'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.2.{#SNMPINDEX}.0'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 2da26ab0d6b24eeea7f0d8926b502e9c
+              name: 'AP {#APNAME}: 5 GHz: Tx utilization'
+              type: DEPENDENT
+              key: 'wlc.ap.radio.txutil[{#SNMPINDEX},1]'
+              units: '%'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.13.1.2.{#SNMPINDEX}.1'
+                    - '0'
+              master_item:
+                key: wlc.radio.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: f5819d54f831464ebdf0e751af5d0fd2
+              name: 'AP {#APNAME}: Serial number'
+              type: DEPENDENT
+              key: 'wlc.ap.serial[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.1.1.17.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.ap.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 4f969f39f0b24975a1e03e99836fc227
+              name: 'AP {#APNAME}: Software version'
+              type: DEPENDENT
+              key: 'wlc.ap.software[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.1.1.8.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.ap.walk
+              tags:
+                - tag: component
+                  value: access-point
+            - uuid: 9b4f0f72bae64bbfb95c7383ef04990e
+              name: 'AP {#APNAME}: Association status'
+              type: DEPENDENT
+              key: 'wlc.ap.status[{#SNMPINDEX}]'
+              valuemap:
+                name: 'Cisco WLC AP operation status'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.2.1.1.6.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.ap.walk
+              tags:
+                - tag: component
+                  value: access-point
+              trigger_prototypes:
+                - uuid: a47653d713a54c40a51fc04394bea048
+                  expression: 'last(/Cisco Wireless LAN Controller by SNMP/wlc.ap.status[{#SNMPINDEX}])<>1'
+                  name: 'Cisco WLC: AP {#APNAME} is not associated'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  tags:
+                    - tag: scope
+                      value: availability
+          trigger_prototypes:
+            - uuid: da8b1207a5d4447a856f75d1425e852c
+              expression: 'last(/Cisco Wireless LAN Controller by SNMP/wlc.ap.radio.admin[{#SNMPINDEX},0])=1 and last(/Cisco Wireless LAN Controller by SNMP/wlc.ap.radio.oper[{#SNMPINDEX},0])=1'
+              name: 'Cisco WLC: AP {#APNAME} 2.4 GHz radio is down'
+              opdata: 'Radio state: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: availability
+            - uuid: c7e3dfd1d1f745f2ba8f35d14ddcb68c
+              expression: 'last(/Cisco Wireless LAN Controller by SNMP/wlc.ap.radio.admin[{#SNMPINDEX},1])=1 and last(/Cisco Wireless LAN Controller by SNMP/wlc.ap.radio.oper[{#SNMPINDEX},1])=1'
+              name: 'Cisco WLC: AP {#APNAME} 5 GHz radio is down'
+              opdata: 'Radio state: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              tags:
+                - tag: scope
+                  value: availability
+          graph_prototypes:
+            - uuid: 3991318e2ad042f495438ccc80ee2a59
+              name: 'AP {#APNAME}: Radio channel utilization'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - drawtype: BOLD_LINE
+                  color: 199C0D
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.ap.radio.channelutil[{#SNMPINDEX},0]'
+                - sortorder: '1'
+                  drawtype: BOLD_LINE
+                  color: F63100
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.ap.radio.channelutil[{#SNMPINDEX},1]'
+            - uuid: 812226c1ff79461c8f2f99c924e3d2ac
+              name: 'AP {#APNAME}: Radio clients'
+              graph_items:
+                - drawtype: BOLD_LINE
+                  color: 199C0D
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.ap.radio.clients[{#SNMPINDEX},0]'
+                - sortorder: '1'
+                  drawtype: BOLD_LINE
+                  color: 1A7CFF
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.ap.radio.clients[{#SNMPINDEX},1]'
+            - uuid: 670bfe94d2cd464e96e7399c8235971d
+              name: 'AP {#APNAME}: Radio Rx/Tx utilization'
+              ymin_type_1: FIXED
+              ymax_type_1: FIXED
+              graph_items:
+                - drawtype: BOLD_LINE
+                  color: 199C0D
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.ap.radio.rxutil[{#SNMPINDEX},0]'
+                - sortorder: '1'
+                  color: 00611C
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.ap.radio.txutil[{#SNMPINDEX},0]'
+                - sortorder: '2'
+                  drawtype: BOLD_LINE
+                  color: F63100
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.ap.radio.rxutil[{#SNMPINDEX},1]'
+                - sortorder: '3'
+                  color: FFAB00
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.ap.radio.txutil[{#SNMPINDEX},1]'
+          master_item:
+            key: wlc.ap.walk
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#APSLOTS}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.2
+                - '0'
+                - '{#APNAME}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.3
+                - '0'
+                - '{#APLOCATION}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.4
+                - '0'
+                - '{#APSTATUS}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.6
+                - '0'
+                - '{#APSOFTWARE}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.8
+                - '0'
+                - '{#APMODEL}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.16
+                - '0'
+                - '{#APSERIAL}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.17
+                - '0'
+                - '{#APIP}'
+                - 1.3.6.1.4.1.14179.2.2.1.1.19
+                - '0'
+        - uuid: e9dda6a54fdb4651a7771e90de4a0801
+          name: 'WLAN discovery'
+          type: DEPENDENT
+          key: wlc.wlan.discovery
+          description: 'Discovers WLANs/SSIDs from AIRESPACE-WIRELESS-MIB::bsnDot11EssTable.'
+          item_prototypes:
+            - uuid: df6f80a2722943d8bd08594897e588d0
+              name: 'WLAN {#SSID}: Administrative status'
+              type: DEPENDENT
+              key: 'wlc.wlan.admin[{#SNMPINDEX}]'
+              valuemap:
+                name: 'Cisco WLC WLAN admin status'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.1.1.1.6.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.wlan.walk
+              tags:
+                - tag: component
+                  value: wlan
+            - uuid: c120ab6eb6154f1fb93b9d9a861b1432
+              name: 'WLAN {#SSID}: Associated clients'
+              type: DEPENDENT
+              key: 'wlc.wlan.clients[{#SNMPINDEX}]'
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.1.1.1.38.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.wlan.walk
+              tags:
+                - tag: component
+                  value: wlan
+            - uuid: b2e4529dc1df40b5930fad757088d5de
+              name: 'WLAN {#SSID}: Interface'
+              type: DEPENDENT
+              key: 'wlc.wlan.interface[{#SNMPINDEX}]'
+              value_type: CHAR
+              preprocessing:
+                - type: SNMP_WALK_VALUE
+                  parameters:
+                    - '1.3.6.1.4.1.14179.2.1.1.1.42.{#SNMPINDEX}'
+                    - '0'
+              master_item:
+                key: wlc.wlan.walk
+              tags:
+                - tag: component
+                  value: wlan
+          graph_prototypes:
+            - uuid: 787a224802b8467ebfa1650186f5b924
+              name: 'WLAN {#SSID}: Associated clients'
+              graph_items:
+                - drawtype: BOLD_LINE
+                  color: 1A7CFF
+                  item:
+                    host: 'Cisco Wireless LAN Controller by SNMP'
+                    key: 'wlc.wlan.clients[{#SNMPINDEX}]'
+          master_item:
+            key: wlc.wlan.walk
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#SSID}'
+                - 1.3.6.1.4.1.14179.2.1.1.1.2
+                - '0'
+                - '{#WLANADMIN}'
+                - 1.3.6.1.4.1.14179.2.1.1.1.6
+                - '0'
+                - '{#WLANCLIENTS}'
+                - 1.3.6.1.4.1.14179.2.1.1.1.38
+                - '0'
+                - '{#WLANINTERFACE}'
+                - 1.3.6.1.4.1.14179.2.1.1.1.42
+                - '0'
+      tags:
+        - tag: class
+          value: network
+        - tag: target
+          value: cisco
+        - tag: target
+          value: wireless-controller
+      macros:
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+          description: 'Warning threshold of ICMP packet loss in %.'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+          description: 'Warning threshold of the average ICMP response time in seconds.'
+        - macro: '{$IFCONTROL}'
+          value: '0'
+          description: 'Global interface link-down alert control. Set to 1 globally or use a context macro such as {$IFCONTROL:"GigabitEthernet0/0/1"}=1.'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+          description: 'Time to wait before reporting that SNMP collection is unavailable.'
+        - macro: '{$WLC.AP.CAPACITY.WARN}'
+          value: '90'
+          description: 'Warning threshold for AP capacity utilization, in percent.'
+        - macro: '{$WLC.AP.MIN}'
+          value: '0'
+          description: 'Expected minimum number of associated APs. 0 disables the minimum-AP trigger. Set to 35 for the reference site if 35 APs are expected.'
+        - macro: '{$WLC.CPU.WARN}'
+          value: '80'
+          description: 'CPU warning threshold in percent.'
+        - macro: '{$WLC.IF.IFNAME.MATCHES}'
+          value: '.*'
+        - macro: '{$WLC.IF.IFNAME.NOT_MATCHES}'
+          value: '^Virtual Interface$'
+          description: 'Filter virtual interface by default'
+        - macro: '{$WLC.MEMORY.WARN}'
+          value: '85'
+          description: 'Memory utilization warning threshold in percent.'
+        - macro: '{$WLC.RADIO.CHANNEL.WARN}'
+          value: '80'
+          description: 'Radio channel utilization warning threshold in percent.'
+        - macro: '{$WLC.RADIO.POORSNR.WARN}'
+          value: '5'
+          description: 'Warning threshold for the number of clients with poor SNR on one radio.'
+      dashboards:
+        - uuid: 3423f884328e4bd082e9f87b91642dfe
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'Controller name'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: system.name
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Controller serial number'
+                  'y': '3'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: wlc.serial
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: gauge
+                  name: 'CPU utilization'
+                  'y': '6'
+                  width: '20'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: wlc.cpu.util
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: svggraph
+                  name: 'WLAN clients'
+                  'y': '11'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'WLAN *: Associated clients'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: YAYCN
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: 'Controller location'
+                  x: '20'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: system.location
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Controller firmware version'
+                  x: '20'
+                  'y': '3'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: wlc.software
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: gauge
+                  name: 'Memory utilization'
+                  x: '20'
+                  'y': '6'
+                  width: '20'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: wlc.memory.util
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: show.2
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: item
+                  name: 'Controller model'
+                  x: '40'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: wlc.model
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Controller uptime'
+                  x: '40'
+                  'y': '3'
+                  width: '20'
+                  height: '3'
+                  fields:
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: system.net.uptime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: svggraph
+                  name: 'AP capacity'
+                  x: '40'
+                  'y': '6'
+                  width: '32'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: 4CAF50
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'WLC: Associated APs'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.1.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.1.color
+                      value: D32F2F
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'WLC: Maximum supported APs'
+                    - type: INTEGER
+                      name: ds.1.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: BOTTV
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: 'ICMP Availability'
+                  x: '60'
+                  width: '12'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'ICMP Availability'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'SNMP Availability'
+                  x: '60'
+                  'y': '3'
+                  width: '12'
+                  height: '3'
+                  hide_header: 'YES'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: 'SNMP Availability'
+                    - type: INTEGER
+                      name: desc_v_pos
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        key: 'zabbix[host,snmp,available]'
+                    - type: INTEGER
+                      name: show.0
+                      value: '1'
+                    - type: INTEGER
+                      name: show.1
+                      value: '2'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: D3212C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+            - name: 'Access points'
+              widgets:
+                - type: honeycomb
+                  name: 'AP Model'
+                  width: '36'
+                  height: '19'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'AP *: Model'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*): Model$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: EINDM
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                - type: honeycomb
+                  name: 'AP serial number'
+                  'y': '19'
+                  width: '36'
+                  height: '15'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'AP *: Serial number'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*): Serial number$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: DJXIR
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                - type: graphprototype
+                  name: 'AP channel utilization'
+                  'y': '34'
+                  width: '72'
+                  height: '10'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        name: 'AP {#APNAME}: Radio channel utilization'
+                    - type: STRING
+                      name: reference
+                      value: APCHU
+                    - type: INTEGER
+                      name: rows
+                      value: '2'
+                - type: graphprototype
+                  name: 'AP clients'
+                  'y': '44'
+                  width: '72'
+                  height: '10'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        name: 'AP {#APNAME}: Radio clients'
+                    - type: STRING
+                      name: reference
+                      value: APCLI
+                    - type: INTEGER
+                      name: rows
+                      value: '2'
+                - type: graphprototype
+                  name: 'AP Rx / Tx utilization'
+                  'y': '54'
+                  width: '72'
+                  height: '10'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'Cisco Wireless LAN Controller by SNMP'
+                        name: 'AP {#APNAME}: Radio Rx/Tx utilization'
+                    - type: STRING
+                      name: reference
+                      value: APRXT
+                    - type: INTEGER
+                      name: rows
+                      value: '2'
+                - type: honeycomb
+                  name: 'AP status'
+                  x: '36'
+                  width: '36'
+                  height: '19'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: FF0000
+                    - type: STRING
+                      name: items.0
+                      value: 'AP *: Association status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*): Association status$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: LANRG
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: E65100
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 1976D2
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                - type: honeycomb
+                  name: 'AP Software version'
+                  x: '36'
+                  'y': '19'
+                  width: '36'
+                  height: '15'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'AP *: Software version'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^(.*): Software version$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: JRNUD
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_units_show
+                      value: '0'
+            - name: Interfaces
+              widgets:
+                - type: honeycomb
+                  name: 'Controller Network speed'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Interface *: Speed'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Interface (.*): Speed$","\1")}'
+                    - type: STRING
+                      name: reference
+                      value: CSFBG
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 13191C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF4000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '10000000'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF681E
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '100000000'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 069C56
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '1000000000'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 0040FF
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '10000000000'
+                - type: svggraph
+                  name: 'Controller Network traffic'
+                  'y': '4'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Interface *: Bits *'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: FWQXF
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Controller Network errors'
+                  'y': '11'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '2'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Interface *: * discards'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'Interface *: * errors'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '10'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: ADJOJ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+      valuemaps:
+        - uuid: b93eb80fbdc24211a9e2763b89156fad
+          name: 'Cisco WLC AP operation status'
+          mappings:
+            - value: '1'
+              newvalue: Associated
+            - value: '2'
+              newvalue: Disassociating
+            - value: '3'
+              newvalue: Downloading
+        - uuid: 7b101239abd44127992f21828d67fd4d
+          name: 'Cisco WLC radio admin status'
+          mappings:
+            - value: '1'
+              newvalue: Enabled
+            - value: '2'
+              newvalue: Disabled
+        - uuid: c02ee15b25dd4e28869c20914ea92aff
+          name: 'Cisco WLC radio operational status'
+          mappings:
+            - value: '1'
+              newvalue: Down
+            - value: '2'
+              newvalue: Up
+        - uuid: fd66480184964f8dbb64d02d9c66f0d8
+          name: 'Cisco WLC WLAN admin status'
+          mappings:
+            - value: '0'
+              newvalue: Disabled
+            - value: '1'
+              newvalue: Enabled
+        - uuid: 9349d01c3f5949f3ba00c6e771561fc8
+          name: 'IF-MIB::ifOperStatus'
+          mappings:
+            - value: '1'
+              newvalue: Up
+            - value: '2'
+              newvalue: Down
+            - value: '3'
+              newvalue: Testing
+            - value: '4'
+              newvalue: Unknown
+            - value: '5'
+              newvalue: Dormant
+            - value: '6'
+              newvalue: 'Not present'
+            - value: '7'
+              newvalue: 'Lower layer down'
+        - uuid: 664bc3984c794dc6b60a4e62fe589af3
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: 10d15c27d83948569509484ee6d36e71
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
+  graphs:
+    - uuid: 72e19a3cde774fa7b729886d5cea0631
+      name: 'ICMP response time'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Cisco Wireless LAN Controller by SNMP'
+            key: icmppingsec
+    - uuid: 5116ff7027a14aa7bbe56f7b7c87cb0a
+      name: 'WLC: Access point capacity'
+      graph_items:
+        - drawtype: BOLD_LINE
+          color: 199C0D
+          item:
+            host: 'Cisco Wireless LAN Controller by SNMP'
+            key: wlc.ap.count
+        - sortorder: '1'
+          color: F63100
+          item:
+            host: 'Cisco Wireless LAN Controller by SNMP'
+            key: wlc.ap.max
+    - uuid: a9b5bb423a3943bd85111248f9943a75
+      name: 'WLC: Controller utilization'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - drawtype: BOLD_LINE
+          color: F63100
+          item:
+            host: 'Cisco Wireless LAN Controller by SNMP'
+            key: wlc.cpu.util
+        - sortorder: '1'
+          drawtype: BOLD_LINE
+          color: 1A7CFF
+          item:
+            host: 'Cisco Wireless LAN Controller by SNMP'
+            key: wlc.memory.util
+    - uuid: 253bc8ddc0c54b46ac4153af93ceac22
+      name: 'WLC: WLAN clients'
+      graph_items:
+        - drawtype: BOLD_LINE
+          color: 1A7CFF
+          item:
+            host: 'Cisco Wireless LAN Controller by SNMP'
+            key: wlc.clients.total
