@@ -4,6 +4,1945 @@ zabbix_export:
     - uuid: 45cb0846e7fe49f79c02ff0888969cf6
       name: Templates/Power
   templates:
+    - uuid: 2285b0d5e6694948ba550bccb6de930c
+      template: 'Eaton UPS - EPPC by SNMP'
+      name: 'Eaton UPS - EPPC by SNMP'
+      description: |
+        Template for Eaton UPS equipped with legacy EPPC Network Management Cards.
+        This template uses the following MIBs:
+        - SNMPv2-MIB
+        - UPS-MIB
+        - EPPC-MIB
+      vendor:
+        name: E-MSN
+        version: 7.4-3
+      groups:
+        - name: Templates/Power
+      items:
+        - uuid: 6c3ca32300584aaa89a6672ebb2e1b51
+          name: 'Battery cell count'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.3.7.0
+          key: eppc.battery.cells
+          delay: 1h
+          history: 90d
+          units: cells
+          tags:
+            - tag: component
+              value: battery
+        - uuid: e64050edd6064feeb950ecc6a86aef20
+          name: 'Battery charge'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.3.4.0
+          key: eppc.battery.charge
+          history: 90d
+          units: '%'
+          tags:
+            - tag: component
+              value: battery
+            - tag: scope
+              value: capacity
+          triggers:
+            - uuid: 65189a98ed274532b61ec50cb3bc5153
+              expression: 'max(/Eaton UPS - EPPC by SNMP/eppc.battery.charge,5m)<{$UPS.BATTERY.CHARGE.MIN}'
+              name: 'Battery charge is low'
+              opdata: 'Charge: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Battery charge is below the configured threshold.'
+              tags:
+                - tag: component
+                  value: battery
+                - tag: scope
+                  value: capacity
+        - uuid: 4902a0b35cae4ea48b1856a8d2046218
+          name: 'Battery last replacement date'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.3.9.0
+          key: eppc.battery.last_replacement
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: battery
+        - uuid: 6ae1aa0eac014370b8dc2e92ba2d8aac
+          name: 'Battery estimated runtime'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.3.3.0
+          key: eppc.battery.runtime
+          history: 90d
+          units: s
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '60'
+          tags:
+            - tag: component
+              value: battery
+            - tag: scope
+              value: capacity
+          triggers:
+            - uuid: 77c0cce6a8d3403e83aeb8a2a6a87780
+              expression: 'max(/Eaton UPS - EPPC by SNMP/eppc.battery.runtime,5m)<{$UPS.RUNTIME.MIN}'
+              name: 'Battery runtime is low'
+              opdata: 'Runtime: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'Estimated battery runtime is below the configured threshold.'
+              tags:
+                - tag: component
+                  value: battery
+                - tag: scope
+                  value: capacity
+        - uuid: b3d4e2144763448c8b6b4abf4ffa4ae9
+          name: 'Seconds on battery'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.3.2.0
+          key: eppc.battery.seconds_on_battery
+          history: 90d
+          units: s
+          tags:
+            - tag: component
+              value: battery
+        - uuid: b01de65af6db4d3593a284fb760adade
+          name: 'Battery status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.3.1.0
+          key: eppc.battery.status
+          history: 90d
+          valuemap:
+            name: 'EPPC battery status'
+          tags:
+            - tag: component
+              value: battery
+            - tag: scope
+              value: status
+          triggers:
+            - uuid: 32b0bec2e2844b2abb9075d5c8bc0df8
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.battery.status)=6'
+              name: 'UPS battery failure'
+              priority: HIGH
+              description: 'EPPC battery status is batteryFailure.'
+              tags:
+                - tag: component
+                  value: battery
+                - tag: scope
+                  value: status
+            - uuid: 7e888346a93c4caeba42c06d37dc53bd
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.battery.status)=4'
+              name: 'UPS battery is depleted'
+              priority: HIGH
+              description: 'EPPC battery status is batteryDepleted.'
+              tags:
+                - tag: component
+                  value: battery
+                - tag: scope
+                  value: capacity
+            - uuid: 4da57d8e2afa464485f090a383c27428
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.battery.status)=3'
+              name: 'UPS battery is low'
+              priority: AVERAGE
+              description: 'EPPC battery status is batteryLow.'
+              tags:
+                - tag: component
+                  value: battery
+                - tag: scope
+                  value: capacity
+        - uuid: 27446f59dcc1487f804b3c36e5dbe31e
+          name: 'Battery temperature'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.3.8.0
+          key: eppc.battery.temperature
+          delay: 2m
+          history: 90d
+          value_type: FLOAT
+          units: °C
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: battery
+          triggers:
+            - uuid: a994edec170f489493282a0073a3d8e3
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.battery.temperature)>{$UPS.BATTERY.TEMP.MAX}'
+              name: 'Battery temperature is high'
+              opdata: 'Temperature: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Battery temperature is above the configured threshold.'
+              tags:
+                - tag: component
+                  value: battery
+                - tag: scope
+                  value: capacity
+        - uuid: e80638c948554227b8be408bb46c8fb5
+          name: 'Battery test elapsed time'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.7.5.0
+          key: eppc.battery.test.elapsed_time
+          delay: 5m
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: test
+        - uuid: 1d6e1ebd343d46b690e2ec1f00ab9ed8
+          name: 'Battery test result'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.7.3.0
+          key: eppc.battery.test.result
+          delay: 5m
+          history: 90d
+          valuemap:
+            name: 'EPPC battery test result'
+          tags:
+            - tag: component
+              value: test
+            - tag: scope
+              value: status
+          triggers:
+            - uuid: 95eb7f7599964ada94f9851d05d3422f
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.battery.test.result)=4'
+              name: 'UPS battery test failed or returned a warning'
+              priority: HIGH
+              description: 'EPPC battery test result is failureOrWarning.'
+              tags:
+                - tag: component
+                  value: test
+                - tag: scope
+                  value: status
+        - uuid: 296f4d757b374ac88c4be39112351067
+          name: 'Battery test start time'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.7.4.0
+          key: eppc.battery.test.start_time
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: test
+        - uuid: 9bfffc5b88654e33b0318cf845f53a14
+          name: 'Battery voltage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.3.5.0
+          key: eppc.battery.voltage
+          history: 90d
+          value_type: FLOAT
+          units: V
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: battery
+        - uuid: 83d691c6449846a38c53782bb986eea1
+          name: 'Bypass frequency'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.20.1.2.1
+          key: eppc.bypass.frequency
+          history: 90d
+          value_type: FLOAT
+          units: Hz
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: bypass
+        - uuid: 31d0d7b637364a16a235f941a4f6b86a
+          name: 'Bypass phase count'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.19.0
+          key: eppc.bypass.phase_count
+          delay: 1h
+          history: 90d
+          tags:
+            - tag: component
+              value: bypass
+        - uuid: fcdd67c3aa81442d8f18b82545eea6d9
+          name: 'Configured low battery capacity limit'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.21.0
+          key: eppc.config.battery_capacity_low
+          delay: 1h
+          history: 90d
+          units: '%'
+          tags:
+            - tag: component
+              value: battery
+        - uuid: a4405b9f93534d3c86613715db6c0a58
+          name: 'Configured input frequency'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.6.0
+          key: eppc.config.input_frequency
+          delay: 1h
+          history: 90d
+          value_type: FLOAT
+          units: Hz
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: input
+        - uuid: 134bad58ee6a4878a1e990baf271e10e
+          name: 'Configured input voltage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.5.0
+          key: eppc.config.input_voltage
+          delay: 1h
+          history: 90d
+          value_type: FLOAT
+          units: V
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: input
+        - uuid: dbee705d0ca24b95956a50455aebe777
+          name: 'Configured high load setpoint'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.11.0
+          key: eppc.config.load_high
+          delay: 1h
+          history: 90d
+          units: '%'
+          tags:
+            - tag: component
+              value: output
+        - uuid: 730d0965db2d4ecba67956bab9d23c9b
+          name: 'Configured low runtime limit'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.22.0
+          key: eppc.config.runtime_low
+          delay: 1h
+          history: 90d
+          units: s
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '60'
+          tags:
+            - tag: component
+              value: battery
+        - uuid: 9d4533299bf4481f8ed0e5f55c4fff3c
+          name: 'Configured overtemperature setpoint'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.12.0
+          key: eppc.config.temperature_high
+          delay: 1h
+          history: 90d
+          value_type: FLOAT
+          units: °C
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: temperature
+        - uuid: 800557f1b7ec4cc68983f2ff9f37a4e9
+          name: 'UPS network agent software version'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.1.6.0
+          key: eppc.ident.agent_software
+          delay: 1h
+          history: 90d
+          value_type: CHAR
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1d
+          tags:
+            - tag: component
+              value: network
+          triggers:
+            - uuid: 53c1920ee960460984ba89a4e844ed85
+              expression: 'change(/Eaton UPS - EPPC by SNMP/eppc.ident.agent_software)=1'
+              name: 'NMC firmware version has changed'
+              opdata: 'Firmware: {ITEM.LASTVALUE1}'
+              priority: INFO
+              description: 'he NMC firmware version has changed.'
+              manual_close: 'YES'
+              tags:
+                - tag: component
+                  value: firmware
+        - uuid: 2fbef124c7914c53b1ca1a05cbb60546
+          name: 'UPS manufacturer'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.1.1.0
+          key: eppc.ident.manufacturer
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          inventory_link: VENDOR
+          tags:
+            - tag: component
+              value: system
+        - uuid: 0d5199a068c24861a2bd7ec946d06429
+          name: 'UPS model'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.1.2.0
+          key: eppc.ident.model
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          inventory_link: MODEL
+          tags:
+            - tag: component
+              value: system
+        - uuid: 46e981b22654482499008489970fb781
+          name: 'UPS serial number'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.1.4.0
+          key: eppc.ident.serial_number
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          inventory_link: SERIALNO_A
+          tags:
+            - tag: component
+              value: system
+        - uuid: d63e3ca1590b4bff815e6b9801186848
+          name: 'UPS firmware version'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.1.3.0
+          key: eppc.ident.ups_firmware
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: system
+        - uuid: fc89c07f34b147e18f352d50ff5465bb
+          name: 'Input frequency'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.16.1.2.1
+          key: eppc.input.frequency
+          history: 90d
+          value_type: FLOAT
+          units: Hz
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: input
+          triggers:
+            - uuid: d38d41117b244d0d9aa9b93b01a70fbd
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.input.frequency)<{$UPS.FREQ.MIN} or last(/Eaton UPS - EPPC by SNMP/eppc.input.frequency)>{$UPS.FREQ.MAX}'
+              name: 'UPS input frequency is outside limits'
+              opdata: 'Frequency: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Input frequency is outside configured limits.'
+              tags:
+                - tag: component
+                  value: input
+                - tag: scope
+                  value: capacity
+        - uuid: 7602404c035f41f08e26e23208a94354
+          name: 'Input line bad count'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.14.0
+          key: eppc.input.line_bad_count
+          history: 90d
+          tags:
+            - tag: component
+              value: input
+            - tag: scope
+              value: status
+          triggers:
+            - uuid: 9bd6a908f6ff4e09a7129267cdb54c33
+              expression: 'change(/Eaton UPS - EPPC by SNMP/eppc.input.line_bad_count)>0'
+              name: 'UPS input line bad counter increased'
+              opdata: 'Counter: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'EPPC input line bad counter increased since the previous poll.'
+              tags:
+                - tag: component
+                  value: input
+                - tag: scope
+                  value: status
+        - uuid: be316ed05eee43c89273ada093bd7827
+          name: 'Input phase count'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.15.0
+          key: eppc.input.phase_count
+          delay: 1h
+          history: 90d
+          tags:
+            - tag: component
+              value: input
+        - uuid: dc1c80c72760407ba01aff5493aca3ca
+          name: 'Input source count'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.13.0
+          key: eppc.input.source_count
+          delay: 1h
+          history: 90d
+          tags:
+            - tag: component
+              value: input
+        - uuid: db79ad01c2ad41bb9660b60b8e28407b
+          name: 'Output phase count'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.17.0
+          key: eppc.output.phase_count
+          delay: 1h
+          history: 90d
+          tags:
+            - tag: component
+              value: output
+        - uuid: 507a9f43949140959eef207a9eb56fd7
+          name: 'UPS fault code'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.4.0
+          key: eppc.system.fault_code
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: alarms
+            - tag: scope
+              value: status
+          triggers:
+            - uuid: 7461b8d01529484dab6862cff9385d04
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.system.fault_code)<>"00000000"'
+              name: 'UPS reports a fault code'
+              opdata: 'Code: {ITEM.LASTVALUE1}'
+              priority: HIGH
+              description: 'EPPC fault code differs from 00000000.'
+              tags:
+                - tag: component
+                  value: alarms
+                - tag: scope
+                  value: status
+        - uuid: 04d78b2de15344579c8fae73b6df7206
+          name: 'UPS system status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.1.0
+          key: eppc.system.status
+          history: 90d
+          valuemap:
+            name: 'EPPC UPS system status'
+          tags:
+            - tag: component
+              value: system
+            - tag: scope
+              value: status
+          triggers:
+            - uuid: 11773df3a7ac46c5a1cadd66279dda99
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.system.status)=3'
+              name: 'UPS is on bypass'
+              priority: AVERAGE
+              description: 'EPPC system status indicates bypass operation.'
+              tags:
+                - tag: component
+                  value: output
+                - tag: scope
+                  value: power
+            - uuid: 413c46abb08b4bfc83f99d2aa4695f50
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.system.status)=5'
+              name: 'UPS is running on battery'
+              priority: HIGH
+              description: 'EPPC system status indicates battery operation.'
+              tags:
+                - tag: component
+                  value: battery
+                - tag: scope
+                  value: power
+            - uuid: a1f506e8abff42dd83511a80685a571b
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.system.status)=10'
+              name: 'UPS is shutting down'
+              priority: HIGH
+              description: 'EPPC system status indicates shutdown.'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: power
+            - uuid: b4cbc852901a440bb3f9276ae11d0188
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.system.status)=7'
+              name: 'UPS reports a fault state'
+              priority: HIGH
+              description: 'EPPC system status is fault.'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: status
+        - uuid: 70d9f4f983b74971a01d9e96b0585470
+          name: 'UPS system temperature'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.2.0
+          key: eppc.system.temperature
+          delay: 2m
+          history: 90d
+          value_type: FLOAT
+          units: °C
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: temperature
+          triggers:
+            - uuid: 61459a25718d4a13aff7c1906cf3ebc9
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.system.temperature)>{$UPS.TEMP.MAX}'
+              name: 'UPS system temperature is high'
+              opdata: 'Temperature: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'UPS internal temperature is above the configured threshold.'
+              tags:
+                - tag: component
+                  value: temperature
+                - tag: scope
+                  value: capacity
+        - uuid: 78533b40800f4f09a2afba71e008d1a7
+          name: 'UPS warning code'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.10.1.1.2.3.0
+          key: eppc.system.warning_code
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: alarms
+            - tag: scope
+              value: status
+          triggers:
+            - uuid: 660432e0f94d49018e3a5504eb9eec76
+              expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.system.warning_code)<>"00000000"'
+              name: 'UPS reports a warning code'
+              opdata: 'Code: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'EPPC warning code differs from 00000000.'
+              tags:
+                - tag: component
+                  value: alarms
+                - tag: scope
+                  value: status
+        - uuid: 6c66a4829e5d4e4ea6b9375598421ff6
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          delay: '60'
+          history: 1w
+          valuemap:
+            name: 'Service state'
+          triggers:
+            - uuid: 3a1b8eda430f41dfaab1dcd2c1c9ac66
+              expression: 'max(/Eaton UPS - EPPC by SNMP/icmpping,#3)=0'
+              name: 'ICMP Ping: Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout. Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 66871eb2cee3482b984cec2ffcd29f90
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: '%'
+          triggers:
+            - uuid: dbb333976f1647aaad90440189f88819
+              expression: 'min(/Eaton UPS - EPPC by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Eaton UPS - EPPC by SNMP/icmppingloss,5m)<100'
+              name: 'ICMP Ping: High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              description: 'ICMP packet loss detected.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Eaton UPS - EPPC by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 194460a7d36c4ef69ff5aec4d6886a50
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          delay: '60'
+          history: 1w
+          value_type: FLOAT
+          units: s
+          triggers:
+            - uuid: 6b81ea37a4be45798babf6aaf779e0fc
+              expression: 'avg(/Eaton UPS - EPPC by SNMP/icmppingsec,5m)>{$ICMP_RESPONSE_TIME_WARN}'
+              name: 'ICMP Ping: High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: 'Average ICMP response time is too high.'
+              dependencies:
+                - name: 'ICMP Ping: High ICMP ping loss'
+                  expression: 'min(/Eaton UPS - EPPC by SNMP/icmppingloss,5m)>{$ICMP_LOSS_WARN} and min(/Eaton UPS - EPPC by SNMP/icmppingloss,5m)<100'
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Eaton UPS - EPPC by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: performance
+        - uuid: 363777d3d22a43cdb756346d1f2fa972
+          name: 'System description'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.1.0
+          key: sysDescr
+          delay: 1d
+          history: 90d
+          value_type: TEXT
+          inventory_link: NOTES
+          tags:
+            - tag: component
+              value: system
+        - uuid: e73b7a575f7c4a0993285650ca871207
+          name: 'System location'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.6.0
+          key: sysLocation
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: system
+        - uuid: f0901bd7ab10471fbaf2a38de91ed283
+          name: 'System name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.5.0
+          key: sysName
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          inventory_link: NAME
+          tags:
+            - tag: component
+              value: system
+        - uuid: b0599a3cd53345cb9ed7e1bd735f64c2
+          name: 'System object ID'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.2.0
+          key: sysObjectID
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: system
+        - uuid: e5f91f4471204009bd5ad45118e07835
+          name: 'SNMP uptime'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.3.0
+          key: sysUpTime
+          history: 90d
+          units: uptime
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: e7b0ed40d46b4ed4b7389bae196d13ce
+              expression: 'last(/Eaton UPS - EPPC by SNMP/sysUpTime)<10m'
+              name: 'SNMP agent has restarted'
+              priority: INFO
+              description: 'SNMP uptime is lower than 10 minutes.'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: availability
+        - uuid: 2064beea6a3346c3973cedaa914e783a
+          name: 'UPS active alarms count'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.33.1.6.1.0
+          key: ups.alarms.count
+          history: 90d
+          tags:
+            - tag: component
+              value: alarms
+            - tag: scope
+              value: status
+          triggers:
+            - uuid: ad5c9018869e4a84860a8578e6ecdb0c
+              expression: 'last(/Eaton UPS - EPPC by SNMP/ups.alarms.count)>{$UPS.ALARMS.MAX}'
+              name: 'UPS has active alarms'
+              opdata: 'Alarms: {ITEM.LASTVALUE1}'
+              priority: HIGH
+              description: 'UPS-MIB active alarm counter is greater than the configured threshold.'
+              tags:
+                - tag: component
+                  value: alarms
+                - tag: scope
+                  value: status
+        - uuid: 42e199e4b55a474eaca77af6e3bbbe77
+          name: 'UPS name'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.33.1.1.5.0
+          key: ups.ident.name
+          delay: 1d
+          history: 90d
+          value_type: CHAR
+          tags:
+            - tag: component
+              value: system
+        - uuid: a13cdef5128a45bc9d69163274e512eb
+          name: 'UPS output source'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.33.1.4.1.0
+          key: ups.output.source
+          history: 90d
+          valuemap:
+            name: 'UPS-MIB output source'
+          tags:
+            - tag: component
+              value: output
+            - tag: scope
+              value: status
+        - uuid: a7aba182bb7441d6bb7215feb3c846e5
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          history: 7d
+          valuemap:
+            name: zabbix.host.available
+          preprocessing:
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 1h
+          tags:
+            - tag: component
+              value: network
+            - tag: scope
+              value: availability
+          triggers:
+            - uuid: a46cf81b1d0c4459a0e0fab02b5471a9
+              expression: 'max(/Eaton UPS - EPPC by SNMP/zabbix[host,snmp,available],{$SNMP.TIMEOUT})=0'
+              name: 'SNMP is unavailable on {HOST.NAME}'
+              priority: AVERAGE
+              description: 'SNMP is not available for polling. Please check device connectivity and SNMP settings.'
+              dependencies:
+                - name: 'ICMP Ping: Unavailable by ICMP ping'
+                  expression: 'max(/Eaton UPS - EPPC by SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+      discovery_rules:
+        - uuid: f30eabd0a9a6439e8e10803d20291447
+          name: 'Bypass phase discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#EPPC.BYPASS.VOLTAGE},1.3.6.1.4.1.935.10.1.1.2.20.1.3]'
+          key: eppc.bypass.phase.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: 7575a0e102874b159813bbd33bc7cb83
+              name: 'Bypass phase {#SNMPINDEX}: Voltage'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.935.10.1.1.2.20.1.3.{#SNMPINDEX}'
+              key: 'eppc.bypass.voltage[{#SNMPINDEX}]'
+              history: 90d
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: component
+                  value: bypass
+        - uuid: 3d59bf778e15418ea2f06a3514f67dee
+          name: 'Input phase discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#EPPC.INPUT.VOLTAGE},1.3.6.1.4.1.935.10.1.1.2.16.1.3]'
+          key: eppc.input.phase.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: ff261b4642cf425b99181feb65dfe45d
+              name: 'Input phase {#SNMPINDEX}: Voltage'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.935.10.1.1.2.16.1.3.{#SNMPINDEX}'
+              key: 'eppc.input.voltage[{#SNMPINDEX}]'
+              history: 90d
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: component
+                  value: input
+              trigger_prototypes:
+                - uuid: 1b1b3de5168a4588ad7e0f9db379f602
+                  expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.input.voltage[{#SNMPINDEX}])<{$UPS.INPUT.VOLTAGE.MIN} or last(/Eaton UPS - EPPC by SNMP/eppc.input.voltage[{#SNMPINDEX}])>{$UPS.INPUT.VOLTAGE.MAX}'
+                  name: 'Input phase {#SNMPINDEX}: voltage is outside limits'
+                  opdata: 'Voltage: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'Input phase voltage is outside configured limits.'
+                  tags:
+                    - tag: component
+                      value: input
+                    - tag: scope
+                      value: capacity
+        - uuid: 7bee47b67c7142559a4371f69c212ddd
+          name: 'Output phase discovery'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#EPPC.OUTPUT.VOLTAGE},1.3.6.1.4.1.935.10.1.1.2.18.1.3]'
+          key: eppc.output.phase.discovery
+          delay: 1h
+          item_prototypes:
+            - uuid: e2a1087342e14da9af651917ccab859a
+              name: 'Output phase {#SNMPINDEX}: Apparent power'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.935.10.1.1.2.18.1.6.{#SNMPINDEX}'
+              key: 'eppc.output.apparent_power[{#SNMPINDEX}]'
+              history: 90d
+              units: VA
+              tags:
+                - tag: component
+                  value: output
+            - uuid: 5f488d5efa44411381ea7f917c83d096
+              name: 'Output phase {#SNMPINDEX}: Current'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.935.10.1.1.2.18.1.4.{#SNMPINDEX}'
+              key: 'eppc.output.current[{#SNMPINDEX}]'
+              history: 90d
+              value_type: FLOAT
+              units: A
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: component
+                  value: output
+            - uuid: 0a2331f7a70e478ab27969bb9ec1beac
+              name: 'Output phase {#SNMPINDEX}: Frequency'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.935.10.1.1.2.18.1.2.{#SNMPINDEX}'
+              key: 'eppc.output.frequency[{#SNMPINDEX}]'
+              history: 90d
+              value_type: FLOAT
+              units: Hz
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: component
+                  value: output
+              trigger_prototypes:
+                - uuid: ced7b12168c946578c4d81679f0956ad
+                  expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.output.frequency[{#SNMPINDEX}])<{$UPS.FREQ.MIN} or last(/Eaton UPS - EPPC by SNMP/eppc.output.frequency[{#SNMPINDEX}])>{$UPS.FREQ.MAX}'
+                  name: 'Output phase {#SNMPINDEX}: frequency is outside limits'
+                  opdata: 'Frequency: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'Output frequency is outside configured limits.'
+                  tags:
+                    - tag: component
+                      value: output
+                    - tag: scope
+                      value: capacity
+            - uuid: 4b207b1f54604a5f97847d32e5b1881d
+              name: 'Output phase {#SNMPINDEX}: Load'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.935.10.1.1.2.18.1.7.{#SNMPINDEX}'
+              key: 'eppc.output.load[{#SNMPINDEX}]'
+              history: 90d
+              units: '%'
+              tags:
+                - tag: component
+                  value: output
+                - tag: scope
+                  value: capacity
+              trigger_prototypes:
+                - uuid: ff63e998121d47a698066093627ffab0
+                  expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.output.load[{#SNMPINDEX}])>{$UPS.LOAD.MAX}'
+                  name: 'Output phase {#SNMPINDEX}: load is high'
+                  opdata: 'Load: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'Output load is above the configured threshold.'
+                  tags:
+                    - tag: component
+                      value: output
+                    - tag: scope
+                      value: capacity
+            - uuid: 616aab33fc3741ceae3b609084954811
+              name: 'Output phase {#SNMPINDEX}: Real power'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.935.10.1.1.2.18.1.5.{#SNMPINDEX}'
+              key: 'eppc.output.power[{#SNMPINDEX}]'
+              history: 90d
+              units: W
+              tags:
+                - tag: component
+                  value: output
+            - uuid: 927b0ed3c6f84a66a6374ea30707b872
+              name: 'Output phase {#SNMPINDEX}: Voltage'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.935.10.1.1.2.18.1.3.{#SNMPINDEX}'
+              key: 'eppc.output.voltage[{#SNMPINDEX}]'
+              history: 90d
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: component
+                  value: output
+              trigger_prototypes:
+                - uuid: 50545c3e361b485b908891182ccb7623
+                  expression: 'last(/Eaton UPS - EPPC by SNMP/eppc.output.voltage[{#SNMPINDEX}])<{$UPS.OUTPUT.VOLTAGE.MIN} or last(/Eaton UPS - EPPC by SNMP/eppc.output.voltage[{#SNMPINDEX}])>{$UPS.OUTPUT.VOLTAGE.MAX}'
+                  name: 'Output phase {#SNMPINDEX}: voltage is outside limits'
+                  opdata: 'Voltage: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'Output voltage is outside configured limits.'
+                  tags:
+                    - tag: component
+                      value: output
+                    - tag: scope
+                      value: capacity
+          graph_prototypes:
+            - uuid: 4774e02f555348f0b11ae4eea2f8aad4
+              name: 'UPS Output load'
+              yaxismax: '0'
+              graph_items:
+                - color: CC0000
+                  item:
+                    host: 'Eaton UPS - EPPC by SNMP'
+                    key: 'eppc.output.load[{#SNMPINDEX}]'
+      tags:
+        - tag: class
+          value: power
+        - tag: target
+          value: eaton
+        - tag: target
+          value: eppc
+      macros:
+        - macro: '{$ICMP_LOSS_WARN}'
+          value: '20'
+        - macro: '{$ICMP_RESPONSE_TIME_WARN}'
+          value: '0.15'
+        - macro: '{$SNMP.TIMEOUT}'
+          value: 5m
+        - macro: '{$UPS.ALARMS.MAX}'
+          value: '0'
+          description: 'Maximum acceptable number of active UPS-MIB alarms.'
+        - macro: '{$UPS.BATTERY.CHARGE.MIN}'
+          value: '20'
+          description: 'Minimum acceptable battery charge, in percent.'
+        - macro: '{$UPS.BATTERY.TEMP.MAX}'
+          value: '45'
+          description: 'Maximum acceptable battery temperature, in degrees Celsius.'
+        - macro: '{$UPS.FREQ.MAX}'
+          value: '51'
+          description: 'Maximum acceptable input/output frequency, in Hz.'
+        - macro: '{$UPS.FREQ.MIN}'
+          value: '49'
+          description: 'Minimum acceptable input/output frequency, in Hz.'
+        - macro: '{$UPS.INPUT.VOLTAGE.MAX}'
+          value: '253'
+          description: 'Maximum acceptable input phase voltage.'
+        - macro: '{$UPS.INPUT.VOLTAGE.MIN}'
+          value: '207'
+          description: 'Minimum acceptable input phase voltage.'
+        - macro: '{$UPS.LOAD.MAX}'
+          value: '85'
+          description: 'Maximum acceptable output load, in percent.'
+        - macro: '{$UPS.OUTPUT.VOLTAGE.MAX}'
+          value: '253'
+          description: 'Maximum acceptable output phase voltage.'
+        - macro: '{$UPS.OUTPUT.VOLTAGE.MIN}'
+          value: '207'
+          description: 'Minimum acceptable output phase voltage.'
+        - macro: '{$UPS.RUNTIME.MIN}'
+          value: 15m
+          description: 'Minimum acceptable estimated battery runtime.'
+        - macro: '{$UPS.TEMP.MAX}'
+          value: '45'
+          description: 'Maximum acceptable UPS internal temperature, in degrees Celsius.'
+      dashboards:
+        - uuid: bc31d1de5af04d15bbe3a13addd9b1ad
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'UPS name'
+                  width: '30'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: ups.ident.name
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Serial number'
+                  'y': '3'
+                  width: '30'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.ident.serial_number
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'System location'
+                  'y': '6'
+                  width: '30'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: sysLocation
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '28'
+                - type: item
+                  name: 'SNMP Uptime'
+                  'y': '9'
+                  width: '30'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: sysUpTime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'UPS model'
+                  x: '30'
+                  width: '29'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.ident.model
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Last battery replacement'
+                  x: '30'
+                  'y': '3'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.battery.last_replacement
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Battery charge'
+                  x: '30'
+                  'y': '6'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.battery.charge
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Battery remaining'
+                  x: '30'
+                  'y': '9'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.battery.runtime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Firmware version'
+                  x: '42'
+                  'y': '3'
+                  width: '17'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.ident.agent_software
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'System status'
+                  x: '42'
+                  'y': '6'
+                  width: '17'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.system.status
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 1E88E5
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 90A4AE
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF8F00
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: 1E88E5
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                    - type: STRING
+                      name: thresholds.6.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.6.threshold
+                      value: '7'
+                    - type: STRING
+                      name: thresholds.7.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.7.threshold
+                      value: '8'
+                    - type: STRING
+                      name: thresholds.8.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.8.threshold
+                      value: '9'
+                    - type: STRING
+                      name: thresholds.9.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.9.threshold
+                      value: '10'
+                    - type: STRING
+                      name: thresholds.10.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.10.threshold
+                      value: '11'
+                    - type: STRING
+                      name: thresholds.11.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.11.threshold
+                      value: '12'
+                    - type: STRING
+                      name: thresholds.12.color
+                      value: 90A4AE
+                    - type: STRING
+                      name: thresholds.12.threshold
+                      value: '13'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Output source'
+                  x: '42'
+                  'y': '9'
+                  width: '17'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: ups.output.source
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 90A4AE
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: FF8F00
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                    - type: STRING
+                      name: thresholds.6.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.6.threshold
+                      value: '7'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Availability
+                  x: '59'
+                  width: '13'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: icmpping
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: Alarms
+                  x: '59'
+                  'y': '3'
+                  width: '13'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: ups.alarms.count
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: alarms
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Battery status'
+                  x: '59'
+                  'y': '6'
+                  width: '13'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.battery.status
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF8F00
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: FF8F00
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'Last battery test'
+                  x: '59'
+                  'y': '9'
+                  width: '13'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Eaton UPS - EPPC by SNMP'
+                        key: eppc.battery.test.result
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 90A4AE
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 1E88E5
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 32CD32
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: 90A4AE
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: FF8F00
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '6'
+                    - type: INTEGER
+                      name: units_bold
+                      value: '0'
+                    - type: INTEGER
+                      name: units_show
+                      value: '0'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+            - name: Metrics
+              widgets:
+                - type: svggraph
+                  name: Load
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FBC02D
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Output phase *: Load'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: CMGBJ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Battery charge'
+                  'y': '5'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Battery charge'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: reference
+                      value: QIPYJ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Battery remaining'
+                  'y': '10'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '2'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Battery estimated runtime'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: reference
+                      value: DXMMO
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Temperatures
+                  'y': '15'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '11'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*temperature'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '4'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: RSTFX
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Voltages
+                  'y': '21'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '6'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*Voltage'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'Battery voltage'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: FBYJG
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Power
+                  'y': '27'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '8'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: '*power'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: JBRGR
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: Frequencies
+                  'y': '33'
+                  width: '72'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '2'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Input frequency'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'Bypass frequency'
+                    - type: STRING
+                      name: ds.0.items.2
+                      value: 'Output phase *: Frequency'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: SFCJQ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+      valuemaps:
+        - uuid: a165c5f54aca459b88b23d05d2cf96dc
+          name: 'EPPC battery status'
+          mappings:
+            - value: '1'
+              newvalue: Unknown
+            - value: '2'
+              newvalue: Normal
+            - value: '3'
+              newvalue: Low
+            - value: '4'
+              newvalue: Depleted
+            - value: '5'
+              newvalue: Discharging
+            - value: '6'
+              newvalue: Failure
+        - uuid: b8d9618d1f3a44b89356a525401a99ae
+          name: 'EPPC battery test result'
+          mappings:
+            - value: '1'
+              newvalue: Idle
+            - value: '2'
+              newvalue: Processing
+            - value: '3'
+              newvalue: Passed
+            - value: '4'
+              newvalue: Failed
+            - value: '5'
+              newvalue: 'Not possible'
+            - value: '6'
+              newvalue: Canceled
+        - uuid: 32f022904b794602895e162c729e98b6
+          name: 'EPPC UPS system status'
+          mappings:
+            - value: '1'
+              newvalue: 'Power on'
+            - value: '2'
+              newvalue: Standby
+            - value: '3'
+              newvalue: Bypass
+            - value: '4'
+              newvalue: Line
+            - value: '5'
+              newvalue: Battery
+            - value: '6'
+              newvalue: 'Battery test'
+            - value: '7'
+              newvalue: Fault
+            - value: '8'
+              newvalue: Converter
+            - value: '9'
+              newvalue: Eco
+            - value: '10'
+              newvalue: Shutdown
+            - value: '11'
+              newvalue: 'On booster'
+            - value: '12'
+              newvalue: 'On reducer'
+            - value: '13'
+              newvalue: Other
+        - uuid: bd82144bf6dd4ecbab6931d775a4ebb6
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: c73d6a31716441edae35907d911236b5
+          name: 'UPS-MIB output source'
+          mappings:
+            - value: '1'
+              newvalue: Other
+            - value: '2'
+              newvalue: None
+            - value: '3'
+              newvalue: Normal
+            - value: '4'
+              newvalue: Bypass
+            - value: '5'
+              newvalue: Battery
+            - value: '6'
+              newvalue: Booster
+            - value: '7'
+              newvalue: Reducer
+        - uuid: 0ea8fa1b65764edaba07a79d90b698f8
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: Available
+            - value: '2'
+              newvalue: Unknown
     - uuid: ccfd83e1a7f2423ea9d1a8b7954cf4c3
       template: 'Eaton UPS - Network M2 and M3 by SNMP'
       name: 'Eaton UPS - Network M2 & M3 by SNMP'
@@ -276,6 +2215,17 @@ zabbix_export:
               value: battery
             - tag: scope
               value: status
+          triggers:
+            - uuid: 5b14ced0de7f43fea74c0d99869d7b5b
+              expression: 'last(/Eaton UPS - Network M2 and M3 by SNMP/xups.battery.aged)=1'
+              name: 'UPS battery is aged'
+              priority: AVERAGE
+              description: 'The UPS reports that its batteries are aged and may require inspection or replacement.'
+              tags:
+                - tag: component
+                  value: battery
+                - tag: scope
+                  value: status
         - uuid: c8c00e23047f4e44a946a4aafbf1c34d
           name: 'Battery charge'
           type: SNMP_AGENT
@@ -2237,7 +4187,7 @@ zabbix_export:
                 - name: 'Battery runtime is low'
                   expression: 'max(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.remaining_time,5m)<{$UPS.RUNTIME.MIN}'
                 - name: 'UPS battery status requires attention'
-                  expression: 'last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.low)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.charger_fault)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.fault)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.replacement)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.no_battery)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.unavailable)=1'
+                  expression: 'last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.low)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.charger_fault)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.fault)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.replacement)=1'
                 - name: 'UPS battery test failed'
                   expression: 'last(/Eaton UPS - Network MS Legacy by SNMP/ups.test.result)=3'
                 - name: 'UPS card communication status is not OK'
@@ -2545,19 +4495,6 @@ zabbix_export:
               value: battery
             - tag: scope
               value: status
-        - uuid: a55f8e2d63c14c4b95aee80fb9ba0262
-          name: 'No battery'
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.705.1.5.10.0
-          key: upsmg.battery.no_battery
-          history: 90d
-          valuemap:
-            name: 'Eaton Yes/No'
-          tags:
-            - tag: component
-              value: battery
-            - tag: scope
-              value: status
         - uuid: bf28d9ee523d4e86bf8ffd1fbe03d829
           name: 'Battery runtime'
           type: SNMP_AGENT
@@ -2589,19 +4526,6 @@ zabbix_export:
           type: SNMP_AGENT
           snmp_oid: 1.3.6.1.4.1.705.1.5.11.0
           key: upsmg.battery.replacement
-          history: 90d
-          valuemap:
-            name: 'Eaton Yes/No'
-          tags:
-            - tag: component
-              value: battery
-            - tag: scope
-              value: status
-        - uuid: 678e3c43a3704a9e8981ee30c6558e6b
-          name: 'Battery unavailable'
-          type: SNMP_AGENT
-          snmp_oid: 1.3.6.1.4.1.705.1.5.12.0
-          key: upsmg.battery.unavailable
           history: 90d
           valuemap:
             name: 'Eaton Yes/No'
@@ -4026,7 +5950,7 @@ zabbix_export:
               newvalue: Unknown
   triggers:
     - uuid: bf470e1ae638470d9ebf098bc704d4cf
-      expression: 'last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.low)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.charger_fault)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.fault)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.replacement)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.no_battery)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.unavailable)=1'
+      expression: 'last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.low)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.charger_fault)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.fault)=1 or last(/Eaton UPS - Network MS Legacy by SNMP/upsmg.battery.replacement)=1'
       name: 'UPS battery status requires attention'
       priority: HIGH
       description: 'One or more Network-MS battery status flags require attention.'
@@ -4036,6 +5960,14 @@ zabbix_export:
         - tag: scope
           value: status
   graphs:
+    - uuid: 5cb66c4d770c46ca9a8ae418d06e0c39
+      name: 'ICMP response time'
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Eaton UPS - EPPC by SNMP'
+            key: icmppingsec
     - uuid: e726800ec7164d22a187106cbae2c6be
       name: 'ICMP response time'
       graph_items:
@@ -4067,6 +5999,14 @@ zabbix_export:
           item:
             host: 'Eaton UPS - Network MS Legacy by SNMP'
             key: upsmg.battery.voltage
+    - uuid: 0d1d5ea9bca34096898e873b4ce55a5b
+      name: 'UPS Battery charge'
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Eaton UPS - EPPC by SNMP'
+            key: eppc.battery.charge
     - uuid: 79d25ebf981b4128a3e390844faee5a0
       name: 'UPS Battery charge'
       graph_items:
@@ -4074,6 +6014,14 @@ zabbix_export:
           item:
             host: 'Eaton UPS - Network M2 and M3 by SNMP'
             key: xups.battery.charge
+    - uuid: a8f49e33f30e4a778e92cf2b443409d1
+      name: 'UPS Battery runtime'
+      yaxismax: '0'
+      graph_items:
+        - color: 0000CC
+          item:
+            host: 'Eaton UPS - EPPC by SNMP'
+            key: eppc.battery.runtime
     - uuid: f8b4cc6a43954eedbc9354a66bfe9b50
       name: 'UPS Battery runtime'
       graph_items:
@@ -4081,6 +6029,22 @@ zabbix_export:
           item:
             host: 'Eaton UPS - Network M2 and M3 by SNMP'
             key: xups.battery.runtime
+    - uuid: 24628d6269d84530a29e7e800b6fa173
+      name: 'UPS battery temperature'
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Eaton UPS - EPPC by SNMP'
+            key: eppc.battery.temperature
+    - uuid: 87d6643285bc44039486db7c80f89f48
+      name: 'UPS Battery voltage'
+      yaxismax: '0'
+      graph_items:
+        - color: CC6600
+          item:
+            host: 'Eaton UPS - EPPC by SNMP'
+            key: eppc.battery.voltage
     - uuid: 225e70991a3d4399b07a4091c3aaf337
       name: 'UPS Battery voltage'
       graph_items:
@@ -4121,3 +6085,11 @@ zabbix_export:
           item:
             host: 'Eaton UPS - Network M2 and M3 by SNMP'
             key: xups.config.output_watts
+    - uuid: 4cf943a4aed44ec0ab2109af987b3177
+      name: 'UPS system temperature'
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          item:
+            host: 'Eaton UPS - EPPC by SNMP'
+            key: eppc.system.temperature
