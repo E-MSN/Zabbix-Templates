@@ -1,0 +1,2359 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: b3ad5abed79e4a73bc7e5a106d36d4dc
+      name: Templates/Telephony
+  templates:
+    - uuid: 0919e24e0d494637a7cb41e6d4a06301
+      template: 'Yeastar P-Series Cloud by HTTP'
+      name: 'Yeastar P-Series Cloud by HTTP'
+      description: |
+        Yeastar P-Series Cloud Edition by REST API.
+        Monitors system information, licensed capacity, SIP trunks, extensions, Linkus endpoints and call queues.
+      vendor:
+        name: E-MSN
+        version: 7.4-3
+      groups:
+        - name: Templates/Telephony
+      items:
+        - uuid: 6651e18d742349ac9c872f2bf10928aa
+          name: 'Yeastar: Active external calls'
+          type: DEPENDENT
+          key: yeastar.calls.external
+          history: 90d
+          description: 'Number of unique active external calls, including inbound and outbound calls.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.external
+          master_item:
+            key: yeastar.calls.raw
+          tags:
+            - tag: component
+              value: calls
+            - tag: direction
+              value: external
+            - tag: scope
+              value: system
+        - uuid: a986b568449041e39f895a9781a0860b
+          name: 'Yeastar: Active inbound calls'
+          type: DEPENDENT
+          key: yeastar.calls.inbound
+          history: 90d
+          description: 'Number of currently active inbound calls on the PBX.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.inbound
+          master_item:
+            key: yeastar.calls.raw
+          tags:
+            - tag: component
+              value: calls
+            - tag: direction
+              value: inbound
+            - tag: scope
+              value: system
+        - uuid: 6da8bfc0b94e45a4b56993b559852761
+          name: 'Yeastar: Active internal calls'
+          type: DEPENDENT
+          key: yeastar.calls.internal
+          history: 90d
+          description: 'Number of currently active internal calls between PBX extensions.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.internal
+          master_item:
+            key: yeastar.calls.raw
+          tags:
+            - tag: component
+              value: calls
+            - tag: direction
+              value: internal
+            - tag: scope
+              value: system
+        - uuid: eb1067f307924e34afe1f5e37fdfee7e
+          name: 'Yeastar: Active outbound calls'
+          type: DEPENDENT
+          key: yeastar.calls.outbound
+          history: 90d
+          description: 'Number of currently active outbound calls on the PBX.'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.outbound
+          master_item:
+            key: yeastar.calls.raw
+          tags:
+            - tag: component
+              value: calls
+            - tag: direction
+              value: outbound
+            - tag: scope
+              value: system
+        - uuid: 57ae652015db4d5a8a998236c67f1491
+          name: 'Yeastar: Collect active calls'
+          type: SCRIPT
+          key: yeastar.calls.raw
+          history: 1d
+          value_type: TEXT
+          params: |
+            var p = JSON.parse(value);
+            var base = String(p.url).replace(/\/$/, '') + '/openapi/v1.0/';
+            var http = new HttpRequest();
+            http.addHeader('User-Agent: Zabbix');
+            http.addHeader('Content-Type: application/json');
+            function request(path, body) {
+                var response = body === null ? http.get(base + path) : http.post(base + path, JSON.stringify(body));
+                if (http.getStatus() !== 200) {
+                    throw 'HTTP ' + http.getStatus() + ' for ' + path;
+                }
+                var result = JSON.parse(response);
+                if (result.errcode !== 0) {
+                    throw path + ': ' + result.errcode + ' ' + result.errmsg;
+                }
+                return result;
+            }
+            var auth = request('get_token', {
+                username: p.id,
+                password: p.secret
+            });
+            var token = encodeURIComponent(auth.access_token);
+            function get(path) {
+                return request(path + (path.indexOf('?') < 0 ? '?' : '&') + 'access_token=' + token, null);
+            }
+            function uniqueCalls(calls) {
+                var seen = {};
+                var result = [];
+                for (var i = 0; i < calls.length; i++) {
+                    var call = calls[i];
+                    if (!call || call.call_id === undefined || call.call_id === null) {
+                        throw 'Call without call_id';
+                    }
+                    var id = String(call.call_id);
+                    if (Object.prototype.hasOwnProperty.call(seen, id)) { continue; }
+                    seen[id] = true;
+                    result.push(call);
+                }
+                return result;
+            }
+            function countTrunks(calls, direction, trunks) {
+                for (var i = 0; i < calls.length; i++) {
+                    var names = {};
+                    var members = calls[i].members || [];
+                    for (var j = 0; j < members.length; j++) {
+                        var member = members[j][direction];
+                        if (!member || !member.trunk_name) { continue; }
+                        names[String(member.trunk_name)] = true;
+                    }
+                    for (var name in names) {
+                        if (!Object.prototype.hasOwnProperty.call(names, name)) { continue; }
+                        if (!Object.prototype.hasOwnProperty.call(trunks, name)) {
+                            trunks[name] = {inbound: 0, outbound: 0, total: 0};
+                        }
+                        trunks[name][direction]++;
+                        trunks[name].total++;
+                    }
+                }
+            }
+            try {
+                var inbound = uniqueCalls(get('call/query?type=inbound').data || []);
+                var outbound = uniqueCalls(get('call/query?type=outbound').data || []);
+                var internal = uniqueCalls(get('call/query?type=internal').data || []);
+                var trunks = {};
+                countTrunks(inbound, 'inbound', trunks);
+                countTrunks(outbound, 'outbound', trunks);
+                var externalIds = {};
+                for (var i = 0; i < inbound.length; i++) {
+                    externalIds[String(inbound[i].call_id)] = true;
+                }
+                for (var j = 0; j < outbound.length; j++) {
+                    externalIds[String(outbound[j].call_id)] = true;
+                }
+                var output = {
+                    inbound: inbound.length,
+                    outbound: outbound.length,
+                    internal: internal.length,
+                    external: Object.keys(externalIds).length,
+                    trunks: trunks
+                };
+                return JSON.stringify(output);
+            } finally {
+                try {
+                    request('del_token?access_token=' + token, null);
+                } catch (e) {
+                    Zabbix.log(3, 'Yeastar: Token revocation failed: ' + e);
+                }
+            }
+          description: 'Collects current inbound, outbound and internal calls through the REST API.'
+          timeout: 30s
+          parameters:
+            - name: id
+              value: '{$YEASTAR.CLIENT.ID}'
+            - name: secret
+              value: '{$YEASTAR.CLIENT.SECRET}'
+            - name: url
+              value: '{$YEASTAR.URL}'
+          tags:
+            - tag: component
+              value: api
+        - uuid: 5efb537ff1fc4f288a138877f2a7adf6
+          name: 'Yeastar: Concurrent calls capacity'
+          type: DEPENDENT
+          key: yeastar.capacity.calls
+          description: 'Licensed concurrent call capacity.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.capacity.cc_capacity;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: capacity
+        - uuid: a81347133bdb416ea30cdd1a85e8e7b2
+          name: 'Yeastar: Concurrent calls allocated'
+          type: DEPENDENT
+          key: yeastar.capacity.calls.used
+          description: 'Allocated concurrent call capacity; not the current number of active calls.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.capacity.cc_used;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: capacity
+        - uuid: 25cc8977cb4d43a691851227c86d7e98
+          name: 'Yeastar: Extensions capacity'
+          type: DEPENDENT
+          key: yeastar.capacity.extensions
+          description: 'Licensed extension capacity.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.capacity.extension_capacity;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: capacity
+        - uuid: f8874c3f76dc41b2a692b7b8abf60afc
+          name: 'Yeastar: Extension allocation'
+          type: DEPENDENT
+          key: yeastar.capacity.extensions.pct
+          value_type: FLOAT
+          units: '%'
+          description: 'Percentage of licensed extensions allocated.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.capacity.extension_capacity > 0 ? 100 * x.capacity.extension_used / x.capacity.extension_capacity : 0;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: capacity
+        - uuid: e2f0abaf941742ca96afb112f58c0350
+          name: 'Yeastar: Extensions used'
+          type: DEPENDENT
+          key: yeastar.capacity.extensions.used
+          description: 'Number of allocated extensions.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.capacity.extension_used;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: capacity
+        - uuid: 56353121285a4bdd9ad9934d05f0e745
+          name: 'Yeastar: Linkus desktop connected'
+          type: CALCULATED
+          key: yeastar.desktop.connected
+          params: 'sum(last_foreach(//yeastar.extension.desktop[*]))'
+          description: 'Number of extensions currently connected to Linkus Desktop.'
+          tags:
+            - tag: client
+              value: desktop
+            - tag: component
+              value: extension
+        - uuid: ac8be341036740f593459c5c12576b85
+          name: 'Yeastar: Firmware'
+          type: DEPENDENT
+          key: yeastar.device.firmware
+          value_type: CHAR
+          description: 'PBX firmware version.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.system.firmware_version;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: system
+        - uuid: de306e35cc5b488d9d683bdc1275ce2e
+          name: 'Yeastar: Model'
+          type: DEPENDENT
+          key: yeastar.device.model
+          value_type: CHAR
+          description: 'PBX model.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.system.model_name;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: system
+        - uuid: 3da05cc149b9471aa1df34d9994104d6
+          name: 'Yeastar: Device name'
+          type: DEPENDENT
+          key: yeastar.device.name
+          value_type: CHAR
+          description: 'Configured PBX name.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.system.device_name;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: system
+        - uuid: f9b7ecf343c5450f86205bf580e1fa04
+          name: 'Yeastar: Serial number'
+          type: DEPENDENT
+          key: yeastar.device.serial
+          value_type: CHAR
+          description: 'PBX serial number.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.system.sn;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: system
+        - uuid: 92ca2ba67340433e9d0f13bebb2947c5
+          name: 'Yeastar: Extension count'
+          type: DEPENDENT
+          key: yeastar.extensions.count
+          description: 'Number of configured extensions on the PBX.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.extensions.length;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: fd72b0945b4e49a9948186eba350c142
+          name: 'Yeastar: SIP extensions connected'
+          type: CALCULATED
+          key: yeastar.extensions.sip.connected
+          params: 'sum(last_foreach(//yeastar.extension.sip[*]))'
+          description: 'Number of extensions with at least one registered SIP device.'
+          tags:
+            - tag: client
+              value: sip
+            - tag: component
+              value: extension
+        - uuid: 7dbb636b1f714a2bb3fea8601fc45360
+          name: 'Yeastar: Linkus mobile connected'
+          type: CALCULATED
+          key: yeastar.mobile.connected
+          params: 'sum(last_foreach(//yeastar.extension.mobile[*]))'
+          description: 'Number of extensions currently connected to Linkus Mobile.'
+          tags:
+            - tag: client
+              value: mobile
+            - tag: component
+              value: extension
+        - uuid: 55b805cf752a4fd8ab7307df359f6240
+          name: 'Yeastar: Queue count'
+          type: DEPENDENT
+          key: yeastar.queues.count
+          description: 'Number of configured call queues on the PBX.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.queues.length;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: 910d0175194a4249956c936097248354
+          name: 'Yeastar: Collect API data'
+          type: SCRIPT
+          key: yeastar.raw
+          history: 1d
+          value_type: TEXT
+          params: |
+            var p = JSON.parse(value);
+            var base = String(p.url).replace(/\/$/, '') + '/openapi/v1.0/';
+            var http = new HttpRequest();
+            http.addHeader('User-Agent: Zabbix');
+            http.addHeader('Content-Type: application/json');
+            function request(path, body) {
+                var response = body === null ? http.get(base + path) : http.post(base + path, JSON.stringify(body));
+                if (http.getStatus() !== 200) { throw 'HTTP ' + http.getStatus() + ' for ' + path; }
+                var result = JSON.parse(response);
+                if (result.errcode !== 0) { throw path + ': ' + result.errcode + ' ' + result.errmsg; }
+                return result;
+            }
+            var auth = request('get_token', {username: p.id, password: p.secret});
+            var token = encodeURIComponent(auth.access_token);
+            function get(path) {
+                return request(path + (path.indexOf('?') < 0 ? '?' : '&') + 'access_token=' + token, null);
+            }
+            try {
+                var output = {
+                    system: get('system/information').data,
+                    capacity: get('system/capacity').data
+                };
+                output.trunks = get('trunk/list').data || [];
+                output.extensions = get('extension/list').data || [];
+                output.ring_groups = get('ringgroup/list').data || [];
+                var queues = get('queue/list');
+                output.queues = queues.queue_list || [];
+                for (var i = 0; i < output.queues.length; i++) {
+                    var q = output.queues[i];
+                    var calls = get('queue/call_status?id=' + encodeURIComponent(q.id));
+                    var agents = get('queue/agent_status?id=' + encodeURIComponent(q.id));
+                    var list = agents.data || [];
+                    q.stats = {
+                        waiting: calls.waiting_calls || 0,
+                        active: calls.active_calls || 0,
+                        ringing: calls.ringing_calls || 0,
+                        agents_total: list.length,
+                        agents_logged: list.filter(function(a) { return a.is_login === 1; }).length,
+                        agents_paused: list.filter(function(a) { return a.is_login === 1 && a.is_pause === 1; }).length,
+                        agents_available: list.filter(function(a) {
+                            return a.is_login === 1 && a.is_pause === 0 && a.call_status === 1;
+                        }).length
+                    };
+                }
+                return JSON.stringify(output);
+            } finally {
+                try {
+                    request('del_token?access_token=' + token, null);
+                } catch (e) {
+                }
+            }
+          description: 'Collects PBX system information, licensed capacity, SIP trunks, extensions, ring groups and call queue statistics through the REST API.'
+          timeout: 30s
+          parameters:
+            - name: id
+              value: '{$YEASTAR.CLIENT.ID}'
+            - name: secret
+              value: '{$YEASTAR.CLIENT.SECRET}'
+            - name: url
+              value: '{$YEASTAR.URL}'
+          tags:
+            - tag: component
+              value: api
+          triggers:
+            - uuid: 793eaea8a21744af98b3fa3fd9339cf4
+              expression: 'nodata(/Yeastar P-Series Cloud by HTTP/yeastar.raw,5m)=1'
+              name: 'Yeastar: No API data for 5minutes'
+              priority: HIGH
+              description: |
+                No successful API data collection has been received from the Yeastar PBX for 5 minutes.
+                
+                Possible causes:
+                - PBX unavailable
+                - Network connectivity issue
+                - API authentication failure
+                - API rate limit exceeded
+        - uuid: 141831116df4428a990c882b751bd87b
+          name: 'Yeastar: Ring group count'
+          type: DEPENDENT
+          key: yeastar.ringgroups.count
+          description: 'Number of configured ring groups on the PBX.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.ring_groups.length;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: 9f3dbc9212374db3ac1fcc7ef4e9d62a
+          name: 'Yeastar: Uptime'
+          type: DEPENDENT
+          key: yeastar.system.uptime
+          units: s
+          description: 'Time since PBX last restart, in seconds.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.system.up_time;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: system
+          triggers:
+            - uuid: 316947b39d194e48b1e0ce261dddbe63
+              expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.system.uptime)<10m'
+              name: 'Yeastar: PBX has been restarted'
+              priority: INFO
+              description: 'The PBX uptime is less than 10 minutes, indicating a recent system restart.'
+              tags:
+                - tag: component
+                  value: system
+        - uuid: 6cbfe95a8bb64e65875af7df5b42c8e7
+          name: 'Yeastar: Trunk count'
+          type: DEPENDENT
+          key: yeastar.trunks.count
+          description: 'Number of configured trunks.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return x.trunks.length;
+          master_item:
+            key: yeastar.raw
+          tags:
+            - tag: component
+              value: inventory
+        - uuid: 80d9fc4fbc324e6480c81ed3b4b2a08c
+          name: 'Yeastar: Linkus web connected'
+          type: CALCULATED
+          key: yeastar.web.connected
+          params: 'sum(last_foreach(//yeastar.extension.web[*]))'
+          description: 'Number of extensions currently connected to Linkus Web.'
+          tags:
+            - tag: client
+              value: web
+            - tag: component
+              value: extension
+      discovery_rules:
+        - uuid: 82ae1fa7d6a24fc1a1c2adb314c6b4bf
+          name: 'Extension discovery'
+          type: DEPENDENT
+          key: yeastar.extension.discovery
+          description: 'Automatically discovers extensions and endpoint connection states.'
+          item_prototypes:
+            - uuid: b566841fe9374a579e1a5091ab3d4835
+              name: 'Extension {#NAME}: Linkus desktop'
+              type: DEPENDENT
+              key: 'yeastar.extension.desktop[{#ID}]'
+              description: 'Connection status of the Linkus desktop client for this extension.'
+              valuemap:
+                name: 'Yeastar connection state'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).extensions;
+                      var o = a.filter(function(v) {
+                          return String(v.id) ===  "{#ID}";
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.online_status.linkus_desktop.status;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+            - uuid: daba05d9c2754559bdb8522e5111ba44
+              name: 'Extension {#NAME}: Email'
+              type: DEPENDENT
+              key: 'yeastar.extension.email[{#ID}]'
+              value_type: CHAR
+              description: 'Email address configured for this extension.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var extensions = JSON.parse(value).extensions;
+                      var extension = extensions.filter(function(e) {
+                          return String(e.id) === "{#ID}";
+                      })[0];
+                      if (!extension) { throw "Resource missing"; }
+                      return String(extension.email_addr || "");
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+            - uuid: 5597667294de47408e97b0248b01e14d
+              name: 'Extension {#NAME}: Registered IP addresses'
+              type: DEPENDENT
+              key: 'yeastar.extension.ip[{#ID}]'
+              value_type: TEXT
+              description: 'Registered IP addresses for this extension.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var extension = data.extensions.filter(function(e) {
+                          return String(e.id) === "{#ID}";
+                      })[0];
+                      if (!extension || !extension.online_status) return "";
+                      var result = [];
+                      var devices = extension.online_status;
+                      Object.keys(devices).forEach(function(type) {
+                          var list = devices[type].status_list || [];
+                          list.forEach(function(device) {
+                              if (Number(device.status) === 1 && device.ip) {
+                                  result.push(type + ": " + device.ip);
+                              }
+                          });
+                      });
+                      return result.join(", ");
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+            - uuid: 1fabbeeed76e41f9bb40d31177278c1a
+              name: 'Extension {#NAME}: Linkus device type'
+              type: DEPENDENT
+              key: 'yeastar.extension.linkus.devtype[{#ID}]'
+              value_type: TEXT
+              description: 'Linkus Mobile device type for this extension.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var extension = data.extensions.filter(function(e) {
+                          return String(e.id) === "{#ID}";
+                      })[0];
+                      if (!extension || !extension.online_status) return "";
+                      var mobile = extension.online_status.linkus_mobile || {};
+                      var list = mobile.status_list || [];
+                      return list.filter(function(device) {
+                          return Number(device.status) === 1 && device.linkus_dev_type;
+                      }).map(function(device) {
+                          return device.linkus_dev_type;
+                      }).join(", ");
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+            - uuid: 5762368ef8454f1eba04b033c61abca8
+              name: 'Extension {#NAME}: Linkus mobile'
+              type: DEPENDENT
+              key: 'yeastar.extension.mobile[{#ID}]'
+              description: 'Connection status of the Linkus mobile client for this extension.'
+              valuemap:
+                name: 'Yeastar connection state'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).extensions;
+                      var o = a.filter(function(v) {
+                          return String(v.id) ===  "{#ID}";
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.online_status.linkus_mobile.status;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+            - uuid: 0acd7165e5a34edfb97318ce73201a94
+              name: 'Extension {#NAME}: Name'
+              type: DEPENDENT
+              key: 'yeastar.extension.name[{#ID}]'
+              value_type: CHAR
+              description: 'Caller ID display name configured for this extension.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var extensions = JSON.parse(value).extensions;
+                      var extension = extensions.filter(function(e) {
+                          return String(e.id) === "{#ID}";
+                      })[0];
+                      if (!extension) { throw "Resource missing"; }
+                      return String(extension.caller_id_name || "");
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+            - uuid: b2ac6d9e6c774f7492e81eaba94236ef
+              name: 'Extension {#NAME}: Presence'
+              type: DEPENDENT
+              key: 'yeastar.extension.presence[{#ID}]'
+              value_type: CHAR
+              description: 'Presence status configured for this extension.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).extensions;
+                      var o = a.filter(function(v) {
+                          return String(v.id) ===  "{#ID}";
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.presence_status;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+            - uuid: f3dbf4e01c284e3ba82a6bcfd2a1cfb0
+              name: 'Extension {#NAME}: SIP registered'
+              type: DEPENDENT
+              key: 'yeastar.extension.sip[{#ID}]'
+              description: 'Indicates whether at least one SIP endpoint is registered to this extension.'
+              valuemap:
+                name: 'Yeastar connection state'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).extensions;
+                      var o = a.filter(function(v) {
+                          return String(v.id) ===  "{#ID}";
+                      })[0];
+                      if (!o) {
+                          throw "Resource missing";
+                      }
+                      var sip = o.online_status && o.online_status.sip_phone;
+                       if (!sip) {
+                          return 0;
+                      }
+                      if (Array.isArray(sip.status_list)) {
+                          for (var i = 0; i < sip.status_list.length;  i++) {
+                              if (Number(sip.status_list[i].status) === 1) {
+                                  return 1;
+                              }
+                           }
+                          return 0;
+                      }
+                      return Number(sip.status) === 1 ? 1 : 0;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+            - uuid: f1c78617788c40ab89084fc8fd72af61
+              name: 'Extension {#NAME}: Linkus web'
+              type: DEPENDENT
+              key: 'yeastar.extension.web[{#ID}]'
+              description: 'Connection status of the Linkus web client for this extension.'
+              valuemap:
+                name: 'Yeastar connection state'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).extensions;
+                      var o = a.filter(function(v) {
+                          return String(v.id) ===  "{#ID}";
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.online_status.linkus_web.status;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: extension
+          master_item:
+            key: yeastar.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return JSON.stringify(x.extensions.map(function(o) { return {"{#ID}": o.id, "{#NAME}": o.number}; }));
+        - uuid: 890b9b5dfebd419ea7e84914594396b6
+          name: 'Queue discovery'
+          type: DEPENDENT
+          key: yeastar.queue.discovery
+          description: 'Discovers configured call queues and their agent and call activity metrics.'
+          item_prototypes:
+            - uuid: 5a8a337a00fd4752a7f041d674c98415
+              name: 'Queue {#NAME}: Active calls'
+              type: DEPENDENT
+              key: 'yeastar.queue.active[{#ID}]'
+              description: 'Number of active calls in this queue.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).queues;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.stats.active;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: queue
+            - uuid: 94e7625b397b4a28be84b80c5b43924b
+              name: 'Queue {#NAME}: Available agents'
+              type: DEPENDENT
+              key: 'yeastar.queue.agents.available[{#ID}]'
+              description: 'Number of logged-in, non-paused agents with call_status=1.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).queues;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.stats.agents_available;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: queue
+            - uuid: af4da9519411416193947830e58d5b1a
+              name: 'Queue {#NAME}: Logged agents'
+              type: DEPENDENT
+              key: 'yeastar.queue.agents.logged[{#ID}]'
+              description: 'Number of agents logged into this queue.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).queues;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.stats.agents_logged;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: queue
+            - uuid: cc38828e608d45749f926ab2e963e351
+              name: 'Queue {#NAME}: Paused agents'
+              type: DEPENDENT
+              key: 'yeastar.queue.agents.paused[{#ID}]'
+              description: 'Number of logged-in agents in pause state.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).queues;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.stats.agents_paused;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: queue
+            - uuid: 7203c1e24aa04fe99fff4c8ce3aa307f
+              name: 'Queue {#NAME}: Configured agents'
+              type: DEPENDENT
+              key: 'yeastar.queue.agents.total[{#ID}]'
+              description: 'Number of agents configured in this queue.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).queues;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.stats.agents_total;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: queue
+            - uuid: 75e65922c4f0490a968843a2c607e79d
+              name: 'Queue {#NAME}: Ringing calls'
+              type: DEPENDENT
+              key: 'yeastar.queue.ringing[{#ID}]'
+              description: 'Number of ringing calls in this queue.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).queues;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.stats.ringing;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: queue
+            - uuid: 3f745f198ba54de4b460a78827e93651
+              name: 'Queue {#NAME}: Waiting calls'
+              type: DEPENDENT
+              key: 'yeastar.queue.waiting[{#ID}]'
+              description: 'Number of waiting calls in this queue.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).queues;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.stats.waiting;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: queue
+          graph_prototypes:
+            - uuid: fecbeadddfe444ab8342532264c55883
+              name: 'Queue {#NAME}: Activity'
+              yaxismax: '0'
+              ymin_type_1: FIXED
+              graph_items:
+                - color: F44336
+                  item:
+                    host: 'Yeastar P-Series Cloud by HTTP'
+                    key: 'yeastar.queue.waiting[{#ID}]'
+                - sortorder: '1'
+                  color: 2196F3
+                  item:
+                    host: 'Yeastar P-Series Cloud by HTTP'
+                    key: 'yeastar.queue.active[{#ID}]'
+                - sortorder: '2'
+                  color: FF9800
+                  item:
+                    host: 'Yeastar P-Series Cloud by HTTP'
+                    key: 'yeastar.queue.ringing[{#ID}]'
+                - sortorder: '3'
+                  color: 4CAF50
+                  item:
+                    host: 'Yeastar P-Series Cloud by HTTP'
+                    key: 'yeastar.queue.agents.available[{#ID}]'
+          master_item:
+            key: yeastar.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return JSON.stringify(x.queues.map(function(o) { return {"{#ID}": o.id, "{#NAME}": o.name}; }));
+        - uuid: 4fa93b0ba77f480380cc7d21a2c7f2c1
+          name: 'Ring groups discovery'
+          type: DEPENDENT
+          key: yeastar.ringgroups.discovery
+          description: 'Automatically discovers configured ring groups.'
+          item_prototypes:
+            - uuid: dfdfbe377358438e9562b38fe35f9253
+              name: 'Ring group {#NAME}: Member count'
+              type: DEPENDENT
+              key: 'yeastar.ringgroup.members[{#ID}]'
+              description: 'Number of extensions assigned to this ring group.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var groups = JSON.parse(value).ring_groups || [];
+                      var group = groups.filter(function(g) {
+                          return  String(g.id) === "{#ID}";
+                      })[0];
+                      if (!group) {
+                          throw "Resource missing";
+                      }
+                      return Number(group.member_count);
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: ringgroup
+                - tag: ringgroup
+                  value: '{#NUMBER}'
+            - uuid: e8d2541444c441e9bf77e9142c496fe6
+              name: 'Ring group {#NAME}: Number'
+              type: DEPENDENT
+              key: 'yeastar.ringgroup.name[{#ID}]'
+              value_type: CHAR
+              description: 'Dialable extension number assigned to this ring group.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var groups = JSON.parse(value).ring_groups || [];
+                      var group = groups.filter(function(g) {
+                          return  String(g.id) === "{#ID}";
+                      })[0];
+                      if (!group) {
+                          throw "Resource missing";
+                      }
+                      return String(group.number);
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: ringgroup
+                - tag: ringgroup
+                  value: '{#NUMBER}'
+            - uuid: 3c7e9ebcefe1422bacc44ce80fa48820
+              name: 'Ring group {#NAME}: Ring strategy'
+              type: DEPENDENT
+              key: 'yeastar.ringgroup.strategy[{#ID}]'
+              value_type: CHAR
+              description: 'Ringing strategy configured for this ring group.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var groups = JSON.parse(value).ring_groups || [];
+                      var group = groups.filter(function(g) {
+                          return  String(g.id) === "{#ID}";
+                      })[0];
+                      if (!group) {
+                          throw "Resource missing";
+                      }
+                      return String(group.ring_strategy);
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: ringgroup
+                - tag: ringgroup
+                  value: '{#NUMBER}'
+          graph_prototypes:
+            - uuid: d76ae107729e4ef8a7f8e28d05500f3e
+              name: 'Ring group {#NAME}: Member count'
+              yaxismax: '0'
+              ymin_type_1: FIXED
+              graph_items:
+                - color: 4CAF50
+                  item:
+                    host: 'Yeastar P-Series Cloud by HTTP'
+                    key: 'yeastar.ringgroup.members[{#ID}]'
+          master_item:
+            key: yeastar.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var groups = JSON.parse(value).ring_groups || [];
+                  var discovery = [];
+                  for (var i = 0; i < groups.length;  i++) {
+                      discovery.push({
+                          "{#ID}": String(groups[i].id),
+                          "{#NUMBER}": String(groups[i].number),
+                          "{#NAME}": String(groups[i].name)
+                      });
+                  }
+                  return JSON.stringify(discovery);
+        - uuid: 1e8d91b4018a4c8cb289a313c519c0fd
+          name: 'Trunk discovery'
+          type: DEPENDENT
+          key: yeastar.trunk.discovery
+          description: 'Automatically discovers SIP trunks and their reported state.'
+          item_prototypes:
+            - uuid: 51335ad89df04cdd84f167c6ce31081b
+              name: 'Trunk {#NAME}: Active inbound calls'
+              type: DEPENDENT
+              key: 'yeastar.trunk.calls.inbound[{#ID}]'
+              history: 90d
+              description: 'Number of active inbound calls currently using this SIP trunk.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var trunk = data.trunks && data.trunks["{#NAME}"];
+                      return trunk ? Number(trunk.inbound || 0) : 0;
+              master_item:
+                key: yeastar.calls.raw
+              tags:
+                - tag: component
+                  value: trunk
+                - tag: direction
+                  value: inbound
+                - tag: metric
+                  value: calls
+            - uuid: a114461923d245118859a7f10490b018
+              name: 'Trunk {#NAME}: Active outbound calls'
+              type: DEPENDENT
+              key: 'yeastar.trunk.calls.outbound[{#ID}]'
+              history: 90d
+              description: 'Number of active outbound calls currently using this SIP trunk.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var trunk = data.trunks && data.trunks["{#NAME}"];
+                      return trunk ? Number(trunk.outbound || 0) : 0;
+              master_item:
+                key: yeastar.calls.raw
+              tags:
+                - tag: component
+                  value: trunk
+                - tag: direction
+                  value: outbound
+                - tag: metric
+                  value: calls
+            - uuid: d39a1dccf7724a518dce4566e0f28b22
+              name: 'Trunk {#NAME}: Active calls'
+              type: DEPENDENT
+              key: 'yeastar.trunk.calls.total[{#ID}]'
+              history: 90d
+              description: 'Total number of active inbound and outbound calls currently using this SIP trunk.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var data = JSON.parse(value);
+                      var trunk = data.trunks && data.trunks["{#NAME}"];
+                      return trunk ? Number(trunk.total || 0) : 0;
+              master_item:
+                key: yeastar.calls.raw
+              tags:
+                - tag: component
+                  value: trunk
+                - tag: direction
+                  value: total
+                - tag: metric
+                  value: calls
+            - uuid: bddc5266a57645aaa60fa1da82992edd
+              name: 'Trunk {#NAME}: Status'
+              type: DEPENDENT
+              key: 'yeastar.trunk.status[{#ID}]'
+              description: 'Current trunk status reported by the Yeastar API, including registration and connectivity failures.'
+              valuemap:
+                name: 'Yeastar trunk status'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).trunks;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.status;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: trunk
+              trigger_prototypes:
+                - uuid: 690a8ccc50d34805b370a83a05f23af7
+                  expression: |
+                    count(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}],#2,"ge",41)=2
+                    and
+                    count(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}],#2,"le",45)=2
+                  name: 'Trunk {#NAME}: SIP registration failed'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'The SIP trunk is unavailable, unreachable, or its registration has failed.'
+                  tags:
+                    - tag: component
+                      value: trunk
+            - uuid: c853fea1e3df4ff3baef623eb66e2758
+              name: 'Trunk {#NAME}: Type'
+              type: DEPENDENT
+              key: 'yeastar.trunk.type[{#ID}]'
+              value_type: CHAR
+              description: 'Yeastar trunk type.'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var a = JSON.parse(value).trunks;
+                      var o = a.filter(function(v) {
+                          return String(v.id) === "{#ID}" ;
+                      })[0];
+                      if (!o) { throw "Resource missing"; }
+                      return o.type;
+              master_item:
+                key: yeastar.raw
+              tags:
+                - tag: component
+                  value: trunk
+          graph_prototypes:
+            - uuid: d240ecd78db2485c98dd42c47566cbb8
+              name: 'Trunk {#NAME}: Active calls'
+              ymin_type_1: FIXED
+              graph_items:
+                - color: 2196F3
+                  item:
+                    host: 'Yeastar P-Series Cloud by HTTP'
+                    key: 'yeastar.trunk.calls.inbound[{#ID}]'
+                - sortorder: '1'
+                  color: FF9800
+                  item:
+                    host: 'Yeastar P-Series Cloud by HTTP'
+                    key: 'yeastar.trunk.calls.outbound[{#ID}]'
+                - sortorder: '2'
+                  color: 4CAF50
+                  item:
+                    host: 'Yeastar P-Series Cloud by HTTP'
+                    key: 'yeastar.trunk.calls.total[{#ID}]'
+          master_item:
+            key: yeastar.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var x = JSON.parse(value);
+                  return JSON.stringify(x.trunks.map(function(o) { return {"{#ID}": o.id, "{#NAME}": o.name}; }));
+      tags:
+        - tag: class
+          value: voip
+        - tag: target
+          value: 'p-series cloud'
+        - tag: target
+          value: yeastar
+      macros:
+        - macro: '{$YEASTAR.CALLS.ALLOC.CRIT}'
+          value: '90'
+          description: 'Critical threshold for allocated concurrent call capacity, expressed as a percentage of the licensed capacity.'
+        - macro: '{$YEASTAR.CALLS.ALLOC.ENABLED}'
+          value: '1'
+          description: 'Enable or disable concurrent call allocation alerts (1 = enabled, 0 = disabled).'
+        - macro: '{$YEASTAR.CALLS.ALLOC.WARN}'
+          value: '80'
+          description: 'Warning threshold for allocated concurrent call capacity, expressed as a percentage of the licensed capacity.'
+        - macro: '{$YEASTAR.CLIENT.ID}'
+          value: CHANGE_ME
+          description: 'API Client ID.'
+        - macro: '{$YEASTAR.CLIENT.SECRET}'
+          type: SECRET_TEXT
+          description: 'API Client Secret.'
+        - macro: '{$YEASTAR.EXT.UTIL.WARN}'
+          value: '90'
+          description: 'Reserved threshold for extension allocation percentage. No alert is enabled by default because full allocation is not necessarily an incident.'
+        - macro: '{$YEASTAR.QUEUE.ALERT.ENABLED}'
+          value: '0'
+          description: 'Set to 1 to enable waiting-calls-without-available-agent trigger for discovered queues. Disabled by default.'
+        - macro: '{$YEASTAR.URL}'
+          value: 'https://pbx.example.yeastarcloud.com'
+          description: 'PBX base URL without trailing slash.'
+      dashboards:
+        - uuid: 36f9775153a340f08dbabc93c5311303
+          name: Overview
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'PBX name'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Yeastar P-Series Cloud by HTTP'
+                        key: yeastar.device.name
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'PBX firmware'
+                  'y': '3'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Yeastar P-Series Cloud by HTTP'
+                        key: yeastar.device.firmware
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'PBX model'
+                  x: '24'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Yeastar P-Series Cloud by HTTP'
+                        key: yeastar.device.model
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'PBX uptime'
+                  x: '24'
+                  'y': '3'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Yeastar P-Series Cloud by HTTP'
+                        key: yeastar.system.uptime
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: item
+                  name: 'PBX serial number'
+                  x: '48'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Yeastar P-Series Cloud by HTTP'
+                        key: yeastar.device.serial
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '35'
+                - type: honeycomb
+                  name: 'PBX Objects'
+                  x: '48'
+                  'y': '3'
+                  width: '24'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Yeastar: * count'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Yeastar: (.*) count$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: MNPKB
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+            - name: Trunks
+              widgets:
+                - type: honeycomb
+                  name: 'SIP trunk status'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Trunk *: Status'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Trunk (.*): Status$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: UNDSX
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: BDBDBD
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 4CAF50
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 4CAF50
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '2'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: 2196F3
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '3'
+                    - type: STRING
+                      name: thresholds.4.color
+                      value: FF9800
+                    - type: STRING
+                      name: thresholds.4.threshold
+                      value: '4'
+                    - type: STRING
+                      name: thresholds.5.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.5.threshold
+                      value: '41'
+                    - type: STRING
+                      name: thresholds.6.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.6.threshold
+                      value: '42'
+                    - type: STRING
+                      name: thresholds.7.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.7.threshold
+                      value: '43'
+                    - type: STRING
+                      name: thresholds.8.color
+                      value: 9E9E9E
+                    - type: STRING
+                      name: thresholds.8.threshold
+                      value: '44'
+                    - type: STRING
+                      name: thresholds.9.color
+                      value: F44336
+                    - type: STRING
+                      name: thresholds.9.threshold
+                      value: '45'
+                - type: piechart
+                  name: 'Active calls'
+                  'y': '4'
+                  width: '24'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: draw_type
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF0000
+                    - type: INTEGER
+                      name: ds.0.dataset_aggregation
+                      value: '5'
+                    - type: STRING
+                      name: ds.0.data_set_label
+                      value: 'Active calls'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Trunk *: Active calls'
+                    - type: STRING
+                      name: ds.1.color
+                      value: 0EC9AC
+                    - type: INTEGER
+                      name: ds.1.dataset_aggregation
+                      value: '5'
+                    - type: STRING
+                      name: ds.1.data_set_label
+                      value: 'Active outbound calls'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Trunk *: Active outbound calls'
+                    - type: STRING
+                      name: ds.2.color
+                      value: 524BBC
+                    - type: INTEGER
+                      name: ds.2.dataset_aggregation
+                      value: '5'
+                    - type: STRING
+                      name: ds.2.data_set_label
+                      value: 'Active inbound calls'
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'Trunk *: Active inbound calls'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_value
+                      value: '1'
+                    - type: INTEGER
+                      name: space
+                      value: '2'
+                - type: piechart
+                  name: 'Concurrent call allocation'
+                  'y': '10'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: draw_type
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF0000
+                    - type: STRING
+                      name: ds.0.data_set_label
+                      value: 'Concurrent calls capacity'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Yeastar: Concurrent calls capacity'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: ds.1.data_set_label
+                      value: 'Concurrent calls allocated'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Yeastar: Concurrent calls allocated'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_value
+                      value: '1'
+                    - type: INTEGER
+                      name: space
+                      value: '2'
+                - type: piechart
+                  name: 'Active calls by direction'
+                  'y': '15'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: draw_type
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF0000
+                    - type: STRING
+                      name: ds.0.data_set_label
+                      value: 'Active external calls'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Yeastar: Active external calls'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: ds.1.data_set_label
+                      value: 'Active internal calls'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Yeastar: Active internal calls'
+                    - type: STRING
+                      name: ds.2.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: ds.2.data_set_label
+                      value: 'Active outbound calls'
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'Yeastar: Active outbound calls'
+                    - type: STRING
+                      name: ds.3.color
+                      value: 524BBC
+                    - type: STRING
+                      name: ds.3.data_set_label
+                      value: 'Active inbound calls'
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: 'Yeastar: Active inbound calls'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '4'
+                    - type: INTEGER
+                      name: legend_value
+                      value: '1'
+                    - type: INTEGER
+                      name: space
+                      value: '2'
+                - type: svggraph
+                  name: 'SIP trunk call activity'
+                  x: '24'
+                  'y': '4'
+                  width: '48'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF0000
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Trunk *: Active calls'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.1.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.1.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Trunk *: Active outbound calls'
+                    - type: INTEGER
+                      name: ds.1.width
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.2.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.2.color
+                      value: 524BBC
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'Trunk *: Active inbound calls'
+                    - type: INTEGER
+                      name: ds.2.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend
+                      value: '0'
+                    - type: STRING
+                      name: reference
+                      value: OTGUF
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Concurrent call allocation history'
+                  x: '24'
+                  'y': '10'
+                  width: '48'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF0000
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Yeastar: Concurrent calls capacity'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.1.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Yeastar: Concurrent calls allocated'
+                    - type: INTEGER
+                      name: ds.1.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: EJOWN
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Active call activity'
+                  x: '24'
+                  'y': '15'
+                  width: '48'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF0000
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Yeastar: Active external calls'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.1.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.1.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Yeastar: Active outbound calls'
+                    - type: INTEGER
+                      name: ds.1.width
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.2.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.2.color
+                      value: FFD54F
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'Yeastar: Active internal calls'
+                    - type: INTEGER
+                      name: ds.2.width
+                      value: '2'
+                    - type: INTEGER
+                      name: ds.3.approximation
+                      value: '7'
+                    - type: STRING
+                      name: ds.3.color
+                      value: 524BBC
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: 'Yeastar: Active inbound calls'
+                    - type: INTEGER
+                      name: ds.3.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '4'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: KOCDG
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+            - name: Extensions
+              widgets:
+                - type: piechart
+                  name: 'Extension allocation'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: draw_type
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.color
+                      value: 2E7D32
+                    - type: STRING
+                      name: ds.0.data_set_label
+                      value: 'Extension allocation'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Yeastar: Extension allocation'
+                    - type: INTEGER
+                      name: legend_value
+                      value: '1'
+                    - type: INTEGER
+                      name: space
+                      value: '2'
+                    - type: INTEGER
+                      name: total_show
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                    - type: INTEGER
+                      name: units_show
+                      value: '1'
+                - type: topitems
+                  name: 'Users overview'
+                  'y': '5'
+                  width: '72'
+                  height: '10'
+                  fields:
+                    - type: INTEGER
+                      name: columns.0.display_value_as
+                      value: '2'
+                    - type: STRING
+                      name: columns.0.items.0
+                      value: 'Extension *: Name'
+                    - type: INTEGER
+                      name: columns.1.display_value_as
+                      value: '2'
+                    - type: STRING
+                      name: columns.1.items.0
+                      value: 'Extension *: Presence'
+                    - type: INTEGER
+                      name: columns.2.display_value_as
+                      value: '2'
+                    - type: STRING
+                      name: columns.2.items.0
+                      value: 'Extension *: Email'
+                    - type: INTEGER
+                      name: columns.3.display_value_as
+                      value: '2'
+                    - type: STRING
+                      name: columns.3.items.0
+                      value: 'Extension *: Registered IP addresses'
+                    - type: INTEGER
+                      name: columns.4.display_value_as
+                      value: '2'
+                    - type: STRING
+                      name: columns.4.items.0
+                      value: 'Extension *: Linkus device type'
+                    - type: INTEGER
+                      name: host_ordering_limit
+                      value: '100'
+                    - type: INTEGER
+                      name: item_ordering_limit
+                      value: '100'
+                    - type: INTEGER
+                      name: item_ordering_order_by
+                      value: '2'
+                    - type: INTEGER
+                      name: layout
+                      value: '1'
+                    - type: INTEGER
+                      name: problems
+                      value: '2'
+                    - type: INTEGER
+                      name: show_column_header
+                      value: '0'
+                - type: piechart
+                  name: 'Extensions usage'
+                  x: '24'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: draw_type
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.color
+                      value: F4511E
+                    - type: STRING
+                      name: ds.0.data_set_label
+                      value: 'Extensions capacity'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Yeastar: Extensions capacity'
+                    - type: STRING
+                      name: ds.1.color
+                      value: 2E7D32
+                    - type: STRING
+                      name: ds.1.data_set_label
+                      value: 'Extensions used'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Yeastar: Extensions used'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_value
+                      value: '1'
+                    - type: INTEGER
+                      name: space
+                      value: '2'
+                - type: piechart
+                  name: 'Extensions distribution'
+                  x: '48'
+                  width: '24'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: draw_type
+                      value: '1'
+                    - type: STRING
+                      name: ds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: ds.0.data_set_label
+                      value: 'SIP device'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'Yeastar: SIP extensions connected'
+                    - type: STRING
+                      name: ds.1.color
+                      value: 0080FF
+                    - type: STRING
+                      name: ds.1.data_set_label
+                      value: 'Linkus Desktop'
+                    - type: STRING
+                      name: ds.1.items.0
+                      value: 'Yeastar: Linkus desktop connected'
+                    - type: STRING
+                      name: ds.2.color
+                      value: E57373
+                    - type: STRING
+                      name: ds.2.data_set_label
+                      value: 'Linkus Mobile'
+                    - type: STRING
+                      name: ds.2.items.0
+                      value: 'Yeastar: Linkus mobile connected'
+                    - type: STRING
+                      name: ds.3.color
+                      value: FFD54F
+                    - type: STRING
+                      name: ds.3.data_set_label
+                      value: 'Linkus Web'
+                    - type: STRING
+                      name: ds.3.items.0
+                      value: 'Yeastar: Linkus web connected'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '4'
+                    - type: INTEGER
+                      name: legend_lines_mode
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_value
+                      value: '1'
+                    - type: INTEGER
+                      name: space
+                      value: '2'
+                    - type: INTEGER
+                      name: total_show
+                      value: '1'
+            - name: 'Ring groups'
+              widgets:
+                - type: honeycomb
+                  name: 'Ring group strategy'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Ring group *: Ring strategy'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Ring group ([^:]+):.*$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: GMBID
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                - type: honeycomb
+                  name: 'Ring groups members count'
+                  'y': '7'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: FF5722
+                    - type: STRING
+                      name: items.0
+                      value: 'Ring group *: Member count'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Ring group ([^:]+):.*$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: EBHXY
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 43A047
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+            - name: Queues
+              widgets:
+                - type: honeycomb
+                  name: 'Waiting calls'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: 43A047
+                    - type: STRING
+                      name: items.0
+                      value: 'Queue *: Waiting calls'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Queue ([^:]+):.*$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: BRMEA
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: FF5722
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                - type: honeycomb
+                  name: 'Active calls'
+                  'y': '7'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Queue *: Active calls'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Queue ([^:]+):.*$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: LOPHW
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                - type: honeycomb
+                  name: 'Logged agents'
+                  'y': '14'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: FF5722
+                    - type: STRING
+                      name: items.0
+                      value: 'Queue *: Logged agents'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Queue ([^:]+):.*$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: BVZEQ
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 43A047
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                - type: honeycomb
+                  name: 'Available agents'
+                  'y': '21'
+                  width: '72'
+                  height: '7'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: FF5722
+                    - type: STRING
+                      name: items.0
+                      value: 'Queue *: Available agents'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Queue ([^:]+):.*$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: WKQUZ
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 43A047
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '1'
+                - type: topitems
+                  name: 'Queues overview'
+                  'y': '28'
+                  width: '72'
+                  height: '10'
+                  fields:
+                    - type: STRING
+                      name: columns.0.base_color
+                      value: 43A047
+                    - type: INTEGER
+                      name: columns.0.decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: columns.0.items.0
+                      value: 'Queue *: Waiting calls'
+                    - type: STRING
+                      name: columns.0.thresholds.0.color
+                      value: FF5722
+                    - type: STRING
+                      name: columns.0.thresholds.0.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: columns.1.decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: columns.1.items.0
+                      value: 'Queue *: Active calls'
+                    - type: STRING
+                      name: columns.2.base_color
+                      value: FF5722
+                    - type: INTEGER
+                      name: columns.2.decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: columns.2.items.0
+                      value: 'Queue *: Logged agents'
+                    - type: STRING
+                      name: columns.2.thresholds.0.color
+                      value: 43A047
+                    - type: STRING
+                      name: columns.2.thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: columns.3.base_color
+                      value: FF5722
+                    - type: INTEGER
+                      name: columns.3.decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: columns.3.items.0
+                      value: 'Queue *: Available agents'
+                    - type: STRING
+                      name: columns.3.thresholds.0.color
+                      value: 43A047
+                    - type: STRING
+                      name: columns.3.thresholds.0.threshold
+                      value: '1'
+                    - type: STRING
+                      name: columns.4.base_color
+                      value: 43A047
+                    - type: INTEGER
+                      name: columns.4.decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: columns.4.items.0
+                      value: 'Queue *: Paused agents'
+                    - type: STRING
+                      name: columns.4.thresholds.0.color
+                      value: FF5722
+                    - type: STRING
+                      name: columns.4.thresholds.0.threshold
+                      value: '1'
+                    - type: INTEGER
+                      name: item_ordering_limit
+                      value: '200'
+                    - type: INTEGER
+                      name: item_ordering_order_by
+                      value: '2'
+                    - type: INTEGER
+                      name: layout
+                      value: '1'
+                    - type: INTEGER
+                      name: problems
+                      value: '2'
+                    - type: INTEGER
+                      name: show_column_header
+                      value: '0'
+      valuemaps:
+        - uuid: 124aaf7d1c7d446db215aaf3510f7854
+          name: 'Yeastar connection state'
+          mappings:
+            - value: '0'
+              newvalue: Disconnected
+            - value: '1'
+              newvalue: Connected
+        - uuid: f88f7acf8c204dd5bcb1494745d1284e
+          name: 'Yeastar trunk status'
+          mappings:
+            - value: '0'
+              newvalue: Unknown
+            - value: '1'
+              newvalue: Idle
+            - value: '2'
+              newvalue: Busy
+            - value: '3'
+              newvalue: 'Idle (Unmonitored)'
+            - value: '4'
+              newvalue: Registering
+            - value: '41'
+              newvalue: 'Registration failed'
+            - value: '42'
+              newvalue: Unreachable
+            - value: '43'
+              newvalue: 'SIP Account Unavailable'
+            - value: '44'
+              newvalue: Disabled
+            - value: '45'
+              newvalue: 'Authentication Failed'
+  triggers:
+    - uuid: d24ce92b2ff74a65befe1b263a216b48
+      expression: |
+        last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls)>0
+        and
+        last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls.used)*100
+        /
+        last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls)
+        >= {$YEASTAR.CALLS.ALLOC.CRIT}
+        and {$YEASTAR.CALLS.ALLOC.ENABLED}=1
+      name: 'Yeastar: Concurrent call allocation above {$YEASTAR.CALLS.ALLOC.CRIT}%'
+      priority: AVERAGE
+      description: |
+        The allocated concurrent call capacity has reached {$YEASTAR.CALLS.ALLOC.CRIT}% of the licensed concurrent call capacity.
+        This alert can be disabled using the {$YEASTAR.CALLS.ALLOC.ENABLED} macro.
+      tags:
+        - tag: component
+          value: capacity
+        - tag: scope
+          value: calls
+    - uuid: 1b8be400b469410db384f72eebc0c523
+      expression: |
+        last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls)>0
+        and
+        last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls.used)*100
+        /
+        last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls)
+        >= {$YEASTAR.CALLS.ALLOC.WARN}
+        and {$YEASTAR.CALLS.ALLOC.ENABLED}=1
+      name: 'Yeastar: Concurrent call allocation above {$YEASTAR.CALLS.ALLOC.WARN}%'
+      priority: WARNING
+      description: |
+        The allocated concurrent call capacity has reached {$YEASTAR.CALLS.ALLOC.WARN}% of the licensed concurrent call capacity.
+        This alert can be disabled using the {$YEASTAR.CALLS.ALLOC.ENABLED} macro.
+      dependencies:
+        - name: 'Yeastar: Concurrent call allocation above {$YEASTAR.CALLS.ALLOC.CRIT}%'
+          expression: |
+            last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls)>0
+            and
+            last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls.used)*100
+            /
+            last(/Yeastar P-Series Cloud by HTTP/yeastar.capacity.calls)
+            >= {$YEASTAR.CALLS.ALLOC.CRIT}
+            and {$YEASTAR.CALLS.ALLOC.ENABLED}=1
+      tags:
+        - tag: component
+          value: capacity
+        - tag: scope
+          value: calls
+  graphs:
+    - uuid: 86048be3e94e4a838021de36eafa779d
+      name: 'Yeastar: Active calls'
+      ymin_type_1: FIXED
+      graph_items:
+        - color: 2196F3
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.calls.inbound
+        - sortorder: '1'
+          color: FF9800
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.calls.outbound
+        - sortorder: '2'
+          color: 9C27B0
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.calls.internal
+        - sortorder: '3'
+          color: 4CAF50
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.calls.external
+    - uuid: 0fe699bbc82b464c94f6da1892e35044
+      name: 'Yeastar: Client connections'
+      yaxismax: '0'
+      ymin_type_1: FIXED
+      graph_items:
+        - drawtype: BOLD_LINE
+          color: 2196F3
+          calc_fnc: ALL
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.extensions.sip.connected
+        - sortorder: '1'
+          drawtype: BOLD_LINE
+          color: 4CAF50
+          calc_fnc: ALL
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.desktop.connected
+        - sortorder: '2'
+          drawtype: BOLD_LINE
+          color: FF9800
+          calc_fnc: ALL
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.mobile.connected
+        - sortorder: '3'
+          drawtype: BOLD_LINE
+          color: 9C27B0
+          calc_fnc: ALL
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.web.connected
+    - uuid: 534897e81a534106b5dac5be13f55b81
+      name: 'Yeastar: Concurrent calls capacity'
+      ymin_type_1: FIXED
+      ymax_type_1: ITEM
+      ymax_item_1:
+        host: 'Yeastar P-Series Cloud by HTTP'
+        key: yeastar.capacity.calls
+      graph_items:
+        - drawtype: FILLED_REGION
+          color: FFD54F
+          item:
+            host: 'Yeastar P-Series Cloud by HTTP'
+            key: yeastar.capacity.calls.used
