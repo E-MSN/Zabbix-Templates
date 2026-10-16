@@ -15,6 +15,7 @@ The goal of this project is to make practical, tested and reusable Zabbix templa
   - [Storage systems](#storage-systems)
   - [UPS devices](#ups-devices)
   - [NVR devices](#nvr-devices)
+  - [Telephony](#telephony)
 - [Zabbix compatibility](#zabbix-compatibility)
 - [How to use](#how-to-use)
 - [About this project](#about-this-project)
@@ -96,6 +97,14 @@ Zabbix templates for network video recorders.
 | --- | --- |
 | [Dahua NVR](Zabbix%20Templates/Dahua%20NVR%20by%20web%20API%20and%20SNMP) | Web API and SNMP |
 | [Hikvision NVR](Zabbix%20Templates/Hikvision%20NVR%20by%20web%20API) | Web API |
+
+### Telephony
+
+Zabbix templates for telephony systems.
+
+| Template | Monitoring method |
+| --- | --- |
+| [Yeastar P-Series Cloud](Zabbix%20Templates/Yeastar%20P-Series%20Cloud%20by%20HTTP) | Web API |
 
 [Back to contents](#contents)
 
