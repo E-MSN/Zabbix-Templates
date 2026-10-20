@@ -4,13 +4,14 @@ This template is based on the original template written by Helmut Leonhardt.<br>
 https://github.com/zabbix/community-templates/tree/main/Storage_Devices/Synology/template_synology_diskstation_snmpv3
 ## Compatibility
 This template is designed for monitoring Synology NAS devices via SNMP.<br>
-It has been tested with DSM versions 6.2 through 7.3 and validated on the following models:
+It has been tested with DSM versions 6.2 through 7.4 and validated on the following models:
 - DS218
 - DS220j
 - DS223
 - DS1618+
 - DS1819+
 - RS1221+
+- RS1226RP+
 - RS2418+
 
 ## Usage
