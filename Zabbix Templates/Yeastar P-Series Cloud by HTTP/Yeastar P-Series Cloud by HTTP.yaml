@@ -1,7 +1,7 @@
 zabbix_export:
   version: '7.4'
   template_groups:
-    - uuid: b3ad5abed79e4a73bc7e5a106d36d4dc
+    - uuid: b28c9804d2d1494081a191996da7e33e
       name: Templates/Telephony
   templates:
     - uuid: 0919e24e0d494637a7cb41e6d4a06301
@@ -12,7 +12,7 @@ zabbix_export:
         Monitors system information, licensed capacity, SIP trunks, extensions, Linkus endpoints and call queues.
       vendor:
         name: E-MSN
-        version: 7.4-3
+        version: 7.4-4
       groups:
         - name: Templates/Telephony
       items:
@@ -1183,18 +1183,83 @@ zabbix_export:
                 - tag: component
                   value: trunk
               trigger_prototypes:
-                - uuid: 690a8ccc50d34805b370a83a05f23af7
-                  expression: |
-                    count(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}],#2,"ge",41)=2
-                    and
-                    count(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}],#2,"le",45)=2
-                  name: 'Trunk {#NAME}: SIP registration failed'
+                - uuid: 90b0e13a23ac467a9b4d570bc838e625
+                  expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}])=2'
+                  name: 'Trunk {#NAME}: Maximum concurrent calls reached'
                   opdata: 'Status: {ITEM.LASTVALUE1}'
-                  priority: HIGH
-                  description: 'The SIP trunk is unavailable, unreachable, or its registration has failed.'
+                  priority: AVERAGE
+                  description: 'The SIP trunk has reached its configured maximum number of concurrent calls.'
                   tags:
                     - tag: component
                       value: trunk
+                    - tag: scope
+                      value: capacity
+                - uuid: 1543dcd77fa84fb396d032877d5878da
+                  expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}])=43'
+                  name: 'Trunk {#NAME}: SIP account unavailable'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'SIP trunk is unavailable or not registered.'
+                  tags:
+                    - tag: component
+                      value: trunk
+                    - tag: scope
+                      value: availability
+                - uuid: 9f5752586a854a129f517cfaa0e94d78
+                  expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}])=45'
+                  name: 'Trunk {#NAME}: SIP authentication failed'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'SIP trunk authentication failed.'
+                  tags:
+                    - tag: component
+                      value: trunk
+                    - tag: scope
+                      value: availability
+                - uuid: 690a8ccc50d34805b370a83a05f23af7
+                  expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}])=41'
+                  name: 'Trunk {#NAME}: SIP registration failed'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'SIP trunk registration failed.'
+                  tags:
+                    - tag: component
+                      value: trunk
+                    - tag: scope²
+                      value: availability
+                - uuid: 7d7545e54a944388837df56343c73078
+                  expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}])=44'
+                  name: 'Trunk {#NAME}: SIP trunk disabled'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'SIP trunk is administratively disabled.'
+                  tags:
+                    - tag: component
+                      value: trunk
+                    - tag: scope
+                      value: availability
+                - uuid: caeaa661da1d4222b1c7ba2498a33a5a
+                  expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}])=42'
+                  name: 'Trunk {#NAME}: SIP trunk unreachable'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: HIGH
+                  description: 'SIP trunk is unreachable.'
+                  tags:
+                    - tag: component
+                      value: trunk
+                    - tag: scope
+                      value: availability
+                - uuid: cce4680e97b74797865aaacc7f233998
+                  expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.trunk.status[{#ID}])=0'
+                  name: 'Trunk {#NAME}: Unknown status'
+                  opdata: 'Status: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: 'The SIP trunk reports an unknown status.'
+                  tags:
+                    - tag: component
+                      value: trunk
+                    - tag: scope
+                      value: availability
             - uuid: c853fea1e3df4ff3baef623eb66e2758
               name: 'Trunk {#NAME}: Type'
               type: DEPENDENT
@@ -1403,7 +1468,25 @@ zabbix_export:
             - name: Trunks
               widgets:
                 - type: honeycomb
+                  name: 'SIP trunk type'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'Trunk *: Type'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^Trunk (.*): Type$", "\1")}'
+                    - type: STRING
+                      name: reference
+                      value: EQAJU
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                - type: honeycomb
                   name: 'SIP trunk status'
+                  'y': '4'
                   width: '72'
                   height: '4'
                   fields:
@@ -1433,7 +1516,7 @@ zabbix_export:
                       value: '1'
                     - type: STRING
                       name: thresholds.2.color
-                      value: 4CAF50
+                      value: FF9800
                     - type: STRING
                       name: thresholds.2.threshold
                       value: '2'
@@ -1481,7 +1564,7 @@ zabbix_export:
                       value: '45'
                 - type: piechart
                   name: 'Active calls'
-                  'y': '4'
+                  'y': '8'
                   width: '24'
                   height: '6'
                   fields:
@@ -1535,7 +1618,7 @@ zabbix_export:
                       value: '2'
                 - type: piechart
                   name: 'Concurrent call allocation'
-                  'y': '10'
+                  'y': '14'
                   width: '24'
                   height: '5'
                   fields:
@@ -1571,7 +1654,7 @@ zabbix_export:
                       value: '2'
                 - type: piechart
                   name: 'Active calls by direction'
-                  'y': '15'
+                  'y': '19'
                   width: '24'
                   height: '5'
                   fields:
@@ -1626,7 +1709,7 @@ zabbix_export:
                 - type: svggraph
                   name: 'SIP trunk call activity'
                   x: '24'
-                  'y': '4'
+                  'y': '8'
                   width: '48'
                   height: '6'
                   fields:
@@ -1678,7 +1761,7 @@ zabbix_export:
                 - type: svggraph
                   name: 'Concurrent call allocation history'
                   x: '24'
-                  'y': '10'
+                  'y': '14'
                   width: '48'
                   height: '5'
                   fields:
@@ -1721,7 +1804,7 @@ zabbix_export:
                 - type: svggraph
                   name: 'Active call activity'
                   x: '24'
-                  'y': '15'
+                  'y': '19'
                   width: '48'
                   height: '5'
                   fields:
@@ -2226,7 +2309,7 @@ zabbix_export:
             - value: '2'
               newvalue: Busy
             - value: '3'
-              newvalue: 'Idle (Unmonitored)'
+              newvalue: 'Idle (unmonitored)'
             - value: '4'
               newvalue: Registering
             - value: '41'
@@ -2234,11 +2317,11 @@ zabbix_export:
             - value: '42'
               newvalue: Unreachable
             - value: '43'
-              newvalue: 'SIP Account Unavailable'
+              newvalue: 'SIP Account unavailable'
             - value: '44'
               newvalue: Disabled
             - value: '45'
-              newvalue: 'Authentication Failed'
+              newvalue: 'Authentication failed'
   triggers:
     - uuid: d24ce92b2ff74a65befe1b263a216b48
       expression: |
