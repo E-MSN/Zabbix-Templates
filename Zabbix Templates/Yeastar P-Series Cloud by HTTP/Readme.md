@@ -30,3 +30,5 @@ Add your PBX using the **'Yeastar P-Series Cloud by HTTP'** template, then confi
 ![Ring groups](./images/Ring%20groups.png)
 **Queues:**
 ![Queues](./images/Queues.png)
+**Voicemail:**
+![Voicemail](./images/Voicemail.png)
