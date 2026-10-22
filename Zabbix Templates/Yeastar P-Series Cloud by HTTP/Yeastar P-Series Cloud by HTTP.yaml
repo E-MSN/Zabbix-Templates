@@ -9,10 +9,10 @@ zabbix_export:
       name: 'Yeastar P-Series Cloud by HTTP'
       description: |
         Yeastar P-Series Cloud Edition by REST API.
-        Monitors system information, licensed capacity, SIP trunks, extensions, Linkus endpoints and call queues.
+        Monitors system information, licensed capacity, SIP trunks, extensions, Linkus endpoints, call queues and voicemails.
       vendor:
         name: E-MSN
-        version: 7.4-5
+        version: 7.4-6
       groups:
         - name: Templates/Telephony
       items:
@@ -570,6 +570,147 @@ zabbix_export:
           tags:
             - tag: component
               value: inventory
+        - uuid: be48f5d40eda40d6924e183fb5d9aad9
+          name: 'Yeastar: Collect voicemail data'
+          type: SCRIPT
+          key: yeastar.voicemail.raw
+          delay: 5m
+          history: 1d
+          value_type: TEXT
+          params: |
+            var p = JSON.parse(value);
+            var base = String(p.url).replace(/\/$/, '') + '/openapi/v1.0/';
+            var http = new HttpRequest();
+            http.addHeader('User-Agent: Zabbix');
+            http.addHeader('Content-Type: application/json');
+            function request(path, body) {
+                var response = body === null ? http.get(base + path) : http.post(base + path, JSON.stringify(body));
+                if (http.getStatus() !== 200) { throw 'Voicemail API HTTP ' + http.getStatus(); }
+                var result = JSON.parse(response);
+                if (result.errcode !== 0) { throw 'Voicemail API error ' + result.errcode + ': ' + result.errmsg; }
+                return result;
+            }
+            function count(n) {
+                if (typeof n !== 'number' || !isFinite(n) || n < 0 || Math.floor(n) !== n) {
+                    throw 'Invalid voicemail API total';
+                }
+                return n;
+            }
+            var auth = request('get_token', {username: p.id, password: p.secret});
+            var token = encodeURIComponent(auth.access_token);
+            function get(path) { return request(path + '&access_token=' + token, null); }
+            function inventory(path, field) {
+                var rows = [], seen = {}, expected = null;
+                for (var page = 1; page <= 10000; page++) {
+                    var response = get(path + '?page=' + page + '&page_size=100&sort_by=id&order_by=asc');
+                    var total = count(response.total_number);
+                    if (expected !== null && expected !== total) { throw 'Voicemail inventory changed during pagination; retry next poll'; }
+                    expected = total;
+                    var list = response[field];
+                    // An explicitly empty inventory may omit its list or return null.
+                    if (total === 0 && rows.length === 0 && (list === undefined || list === null)) {
+                        return [];
+                    }
+                    if (!Array.isArray(list)) {
+                        var shape = Object.keys(response).map(function(key) {
+                            var v = response[key];
+                            return key + ':' + (v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v);
+                        }).join(', ');
+                        throw 'Voicemail inventory ' + path + ', page=' + page + ', total_number=' + total
+                            + ': expected array ' + field + '; response fields: ' + shape;
+                    }
+                    for (var i = 0; i < list.length; i++) {
+                        var id = String(list[i].id);
+                        if (!/^\d+$/.test(id) || seen[id]) { throw 'Invalid or repeated voicemail inventory ID'; }
+                        seen[id] = true;
+                        rows.push(list[i]);
+                    }
+                    if (rows.length === total) { return rows; }
+                    if (!list.length || rows.length > total) { throw 'Incomplete voicemail inventory'; }
+                }
+                throw 'Voicemail inventory pagination limit reached';
+            }
+            try {
+                var users = inventory('extension/list', 'data');
+                var groups = inventory('vm_group/list', 'vm_group_list');
+                var boxes = [], byNumber = {}, output = {mailboxes: {}};
+                function add(row, kind) {
+                    var number = String(row.number);
+                    if (!/^\d+$/.test(number) || byNumber[number]) { throw 'Invalid or duplicate mailbox number'; }
+                    var box = {kind: kind, number: number, name: String(row.caller_id_name || row.name || number)};
+                    byNumber[number] = box;
+                    boxes.push(box);
+                }
+                // Only enabled user mailboxes enter collection and low-level discovery.
+                // A missing activation flag is an API error, not a disabled mailbox.
+                for (var userOffset = 0; userOffset < users.length; userOffset += 20) {
+                    var userBatch = users.slice(userOffset, userOffset + 20);
+                    var requestedUsers = {}, returnedUsers = {}, ids = [];
+                    for (var u = 0; u < userBatch.length; u++) {
+                        var userId = String(userBatch[u].id);
+                        requestedUsers[userId] = userBatch[u];
+                        ids.push(userId);
+                    }
+                    var details = get('extension/query?ids=' + encodeURIComponent(ids.join(','))).data;
+                    if (!Array.isArray(details)) { throw 'Missing extension/query data for voicemail activation'; }
+                    for (var d = 0; d < details.length; d++) {
+                        var detail = details[d], detailId = String(detail.id);
+                        var user = requestedUsers[detailId];
+                        if (!user || returnedUsers[detailId]) { throw 'Unexpected or duplicate extension/query ID'; }
+                        returnedUsers[detailId] = true;
+                        if (detail.enb_vm !== 0 && detail.enb_vm !== 1) {
+                            throw 'Missing or invalid enb_vm for extension ID ' + detailId;
+                        }
+                        if (detail.enb_vm === 1) { add(user, 'user'); }
+                    }
+                    for (var v = 0; v < ids.length; v++) {
+                        if (!returnedUsers[ids[v]]) { throw 'Missing extension/query result for ID ' + ids[v]; }
+                    }
+                }
+                for (var j = 0; j < groups.length; j++) {
+                    if (groups[j].mode === 'share') { add(groups[j], 'group'); }
+                    else if (groups[j].mode !== 'broadcast') { throw 'Unknown group voicemail mode'; }
+                }
+                for (var offset = 0; offset < boxes.length; offset += 20) {
+                    var batch = boxes.slice(offset, offset + 20), wanted = {}, received = {};
+                    var numbers = [];
+                    for (var k = 0; k < batch.length; k++) {
+                        wanted[batch[k].number] = batch[k];
+                        numbers.push(batch[k].number);
+                    }
+                    // total_number is the mailbox total, independent of the paginated message data.
+                    // Fetch only one message per mailbox; never count data.length or store message details.
+                    var response = get('vm/query?number=' + encodeURIComponent(numbers.join(',')) + '&page=1&page_size=1');
+                    var list = response.voicemail_list;
+                    if (!Array.isArray(list)) { throw 'Missing voicemail_list'; }
+                    for (var m = 0; m < list.length; m++) {
+                        var number = String(list[m].number), box = wanted[number];
+                        if (!box || received[number]) { throw 'Unexpected or duplicate voicemail result'; }
+                        received[number] = true;
+                        box.count = count(list[m].total_number);
+                        output.mailboxes[box.kind + '_' + number] = box;
+                    }
+                    for (var n = 0; n < batch.length; n++) {
+                        if (!received[batch[n].number]) { throw 'Missing voicemail total for ' + batch[n].number; }
+                    }
+                }
+                return JSON.stringify(output);
+            } finally {
+                try { request('del_token?access_token=' + token, null); }
+                catch (e) { Zabbix.log(3, 'Yeastar voicemail: Token revocation failed'); }
+            }
+          description: 'Collects paginated extension and group inventories, checks extension/query enb_vm, then collects vm/query total_number only for enabled user mailboxes and shared group mailboxes. Shared groups are monitored directly; broadcast groups store messages in member mailboxes. No unread counts or message details are retained. A missing or invalid total fails collection instead of reporting zero.'
+          timeout: 60s
+          parameters:
+            - name: id
+              value: '{$YEASTAR.CLIENT.ID}'
+            - name: secret
+              value: '{$YEASTAR.CLIENT.SECRET}'
+            - name: url
+              value: '{$YEASTAR.URL}'
+          tags:
+            - tag: component
+              value: voicemail
         - uuid: 80d9fc4fbc324e6480c81ed3b4b2a08c
           name: 'Yeastar: Linkus web connected'
           type: CALCULATED
@@ -1324,6 +1465,83 @@ zabbix_export:
                 - |
                   var x = JSON.parse(value);
                   return JSON.stringify(x.trunks.map(function(o) { return {"{#ID}": o.id, "{#NAME}": o.name}; }));
+        - uuid: 50c55b9d40854002b67b1fb47d849453
+          name: 'Voicemail discovery'
+          type: DEPENDENT
+          key: yeastar.voicemail.discovery
+          description: |
+            Discovers enabled user mailboxes and shared group mailboxes.
+            Broadcast groups are represented by their member mailboxes.
+          item_prototypes:
+            - uuid: fd225c69f969430ba2ddc8a19b099bb1
+              name: 'Voicemail {#VM.KIND} {#VM.NUMBER} ({#VM.NAME}): Messages'
+              type: DEPENDENT
+              key: 'yeastar.voicemail.count[{#VM.KIND},{#VM.NUMBER}]'
+              history: 90d
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var box = JSON.parse(value).mailboxes["{#VM.KIND}_{#VM.NUMBER}"];
+                      if (!box) { throw "Mailbox missing"; }
+                      return box.count;
+              master_item:
+                key: yeastar.voicemail.raw
+              tags:
+                - tag: component
+                  value: voicemail
+                - tag: mailbox
+                  value: '{#VM.NUMBER}'
+                - tag: mailbox_type
+                  value: '{#VM.KIND}'
+            - uuid: 446074aebd20440c89527e90e5479e65
+              name: 'Voicemail {#VM.KIND} {#VM.NUMBER} ({#VM.NAME}): Occupation'
+              type: DEPENDENT
+              key: 'yeastar.voicemail.pct[{#VM.KIND},{#VM.NUMBER}]'
+              history: 90d
+              value_type: FLOAT
+              units: '%'
+              preprocessing:
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var box = JSON.parse(value).mailboxes["{#VM.KIND}_{#VM.NUMBER}"];
+                      if (!box) { throw "Mailbox missing"; }
+                      var quota = Number("{$YEASTAR.VOICEMAIL.MAX}");
+                      if (!isFinite(quota) || quota <= 0 || Math.floor(quota) !== quota) { throw "Voicemail quota must be a positive integer"; }
+                      return 100 * box.count / quota;
+              master_item:
+                key: yeastar.voicemail.raw
+              tags:
+                - tag: component
+                  value: voicemail
+                - tag: mailbox
+                  value: '{#VM.NUMBER}'
+                - tag: mailbox_type
+                  value: '{#VM.KIND}'
+              trigger_prototypes:
+                - uuid: 9f09822dd40741c3844e81c72b177628
+                  expression: 'last(/Yeastar P-Series Cloud by HTTP/yeastar.voicemail.pct[{#VM.KIND},{#VM.NUMBER}])>=90'
+                  name: 'Voicemail of {#VM.KIND} {#VM.NUMBER} ({#VM.NAME}): Occupation >90%'
+                  opdata: 'VM Occupation: {ITEM.LASTVALUE1}'
+                  priority: WARNING
+                  description: |
+                    This voicemail has reached 90% of the allowed storage limit.
+                    When reaching the limit, the PBX will automatically clear the oldest data to ensure that the data storage limit is not exceeded.
+                  tags:
+                    - tag: component
+                      value: voicemail
+          master_item:
+            key: yeastar.voicemail.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var boxes = JSON.parse(value).mailboxes;
+                  return JSON.stringify(Object.keys(boxes).map(function(key) {
+                      var b = boxes[key];
+                      return {"{#VM.KIND}": b.kind, "{#VM.NUMBER}": b.number, "{#VM.NAME}": b.name};
+                  }));
       tags:
         - tag: class
           value: voip
@@ -1356,6 +1574,9 @@ zabbix_export:
         - macro: '{$YEASTAR.URL}'
           value: 'https://pbx.example.yeastarcloud.com'
           description: 'PBX base URL without trailing slash.'
+        - macro: '{$YEASTAR.VOICEMAIL.MAX}'
+          value: '100'
+          description: 'Maximum number of voicemail messages per mailbox (must match the PBX settings)'
       dashboards:
         - uuid: 36f9775153a340f08dbabc93c5311303
           name: Overview
@@ -2298,6 +2519,46 @@ zabbix_export:
                     - type: INTEGER
                       name: item_ordering_order_by
                       value: '2'
+                    - type: INTEGER
+                      name: layout
+                      value: '1'
+                    - type: INTEGER
+                      name: problems
+                      value: '2'
+                    - type: INTEGER
+                      name: show_column_header
+                      value: '0'
+            - name: Voicemail
+              widgets:
+                - type: topitems
+                  name: 'Voicemail occupation'
+                  width: '72'
+                  height: '11'
+                  fields:
+                    - type: STRING
+                      name: columns.0.base_color
+                      value: 43A047
+                    - type: INTEGER
+                      name: columns.0.decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: columns.0.items.0
+                      value: 'Voicemail *: Occupation'
+                    - type: STRING
+                      name: columns.0.thresholds.0.color
+                      value: FF9800
+                    - type: STRING
+                      name: columns.0.thresholds.0.threshold
+                      value: '80'
+                    - type: STRING
+                      name: columns.0.thresholds.1.color
+                      value: F44336
+                    - type: STRING
+                      name: columns.0.thresholds.1.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: item_ordering_limit
+                      value: '200'
                     - type: INTEGER
                       name: layout
                       value: '1'
