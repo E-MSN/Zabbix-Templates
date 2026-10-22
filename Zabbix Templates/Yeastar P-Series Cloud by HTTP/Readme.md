@@ -4,7 +4,7 @@ Built from scratch by E-MSN.
 ## Compatibility
 This template is designed for monitoring Yeastar P-Series Cloud PBX.<br>
 It has been tested on the following firmware:
-- 84.24.0.73
+- from 84.24.0.73 to 84.24.0.122
 
 **Compatibility with older PBX firmware is not guaranteed.**
 
