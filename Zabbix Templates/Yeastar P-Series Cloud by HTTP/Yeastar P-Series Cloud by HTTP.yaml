@@ -12,7 +12,7 @@ zabbix_export:
         Monitors system information, licensed capacity, SIP trunks, extensions, Linkus endpoints and call queues.
       vendor:
         name: E-MSN
-        version: 7.4-4
+        version: 7.4-5
       groups:
         - name: Templates/Telephony
       items:
@@ -308,6 +308,22 @@ zabbix_export:
           tags:
             - tag: component
               value: system
+          triggers:
+            - uuid: cf3067bcfcb440eea41483dae8792036
+              expression: 'changecount(/Yeastar P-Series Cloud by HTTP/yeastar.device.firmware,#2)=1'
+              recovery_mode: NONE
+              name: 'Yeastar: PBX has been updated'
+              opdata: 'Firmware version changed (new version: {ITEM.LASTVALUE1})'
+              priority: INFO
+              description: |
+                The PBX firmware version has changed, indicating a possible upgrade or downgrade.
+                This event requires manual closure.
+              manual_close: 'YES'
+              tags:
+                - tag: component
+                  value: system
+                - tag: scope
+                  value: software
         - uuid: de306e35cc5b488d9d683bdc1275ce2e
           name: 'Yeastar: Model'
           type: DEPENDENT
