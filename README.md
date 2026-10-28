@@ -12,6 +12,7 @@ The goal of this project is to make practical, tested and reusable Zabbix templa
   - [Network switches](#network-switches)
   - [Wi-Fi access points and controllers](#wi-fi-access-points-and-controllers)
   - [Servers and management controllers](#servers-and-management-controllers)
+  - [Virtualization and Hypervisors](#virtualization-and-hypervisors)
   - [Storage systems](#storage-systems)
   - [UPS devices](#ups-devices)
   - [NVR devices](#nvr-devices)
@@ -68,6 +69,14 @@ Zabbix templates for server hardware management controllers.
 | Template | Monitoring method |
 | --- | --- |
 | [Lenovo XCC](Zabbix%20Templates/Lenovo%20XCC%20by%20SNMP) | SNMP |
+
+### Virtualization and Hypervisors
+
+Zabbix templates for virtualization platforms, hypervisors, and virtual infrastructure monitoring.
+
+| Template | Monitoring method |
+| --- | --- |
+| [Vates Virtualization Management Stack](Zabbix%20Templates/Xen%20Orchestra%20by%20HTTP) | Web API |
 
 ### Storage systems
 
