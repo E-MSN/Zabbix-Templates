@@ -37,7 +37,8 @@ Connect to XOA with your web browser and authenticate with the administrator acc
 Open ***'REST API doc'*** from the Xen Orchestra web interface (XO-5 web UI).<br>
 Go to ***'Users'***, open ***'POST /users/{id}/authentication_tokens'*** then click on the ***'Try it out'*** button.<br>
 Adapt the request body to your needs. For example:<br>
-```{
+```
+{
     "client": {
         "id": "zabbix"
     },
