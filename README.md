@@ -64,11 +64,12 @@ Zabbix templates for wireless access points and WLAN controllers.
 
 ### Servers and management controllers
 
-Zabbix templates for server hardware management controllers.
+Zabbix templates for server hardware and management controllers.
 
 | Template | Monitoring method |
 | --- | --- |
 | [Lenovo XCC](Zabbix%20Templates/Lenovo%20XCC%20by%20SNMP) | SNMP |
+| [NVIDIA DGX Spark and vLLM](Zabbix%20Templates/NVIDIA%20DGX%20Spark%20by%20Zabbix%20agent%202%20active) | Zabbix agent 2 active |
 
 ### Virtualization and Hypervisors
 
