@@ -1,0 +1,2585 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 9e3e55f0f47c41e3a8b0e0e0b1d1c001
+      name: Templates/Applications
+  templates:
+    - uuid: fd770d65c1094540b99a5b8d2c42b21e
+      template: 'Nvidia GB10 by Zabbix agent 2 active'
+      name: 'Nvidia GB10 by Zabbix agent 2 active'
+      description: |
+        Monitors the NVIDIA GB10 Grace Blackwell Superchip using Zabbix agent 2 in active mode.
+        
+        Uses NVIDIA-SMI master items and dependent items to reduce collection overhead. Includes basic visibility into vLLM engine processes; detailed inference metrics require separate vLLM monitoring.
+        
+        Tested on NVIDIA DGX Spark.
+      vendor:
+        name: E-MSN
+        version: 7.4-1
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: 35d664800a1545e6a449d69984350e96
+          name: 'GB10: Decoder activity'
+          type: DEPENDENT
+          key: gb10.busy.decoder
+          value_type: FLOAT
+          units: '%'
+          description: 'Percentage of the sampling period during which the NVIDIA hardware video decoder (NVDEC) was active.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Utilization", field="Decoder";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: utilization
+        - uuid: 432415309ef64a8c9402bd50e0cda003
+          name: 'GB10: Encoder activity'
+          type: DEPENDENT
+          key: gb10.busy.encoder
+          value_type: FLOAT
+          units: '%'
+          description: 'Percentage of the sampling period during which the NVIDIA hardware video encoder (NVENC) was active.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Utilization", field="Encoder";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: utilization
+        - uuid: 04b2b7656f2948b1b84e5e5b72014ca2
+          name: 'GB10: JPEG activity'
+          type: DEPENDENT
+          key: gb10.busy.jpeg
+          value_type: FLOAT
+          units: '%'
+          description: 'Percentage of the sampling period during which the hardware JPEG processing engine was active.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Utilization", field="JPEG";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: utilization
+        - uuid: dcfc98c09cdf4c1a919325e3ebe7a876
+          name: 'GB10: Memory activity'
+          type: DEPENDENT
+          key: gb10.busy.memory
+          value_type: FLOAT
+          units: '%'
+          description: 'Percentage of the sampling period during which GPU memory was being read or written. This is not memory capacity utilization or memory bandwidth.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Utilization", field="Memory";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: utilization
+        - uuid: a1577f28c3cd492f9c4df37e4648f262
+          name: 'GB10: OFA activity'
+          type: DEPENDENT
+          key: gb10.busy.ofa
+          value_type: FLOAT
+          units: '%'
+          description: 'Percentage of the sampling period during which the Optical Flow Accelerator (OFA) was active.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Utilization", field="OFA";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: utilization
+        - uuid: f41ac60af1bd41e8b64a7e9e67940c25
+          name: 'GB10: Graphics clock'
+          type: DEPENDENT
+          key: gb10.clock.graphics
+          value_type: FLOAT
+          units: '!MHz'
+          description: 'Current GPU graphics clock frequency, in MHz.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks", field="Graphics";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: clocks
+        - uuid: 6d297d6b87e041f7a806ffda965a45db
+          name: 'GB10: Maximum Graphics clock'
+          type: DEPENDENT
+          key: gb10.clock.max.graphics
+          value_type: FLOAT
+          units: '!MHz'
+          description: 'Maximum reported GPU graphics clock frequency, in MHz; not necessarily a sustained operating frequency.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Max Clocks", field="Graphics";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: clocks
+        - uuid: 08a00be7ea0b458e865bcede6c0a8c43
+          name: 'GB10: Maximum SM clock'
+          type: DEPENDENT
+          key: gb10.clock.max.sm
+          value_type: FLOAT
+          units: '!MHz'
+          description: 'Maximum reported Streaming Multiprocessor (SM) clock frequency, in MHz; not necessarily a sustained operating frequency.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Max Clocks", field="SM";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: clocks
+        - uuid: d63301349750448d810aada43c9e3ade
+          name: 'GB10: Maximum Video clock'
+          type: DEPENDENT
+          key: gb10.clock.max.video
+          value_type: FLOAT
+          units: '!MHz'
+          description: 'Maximum reported video engine clock frequency, in MHz; not necessarily a sustained operating frequency.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Max Clocks", field="Video";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: clocks
+        - uuid: 0d6cabfdc3c64576930f548c53a4c15a
+          name: 'GB10: SM clock'
+          type: DEPENDENT
+          key: gb10.clock.sm
+          value_type: FLOAT
+          units: '!MHz'
+          description: 'Current Streaming Multiprocessor (SM) clock frequency, in MHz.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks", field="SM";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: clocks
+        - uuid: 9197fcee9b384210a30a7aba590eb37b
+          name: 'GB10: Video clock'
+          type: DEPENDENT
+          key: gb10.clock.video
+          value_type: FLOAT
+          units: '!MHz'
+          description: 'Current video engine clock frequency, in MHz.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks", field="Video";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: clocks
+        - uuid: 743a7d21bb0447178838af86c6024761
+          name: 'GB10: Detailed GPU report'
+          type: ZABBIX_ACTIVE
+          key: gb10.details
+          history: '0'
+          value_type: TEXT
+          description: 'Raw detailed NVIDIA-SMI GPU report used as the source for dependent hardware metrics. Collection requires the gb10.details agent key.'
+          timeout: 10s
+          tags:
+            - tag: component
+              value: raw
+          triggers:
+            - uuid: 6d1d4fe950b34e25ad79912f454d541b
+              expression: 'nodata(/Nvidia GB10 by Zabbix agent 2 active/gb10.details,5m)=1'
+              name: 'GB10: No detailed GPU report for 5 minutes'
+              priority: WARNING
+        - uuid: df1db94bb8e248aa95c71be1d23eb8e2
+          name: 'GB10: Driver version'
+          type: DEPENDENT
+          key: gb10.driver
+          value_type: CHAR
+          description: 'NVIDIA GPU driver version reported by NVIDIA-SMI.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'var fields = value.trim().split('',''); if (fields.length !== 6) { throw ''Unexpected nvidia-smi output: '' + value; } var result = fields[1].trim(); return result;'
+          master_item:
+            key: gb10.metrics
+          tags:
+            - tag: component
+              value: gpu
+        - uuid: ccac1f80cfb74c3e952b9efa40e88b79
+          name: 'GB10: Applications Clocks Setting active'
+          type: DEPENDENT
+          key: gb10.limit.applications_clocks_setting
+          description: 'Indicates whether configured application clock settings are constraining GPU clocks. 1 = Active; 0 = Inactive. Not necessarily a fault.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="Applications Clocks Setting";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: b900057a2a094d46a513cff424420aeb
+          name: 'GB10: Display Clock Setting active'
+          type: DEPENDENT
+          key: gb10.limit.display_clock_setting
+          description: 'Indicates whether display-related clock settings are constraining GPU clocks. 1 = Active; 0 = Inactive. Not necessarily a fault.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="Display Clock Setting";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 1bbda4c5d459498b97b9b62912d16a4a
+          name: 'GB10: HW Power Brake Slowdown active'
+          type: DEPENDENT
+          key: gb10.limit.hw_power_brake_slowdown
+          description: 'Indicates a hardware power-brake signal causing GPU clock reduction. 1 = Active; 0 = Inactive.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="HW Power Brake Slowdown";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 2e6ed4aaceb64bbb90ba305dafb16d83
+          name: 'GB10: HW Slowdown active'
+          type: DEPENDENT
+          key: gb10.limit.hw_slowdown
+          description: 'Indicates hardware-enforced GPU clock slowdown, potentially due to thermal or power constraints. 1 = Active; 0 = Inactive.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="HW Slowdown";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: c07a9d5a1426499e9a049c323318a371
+          name: 'GB10: HW Thermal Slowdown active'
+          type: DEPENDENT
+          key: gb10.limit.hw_thermal_slowdown
+          description: 'Indicates GPU clock reduction enforced by hardware thermal protection. 1 = Active; 0 = Inactive.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="HW Thermal Slowdown";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 8c59d7bc95d84e5d90715d1077a6263e
+          name: 'GB10: Idle active'
+          type: DEPENDENT
+          key: gb10.limit.idle
+          description: 'Indicates reduced GPU clocks because the device is idle. 1 = Active; 0 = Inactive. Normal when idle.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="Idle";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 1dea4dea0a0847128a63f47d6040350f
+          name: 'GB10: SW Power Cap active'
+          type: DEPENDENT
+          key: gb10.limit.sw_power_cap
+          description: 'Indicates GPU clocks constrained by the configured software power cap. 1 = Active; 0 = Inactive. Can be normal under load.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="SW Power Cap";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: a17e51f4218f4b67a633357ba91b246a
+          name: 'GB10: SW Thermal Slowdown active'
+          type: DEPENDENT
+          key: gb10.limit.sw_thermal_slowdown
+          description: 'Indicates GPU clock reduction by software thermal management. 1 = Active; 0 = Inactive.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="SW Thermal Slowdown";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 10212f34eaec49b8aaea6c30bc078142
+          name: 'GB10: Sync Boost active'
+          type: DEPENDENT
+          key: gb10.limit.sync_boost
+          description: 'Indicates clock constraints related to GPU synchronization. 1 = Active; 0 = Inactive. Not necessarily a fault.'
+          valuemap:
+            name: 'NVIDIA GPU status'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons", field="Sync Boost";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  if(result==='Active') return 1; if(result==='Not Active') return 0; throw 'Unknown status: '+result;
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: a2f131c089be45adb022d57cb6b73aa9
+          name: 'GB10: HW Power Braking cumulative duration'
+          type: DEPENDENT
+          key: gb10.limit.time.hw_power_braking
+          units: '!us'
+          description: 'Cumulative duration of hardware power braking reported by the driver, in microseconds. Not the duration within the latest polling interval.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons Counters", field="HW Power Braking";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 0bc999c5a0ba4cbd8af359bd72fc21cf
+          name: 'GB10: HW Thermal Slowdown cumulative duration'
+          type: DEPENDENT
+          key: gb10.limit.time.hw_thermal_slowdown
+          units: '!us'
+          description: 'Cumulative duration of hardware thermal slowdown reported by the driver, in microseconds. Not the duration within the latest polling interval.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons Counters", field="HW Thermal Slowdown";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 107463d404f24c85a217e6ed06a7f3ec
+          name: 'GB10: SW Power Capping cumulative duration'
+          type: DEPENDENT
+          key: gb10.limit.time.sw_power_capping
+          units: '!us'
+          description: 'Cumulative duration of software power capping reported by the driver, in microseconds. Not the duration within the latest polling interval.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons Counters", field="SW Power Capping";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 9d827d267ffb4149a023b5a829fd0dd7
+          name: 'GB10: SW Thermal Slowdown cumulative duration'
+          type: DEPENDENT
+          key: gb10.limit.time.sw_thermal_slowdown
+          units: '!us'
+          description: 'Cumulative duration of software thermal slowdown reported by the driver, in microseconds. Not the duration within the latest polling interval.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons Counters", field="SW Thermal Slowdown";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 4b06f2f406bd44c6aee916d547cd8392
+          name: 'GB10: Sync Boost cumulative duration'
+          type: DEPENDENT
+          key: gb10.limit.time.sync_boost
+          units: '!us'
+          description: 'Cumulative duration of synchronization-related clock constraints reported by the driver, in microseconds. Not the duration within the latest polling interval.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Clocks Event Reasons Counters", field="Sync Boost";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: throttling
+        - uuid: 22c5d1da48e24c43b0d78aa1359bf638
+          name: 'GB10: GPU metrics'
+          type: ZABBIX_ACTIVE
+          key: gb10.metrics
+          history: '0'
+          value_type: TEXT
+          description: 'Raw NVIDIA-SMI GPU metrics used as the source for dependent GPU identity, utilization, power and temperature items. Collection requires the gb10.metrics agent key.'
+          timeout: 10s
+          tags:
+            - tag: component
+              value: raw
+          triggers:
+            - uuid: 06ae6fd389ee4b1398bc0c269faab4e9
+              expression: 'nodata(/Nvidia GB10 by Zabbix agent 2 active/gb10.metrics,5m)=1'
+              name: 'GB10: No GPU metrics for 5 minutes'
+              priority: WARNING
+        - uuid: 5e77d611527342fdaeb257da0815d709
+          name: 'GB10: GPU name'
+          type: DEPENDENT
+          key: gb10.name
+          value_type: CHAR
+          description: 'GPU model name as reported by NVIDIA-SMI.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'var fields = value.trim().split('',''); if (fields.length !== 6) { throw ''Unexpected nvidia-smi output: '' + value; } var result = fields[0].trim(); return result;'
+          master_item:
+            key: gb10.metrics
+          tags:
+            - tag: component
+              value: gpu
+        - uuid: eec7ce60e0344b8ea56515da873f6dde
+          name: 'GB10: PCIe replays since reset'
+          type: DEPENDENT
+          key: gb10.pcie.replays
+          description: 'Cumulative PCIe replay count since the last reset, as reported by NVIDIA-SMI. Increases can indicate link transmission retries; assess changes rather than the absolute value.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="PCI", field="Replays Since Reset";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: pcie
+        - uuid: 2beea3476bf34911bd1369561a7f90b9
+          name: 'GB10: Power draw'
+          type: DEPENDENT
+          key: gb10.power
+          value_type: FLOAT
+          units: W
+          description: 'GPU power consumption reported by the NVIDIA-SMI power.draw field, in watts. Does not necessarily represent total DGX Spark system power.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'var fields = value.trim().split('',''); if (fields.length !== 6) { throw ''Unexpected nvidia-smi output: '' + value; } var result = fields[3].trim(); if (!/^[0-9]+(\.[0-9]+)?$/.test(result)) { throw ''Metric unavailable: '' + result; } return Number(result);'
+          master_item:
+            key: gb10.metrics
+          tags:
+            - tag: component
+              value: power
+        - uuid: ce8c7848936d418f997f2b5c2ca0566f
+          name: 'GB10: Average GPU power'
+          type: DEPENDENT
+          key: gb10.power.average
+          value_type: FLOAT
+          units: W
+          description: 'Average GPU power consumption over the driver measurement window, in watts. Does not necessarily represent total DGX Spark system power.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="GPU Power Readings", field="Average Power Draw";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: power
+        - uuid: d0683ec391e84a3f853617cfbfa7890c
+          name: 'GB10: Instantaneous GPU power'
+          type: DEPENDENT
+          key: gb10.power.instant
+          value_type: FLOAT
+          units: W
+          description: 'Instantaneous GPU power consumption reported by the driver, in watts. Does not necessarily represent total DGX Spark system power.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="GPU Power Readings", field="Instantaneous Power Draw";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: power
+        - uuid: c380e43db7d54fae813c26e0ca9579d9
+          name: 'GB10: Compute processes (PID, name, MiB)'
+          type: ZABBIX_ACTIVE
+          key: gb10.processes
+          history: 1d
+          value_type: TEXT
+          description: 'Raw NVIDIA-SMI compute-process snapshot containing process IDs, names and driver-reported GPU memory in MiB. Used by dependent vLLM process metrics.'
+          timeout: 10s
+          tags:
+            - tag: component
+              value: processes
+        - uuid: 71df3aee45844a4ebfaa1eb1eabdf973
+          name: 'GB10: Performance state'
+          type: DEPENDENT
+          key: gb10.pstate
+          value_type: CHAR
+          description: 'Current NVIDIA GPU performance state (P0–P15). P0 denotes the highest performance state; supported states vary by device and driver.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'var fields = value.trim().split('',''); if (fields.length !== 6) { throw ''Unexpected nvidia-smi output: '' + value; } var result = fields[5].trim(); return result;'
+          master_item:
+            key: gb10.metrics
+          tags:
+            - tag: component
+              value: gpu
+        - uuid: cfc9346f905249e6aa3f396ce1c5e9f6
+          name: 'GB10: Temperature'
+          type: DEPENDENT
+          key: gb10.temperature
+          value_type: FLOAT
+          units: °C
+          description: 'Current GPU temperature, in degrees Celsius.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'var fields = value.trim().split('',''); if (fields.length !== 6) { throw ''Unexpected nvidia-smi output: '' + value; } var result = fields[2].trim(); if (!/^[0-9]+(\.[0-9]+)?$/.test(result)) { throw ''Metric unavailable: '' + result; } return Number(result);'
+          master_item:
+            key: gb10.metrics
+          tags:
+            - tag: component
+              value: temperature
+        - uuid: 852cc039a90e4d928d3d4c1c92e578da
+          name: 'GB10: Thermal margin to maximum operating temperature'
+          type: DEPENDENT
+          key: gb10.thermal.margin
+          value_type: FLOAT
+          units: °C
+          description: 'Remaining GPU thermal headroom relative to the maximum operating temperature, in degrees Celsius. Lower values indicate proximity to the thermal limit.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var section="Temperature", field="GPU T.Limit Temp";
+                  var lines=value.replace(/\r\n?/g,'\n').split('\n');
+                  var sections=['PCI','Clocks Event Reasons','Clocks Event Reasons Counters','Clocks Throttle Reasons','Clocks Throttle Reasons Counters','Utilization','Temperature','GPU Power Readings','GPU Memory Power Readings','Module Power Readings','Clocks','Applications Clocks','Default Applications Clocks','Deferred Clocks','Max Clocks','Max Customer Boost Clocks','Clock Policy','Processes','Encoder Stats','FBC Stats','Fabric'];
+                  function clean(s){return s.replace(/^\s+|\s+$/g,'').replace(/\s+/g,' ');}
+                  function canon(s){return clean(s).replace(/\s*:\s*$/,'').replace('Clocks Throttle Reasons','Clocks Event Reasons');}
+                  var active=false, result=null;
+                  for(var i=0;i<lines.length;i++) {
+                   var line=clean(lines[i]), header=canon(line);
+                   if(!active){if(header===section) active=true;continue;}
+                   if(sections.indexOf(header)!==-1) break;
+                   var pos=line.indexOf(':');
+                   if(pos<0)continue;
+                   var label=clean(line.substring(0,pos));
+                   if(label===field || (field==='GPU T.Limit Temp' && label==='GPU Current T.Limit Temp')) {
+                    result=clean(line.substring(pos+1));break;
+                   }
+                  }
+                  if(result===null || result==='N/A') throw 'Metric unavailable: '+section+'/'+field;
+                  var m=result.match(/^(-?[0-9]+(?:\.[0-9]+)?)(?:\s|$)/); if(!m) throw 'Invalid number: '+result; return Number(m[1]);
+          master_item:
+            key: gb10.details
+          tags:
+            - tag: component
+              value: temperature
+          triggers:
+            - uuid: 0fd31181a3384f99984c0869eb4e0eb3
+              expression: 'max(/Nvidia GB10 by Zabbix agent 2 active/gb10.thermal.margin,5m)<={$GPU.THERMAL.MARGIN.CRIT}'
+              name: 'GB10: GPU thermal headroom is critically low'
+              priority: HIGH
+            - uuid: 5f471a84db2c40679134c8ebf44143ae
+              expression: 'max(/Nvidia GB10 by Zabbix agent 2 active/gb10.thermal.margin,5m)<={$GPU.THERMAL.MARGIN.WARN}'
+              name: 'GB10: GPU thermal headroom is low'
+              priority: AVERAGE
+              dependencies:
+                - name: 'GB10: GPU thermal headroom is critically low'
+                  expression: 'max(/Nvidia GB10 by Zabbix agent 2 active/gb10.thermal.margin,5m)<={$GPU.THERMAL.MARGIN.CRIT}'
+        - uuid: 70d9948dd5bd4bd1b9e5509de43344b7
+          name: 'GB10: GPU utilization'
+          type: DEPENDENT
+          key: gb10.utilization
+          value_type: FLOAT
+          units: '%'
+          description: 'Percentage of the sampling period during which one or more GPU kernels were executing. Not a direct measure of achieved compute throughput.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - 'var fields = value.trim().split('',''); if (fields.length !== 6) { throw ''Unexpected nvidia-smi output: '' + value; } var result = fields[4].trim(); if (!/^[0-9]+(\.[0-9]+)?$/.test(result)) { throw ''Metric unavailable: '' + result; } return Number(result);'
+          master_item:
+            key: gb10.metrics
+          tags:
+            - tag: component
+              value: utilization
+        - uuid: a43a8a80b79a4824aaac4a570f8306d8
+          name: 'GB10: vLLM engine process count'
+          type: DEPENDENT
+          key: gb10.vllm.process.count
+          description: 'Number of NVIDIA-SMI compute processes whose names contain VLLM::EngineCore. Process-name matching does not identify the served model.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var rows=value.trim() ? value.trim().split(/\r?\n/) : []; var count=0,total=0;
+                  for(var i=0;i<rows.length;i++){var m=rows[i].match(/^\s*(\d+)\s*,\s*(.*?)\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*$/);if(!m) throw 'Unexpected compute-process row: '+rows[i]; if(m[2].indexOf('VLLM::EngineCore')!==-1){count++;total+=Number(m[3]);}}
+                  return count;
+          master_item:
+            key: gb10.processes
+          tags:
+            - tag: component
+              value: processes
+        - uuid: 36d3a552c29c4a30a1cdc4ee7905b022
+          name: 'GB10: Sum of reported vLLM process memory'
+          type: DEPENDENT
+          key: gb10.vllm.process.memory
+          units: B
+          description: 'Sum of NVIDIA-SMI reported GPU memory for processes named VLLM::EngineCore, converted from MiB to bytes. This is not unique physical RAM usage or total model memory.'
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var rows=value.trim() ? value.trim().split(/\r?\n/) : []; var count=0,total=0;
+                  for(var i=0;i<rows.length;i++){var m=rows[i].match(/^\s*(\d+)\s*,\s*(.*?)\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*$/);if(!m) throw 'Unexpected compute-process row: '+rows[i]; if(m[2].indexOf('VLLM::EngineCore')!==-1){count++;total+=Number(m[3]);}}
+                  return total*1048576;
+          master_item:
+            key: gb10.processes
+          tags:
+            - tag: component
+              value: processes
+      tags:
+        - tag: class
+          value: hardware
+        - tag: target
+          value: 'dgx spark'
+        - tag: target
+          value: nvidia
+      macros:
+        - macro: '{$GPU.THERMAL.MARGIN.CRIT}'
+          value: '5'
+          description: 'Critical threshold for GPU thermal headroom, in °C. Lower values indicate proximity to the thermal limit.'
+        - macro: '{$GPU.THERMAL.MARGIN.WARN}'
+          value: '10'
+          description: 'Warning threshold for GPU thermal headroom, in °C. Lower values indicate proximity to the thermal limit.'
+      dashboards:
+        - uuid: d2b4240882ed43089d268bb0d0e311d7
+          name: 'Nvidia: Overview'
+          pages:
+            - name: Overview
+              widgets:
+                - type: item
+                  name: 'GPU name'
+                  width: '15'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Nvidia GB10 by Zabbix agent 2 active'
+                        key: gb10.name
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: honeycomb
+                  name: 'GPU clock states'
+                  'y': '3'
+                  width: '30'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'GB10: Idle active'
+                    - type: STRING
+                      name: items.1
+                      value: 'GB10: Applications Clocks Setting active'
+                    - type: STRING
+                      name: items.2
+                      value: 'GB10: Display Clock Setting active'
+                    - type: STRING
+                      name: items.3
+                      value: 'GB10: Sync Boost active'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^GB10: (.*?)( Setting)? active$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '18'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: YLDAY
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 78909C
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: 00BFFF
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                - type: gauge
+                  name: 'GPU utilization'
+                  'y': '7'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: desc_size
+                      value: '8'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Nvidia GB10 by Zabbix agent 2 active'
+                        key: gb10.utilization
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: svggraph
+                  name: 'Temperature history'
+                  'y': '11'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '0'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'GB10: Temperature'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: WNDBN
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Clock speed history'
+                  'y': '15'
+                  width: '36'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '10'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'GB10: Graphics clock'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'GB10: SM clock'
+                    - type: STRING
+                      name: ds.0.items.2
+                      value: 'GB10: Video clock'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '3'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: SEPDZ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: 'Driver version'
+                  x: '15'
+                  width: '15'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Nvidia GB10 by Zabbix agent 2 active'
+                        key: gb10.driver
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: gauge
+                  name: 'GPU memory activity'
+                  x: '18'
+                  'y': '7'
+                  width: '18'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: desc_size
+                      value: '8'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Nvidia GB10 by Zabbix agent 2 active'
+                        key: gb10.busy.memory
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 0EC9AC
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FFD54F
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF465C
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: STRING
+                      name: units
+                      value: '%'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: item
+                  name: 'Performance state'
+                  x: '30'
+                  width: '15'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Nvidia GB10 by Zabbix agent 2 active'
+                        key: gb10.pstate
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: units_size
+                      value: '25'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: honeycomb
+                  name: 'GPU throttling'
+                  x: '30'
+                  'y': '3'
+                  width: '42'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: 'GB10: HW Power Brake Slowdown active'
+                    - type: STRING
+                      name: items.1
+                      value: 'GB10: HW Slowdown active'
+                    - type: STRING
+                      name: items.2
+                      value: 'GB10: HW Thermal Slowdown active'
+                    - type: STRING
+                      name: items.3
+                      value: 'GB10: SW Thermal Slowdown active'
+                    - type: STRING
+                      name: items.4
+                      value: 'GB10: SW Power Cap active'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^GB10: (.*?)( Setting)? active$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '18'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: AMVPP
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 28A745
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: DC3545
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                - type: svggraph
+                  name: 'GPU & Memory history'
+                  x: '36'
+                  'y': '7'
+                  width: '36'
+                  height: '4'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '11'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'GB10: GPU utilization'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'GB10: Memory activity'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: STRING
+                      name: lefty_max
+                      value: '100'
+                    - type: STRING
+                      name: lefty_min
+                      value: '0'
+                    - type: STRING
+                      name: lefty_static_units
+                      value: '%'
+                    - type: INTEGER
+                      name: lefty_units
+                      value: '1'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: YAOBT
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'Power history'
+                  x: '36'
+                  'y': '15'
+                  width: '36'
+                  height: '6'
+                  fields:
+                    - type: INTEGER
+                      name: ds.0.approximation
+                      value: '7'
+                    - type: INTEGER
+                      name: ds.0.color_palette
+                      value: '7'
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: 'GB10: Average GPU power'
+                    - type: STRING
+                      name: ds.0.items.1
+                      value: 'GB10: Instantaneous GPU power'
+                    - type: INTEGER
+                      name: ds.0.width
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_lines
+                      value: '2'
+                    - type: INTEGER
+                      name: legend_statistic
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: WCAXA
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: item
+                  name: 'vLLM process memory'
+                  x: '45'
+                  width: '15'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Nvidia GB10 by Zabbix agent 2 active'
+                        key: gb10.vllm.process.memory
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: units_size
+                      value: '25'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+                - type: item
+                  name: 'vLLM engine process'
+                  x: '60'
+                  width: '12'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Nvidia GB10 by Zabbix agent 2 active'
+                        key: gb10.vllm.process.count
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: units_size
+                      value: '25'
+                    - type: INTEGER
+                      name: value_size
+                      value: '25'
+      valuemaps:
+        - uuid: b7e2d47e50a54dc98d52b5e49e62c291
+          name: 'NVIDIA GPU status'
+          mappings:
+            - value: '0'
+              newvalue: Inactive
+            - value: '1'
+              newvalue: Active
+    - uuid: b07977e2cdd84840998fa341cf33dfa4
+      template: 'vLLM by Zabbix agent 2 active'
+      name: 'vLLM by Zabbix agent 2 active'
+      description: 'Monitors vLLM inference engines through Zabbix agent 2 active checks and Prometheus metrics.'
+      vendor:
+        name: E-MSN
+        version: 7.4-1
+      groups:
+        - name: Templates/Applications
+      discovery_rules:
+        - uuid: 4bb59b397fa7474f87799e6ef30ca8c6
+          name: 'vLLM: Declared instances'
+          type: ZABBIX_ACTIVE
+          key: vllm.simple.discovery
+          item_prototypes:
+            - uuid: 102d9881684849d48209aced0cca8716
+              name: 'vLLM [{#INSTANCE}]: KV cache utilization'
+              type: DEPENDENT
+              key: 'vllm.simple.kv.cache.usage[{#INSTANCE}]'
+              value_type: FLOAT
+              units: '%'
+              description: 'Percentage of the available KV cache capacity currently occupied. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:kv_cache_usage_perc'
+                    - function
+                    - max
+                  error_handler: DISCARD_VALUE
+                - type: MULTIPLIER
+                  parameters:
+                    - '100'
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: cache
+              trigger_prototypes:
+                - uuid: 39cc34e1aff144af91b8835f13bea86c
+                  expression: 'min(/vLLM by Zabbix agent 2 active/vllm.simple.kv.cache.usage[{#INSTANCE}],5m)>{$VLLM.KV.CACHE.CRIT}'
+                  name: 'vLLM [{#INSTANCE}]: KV cache utilization is critical'
+                  priority: HIGH
+                - uuid: 4f41eee781ab408aad78c7d128a01bda
+                  expression: 'min(/vLLM by Zabbix agent 2 active/vllm.simple.kv.cache.usage[{#INSTANCE}],5m)>{$VLLM.KV.CACHE.WARN}'
+                  name: 'vLLM [{#INSTANCE}]: KV cache utilization is high'
+                  priority: WARNING
+                  dependencies:
+                    - name: 'vLLM [{#INSTANCE}]: KV cache utilization is critical'
+                      expression: 'min(/vLLM by Zabbix agent 2 active/vllm.simple.kv.cache.usage[{#INSTANCE}],5m)>{$VLLM.KV.CACHE.CRIT}'
+            - uuid: aa1408e4444b4dbdb7015bdc0558a1ba
+              name: 'vLLM [{#INSTANCE}]: Prometheus metrics'
+              type: ZABBIX_ACTIVE
+              key: 'vllm.simple.metrics[{#INSTANCE}]'
+              history: '0'
+              value_type: TEXT
+              description: 'Raw Prometheus metrics collected from the discovered vLLM instance. Source for dependent metrics.'
+              preprocessing:
+                - type: MATCHES_REGEX
+                  parameters:
+                    - '(?m)^vllm:'
+              timeout: 10s
+              tags:
+                - tag: component
+                  value: raw
+              trigger_prototypes:
+                - uuid: de104f07e1914f4898970b6d44b54791
+                  expression: 'nodata(/vLLM by Zabbix agent 2 active/vllm.simple.metrics[{#INSTANCE}],5m)=1'
+                  name: 'vLLM [{#INSTANCE}]: Metrics collection unavailable'
+                  priority: HIGH
+                  description: 'No Prometheus metrics received for 5 minutes.'
+            - uuid: b6484e546d404ef798e04697064dd0e9
+              name: 'vLLM [{#INSTANCE}]: Preemptions per second'
+              type: DEPENDENT
+              key: 'vllm.simple.preemptions.rate[{#INSTANCE}]'
+              value_type: FLOAT
+              units: preemptions/s
+              description: 'Rate of inference scheduler preemptions per second. Sustained preemptions may indicate resource contention. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:num_preemptions_total'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: performance
+            - uuid: bd6f0f6084af402cae6c554a5ac23e77
+              name: 'vLLM [{#INSTANCE}]: Completed requests per second'
+              type: DEPENDENT
+              key: 'vllm.simple.requests.completed.rate[{#INSTANCE}]'
+              value_type: FLOAT
+              units: req/s
+              description: 'Rate of requests completed with finished_reason=stop. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:request_success_total{finished_reason="stop"}'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: requests
+            - uuid: 7183ba5fd2274bd387f0fd0507463ff2
+              name: 'vLLM [{#INSTANCE}]: Failed requests per second'
+              type: DEPENDENT
+              key: 'vllm.simple.requests.failed.rate[{#INSTANCE}]'
+              value_type: FLOAT
+              units: req/s
+              description: 'Rate of requests with finished_reason=error. Aborted or length-limited requests are not counted. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:request_success_total{finished_reason="error"}'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: requests
+            - uuid: 3279be2aad1e4b7fb5af740debf1939f
+              name: 'vLLM [{#INSTANCE}]: Running requests'
+              type: DEPENDENT
+              key: 'vllm.simple.requests.running[{#INSTANCE}]'
+              description: 'Current number of requests being processed by the inference engine. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:num_requests_running'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: requests
+            - uuid: b185918392714645b7db2d657135f9e5
+              name: 'vLLM [{#INSTANCE}]: Waiting requests'
+              type: DEPENDENT
+              key: 'vllm.simple.requests.waiting[{#INSTANCE}]'
+              description: 'Current number of requests queued for execution by the inference scheduler. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:num_requests_waiting'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: requests
+              trigger_prototypes:
+                - uuid: e9dbbde227aa410289c431410c4f14c6
+                  expression: 'min(/vLLM by Zabbix agent 2 active/vllm.simple.requests.waiting[{#INSTANCE}],5m)>{$VLLM.QUEUE.CRIT}'
+                  name: 'vLLM [{#INSTANCE}]: Request queue is critical'
+                  priority: HIGH
+                - uuid: 165d96f03c394dada1b4dc9658d6755b
+                  expression: 'min(/vLLM by Zabbix agent 2 active/vllm.simple.requests.waiting[{#INSTANCE}],5m)>{$VLLM.QUEUE.WARN}'
+                  name: 'vLLM [{#INSTANCE}]: Request queue is high'
+                  priority: WARNING
+                  dependencies:
+                    - name: 'vLLM [{#INSTANCE}]: Request queue is critical'
+                      expression: 'min(/vLLM by Zabbix agent 2 active/vllm.simple.requests.waiting[{#INSTANCE}],5m)>{$VLLM.QUEUE.CRIT}'
+            - uuid: c8784378580e4b70a1555e027bae944c
+              name: 'vLLM [{#INSTANCE}]: Speculative accepted tokens per second'
+              type: DEPENDENT
+              key: 'vllm.simple.speculative.accepted.rate[{#INSTANCE}]'
+              value_type: FLOAT
+              units: tokens/s
+              description: 'Rate of speculative decoding tokens accepted per second. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:spec_decode_num_accepted_tokens_total'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: speculative
+            - uuid: f6b4d0c13c044031bb3d075288b2edb5
+              name: 'vLLM [{#INSTANCE}]: Generation tokens per second'
+              type: DEPENDENT
+              key: 'vllm.simple.tokens.generation.rate[{#INSTANCE}]'
+              value_type: FLOAT
+              units: tokens/s
+              description: 'Rate of output tokens generated per second. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:generation_tokens_total'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: tokens
+            - uuid: 5f957a1adc47495faa12f4766527291d
+              name: 'vLLM [{#INSTANCE}]: Prompt tokens per second'
+              type: DEPENDENT
+              key: 'vllm.simple.tokens.prompt.rate[{#INSTANCE}]'
+              value_type: FLOAT
+              units: tokens/s
+              description: 'Rate of input prompt tokens processed per second. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:prompt_tokens_total'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+                - type: CHANGE_PER_SECOND
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: tokens
+            - uuid: 0cb6e9cd6ee44f49892b56cc16654264
+              name: 'vLLM [{#INSTANCE}]: TTFT cumulative count'
+              type: DEPENDENT
+              key: 'vllm.simple.ttft.count[{#INSTANCE}]'
+              description: 'Cumulative number of time-to-first-token observations. Used to calculate the average TTFT. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:time_to_first_token_seconds_count'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: latency
+            - uuid: 7ca5d43b036340a5bfab3893577afd32
+              name: 'vLLM [{#INSTANCE}]: TTFT cumulative sum'
+              type: DEPENDENT
+              key: 'vllm.simple.ttft.sum[{#INSTANCE}]'
+              value_type: FLOAT
+              units: s
+              description: 'Cumulative time to first token across observations, in seconds. Used to calculate the average TTFT. Optional metric; missing values are discarded.'
+              preprocessing:
+                - type: PROMETHEUS_PATTERN
+                  parameters:
+                    - 'vllm:time_to_first_token_seconds_sum'
+                    - function
+                    - sum
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: 'vllm.simple.metrics[{#INSTANCE}]'
+              tags:
+                - tag: component
+                  value: latency
+            - uuid: c2d323af7bfb4e75ba7ffa8b13a839d3
+              name: 'vLLM [{#INSTANCE}]: TTFT average'
+              type: CALCULATED
+              key: 'vllm.ttft.average[{#INSTANCE}]'
+              value_type: FLOAT
+              units: ms
+              params: '1000 * rate(//vllm.simple.ttft.sum[{#INSTANCE}],5m) / max(rate(//vllm.simple.ttft.count[{#INSTANCE}],5m),0.000000001)'
+              description: 'Average time to first token over a 5-minute window, in milliseconds. Returns zero if no observations are recorded during the window; requires valid source history.'
+              tags:
+                - tag: component
+                  value: latency
+          graph_prototypes:
+            - uuid: c8f5b419b13f40b48d1bd87f50efeff9
+              name: 'vLLM [{#INSTANCE}]: KV Cache utilization'
+              ymax_type_1: FIXED
+              graph_items:
+                - color: FF9800
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.simple.kv.cache.usage[{#INSTANCE}]'
+            - uuid: 2b6c479f6d6649aa818fbc7049206693
+              name: 'vLLM [{#INSTANCE}]: Request activity'
+              graph_items:
+                - color: 36A2EB
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.simple.requests.running[{#INSTANCE}]'
+                - sortorder: '1'
+                  color: FF9800
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.simple.requests.waiting[{#INSTANCE}]'
+            - uuid: 7261ad8dbe374449bfcd340ee7c811b0
+              name: 'vLLM [{#INSTANCE}]: Request throughput'
+              graph_items:
+                - color: 4CAF50
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.simple.requests.completed.rate[{#INSTANCE}]'
+                - sortorder: '1'
+                  color: F44336
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.simple.requests.failed.rate[{#INSTANCE}]'
+            - uuid: 9ed41284daa1489887f8fd9c98e2b423
+              name: 'vLLM [{#INSTANCE}]: Scheduler preemptions'
+              graph_items:
+                - color: F44336
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.simple.preemptions.rate[{#INSTANCE}]'
+            - uuid: 92dbf3da17f14049bdb164f14a097d8d
+              name: 'vLLM [{#INSTANCE}]: Token throughput'
+              graph_items:
+                - color: 2196F3
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.simple.tokens.prompt.rate[{#INSTANCE}]'
+                - sortorder: '1'
+                  color: 8BC34A
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.simple.tokens.generation.rate[{#INSTANCE}]'
+            - uuid: ae00d79b61974916ab43b58d492ec7dd
+              name: 'vLLM [{#INSTANCE}]: TTFT latency'
+              graph_items:
+                - color: 9C27B0
+                  item:
+                    host: 'vLLM by Zabbix agent 2 active'
+                    key: 'vllm.ttft.average[{#INSTANCE}]'
+      macros:
+        - macro: '{$VLLM.KV.CACHE.CRIT}'
+          value: '90'
+          description: 'Critical threshold for KV cache usage (%).'
+        - macro: '{$VLLM.KV.CACHE.WARN}'
+          value: '80'
+          description: 'Warning threshold for KV cache usage (%).'
+        - macro: '{$VLLM.QUEUE.CRIT}'
+          value: '10'
+          description: 'Critical threshold for waiting requests.'
+        - macro: '{$VLLM.QUEUE.WARN}'
+          value: '5'
+          description: 'Warning threshold for waiting requests.'
+      dashboards:
+        - uuid: 178e1f2ccd264b3fb30dfd656054bddd
+          name: 'vLLM: Overview'
+          pages:
+            - name: Overview
+              widgets:
+                - type: honeycomb
+                  name: 'Generation throughput'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Generation tokens per second'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: MUZRB
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: secondary_label_units
+                      value: tokens/s
+                - type: honeycomb
+                  name: 'Prompt throughput'
+                  'y': '4'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Prompt tokens per second'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: QPMTP
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: secondary_label_units
+                      value: tokens/s
+                - type: honeycomb
+                  name: 'Running requests'
+                  'y': '8'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Running requests'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: IDHPA
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: secondary_label_units
+                      value: requests
+                - type: honeycomb
+                  name: 'Waiting requests'
+                  'y': '12'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Waiting requests'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: FRRXF
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: secondary_label_units
+                      value: requests
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 4CAF50
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF8000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '1'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '5'
+                - type: honeycomb
+                  name: 'Completed requests'
+                  'y': '16'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Completed requests per second'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: XEPCX
+                    - type: STRING
+                      name: secondary_label_units
+                      value: req/s
+                - type: honeycomb
+                  name: 'Failed requests'
+                  'y': '20'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Failed requests per second'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: MHNHH
+                    - type: STRING
+                      name: secondary_label_units
+                      value: req/s
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 4CAF50
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF8000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '0.01'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '1'
+                - type: honeycomb
+                  name: 'KV Cache'
+                  'y': '24'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*KV cache utilization'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: JLJYO
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_size
+                      value: '40'
+                    - type: INTEGER
+                      name: secondary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: secondary_label_units
+                      value: '%'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 4CAF50
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: D8B51E
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '70'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: ED8C26
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '85'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: D63C3C
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '95'
+                - type: honeycomb
+                  name: Preemptions
+                  'y': '28'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*Preemptions per second'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: YVWWN
+                    - type: STRING
+                      name: secondary_label_units
+                      value: preemptions/s
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 4CAF50
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FF8000
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '0.01'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '1'
+                - type: honeycomb
+                  name: 'TTFT latency'
+                  'y': '32'
+                  width: '72'
+                  height: '4'
+                  fields:
+                    - type: STRING
+                      name: items.0
+                      value: '*TTFT average'
+                    - type: STRING
+                      name: primary_label
+                      value: '{{ITEM.NAME}.regsub("^vLLM \[([^\]]+)\]:.*$", "\1")}'
+                    - type: INTEGER
+                      name: primary_label_size
+                      value: '25'
+                    - type: INTEGER
+                      name: primary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: ESTTB
+                    - type: INTEGER
+                      name: secondary_label_decimal_places
+                      value: '0'
+                    - type: INTEGER
+                      name: secondary_label_size
+                      value: '40'
+                    - type: INTEGER
+                      name: secondary_label_size_type
+                      value: '1'
+                    - type: STRING
+                      name: secondary_label_units
+                      value: ms
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 4CAF50
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '500'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: FF8000
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '1000'
+                    - type: STRING
+                      name: thresholds.3.color
+                      value: FF0000
+                    - type: STRING
+                      name: thresholds.3.threshold
+                      value: '2000'
+            - name: History
+              widgets:
+                - type: graphprototype
+                  name: 'Token throughput'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'vLLM by Zabbix agent 2 active'
+                        name: 'vLLM [{#INSTANCE}]: Token throughput'
+                    - type: STRING
+                      name: reference
+                      value: DJHKL
+                - type: graphprototype
+                  name: 'Request activity'
+                  'y': '5'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'vLLM by Zabbix agent 2 active'
+                        name: 'vLLM [{#INSTANCE}]: Request activity'
+                    - type: STRING
+                      name: reference
+                      value: BZHYA
+                - type: graphprototype
+                  name: 'Request throughput'
+                  'y': '10'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'vLLM by Zabbix agent 2 active'
+                        name: 'vLLM [{#INSTANCE}]: Request throughput'
+                    - type: STRING
+                      name: reference
+                      value: PRFSF
+                - type: graphprototype
+                  name: 'KV cache utilization'
+                  'y': '15'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'vLLM by Zabbix agent 2 active'
+                        name: 'vLLM [{#INSTANCE}]: KV Cache utilization'
+                    - type: STRING
+                      name: reference
+                      value: SQRNI
+                - type: graphprototype
+                  name: 'Scheduler preemptions'
+                  'y': '20'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'vLLM by Zabbix agent 2 active'
+                        name: 'vLLM [{#INSTANCE}]: Scheduler preemptions'
+                    - type: STRING
+                      name: reference
+                      value: LDLPC
+                - type: graphprototype
+                  name: 'TTFT latency'
+                  'y': '25'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: GRAPH_PROTOTYPE
+                      name: graphid.0
+                      value:
+                        host: 'vLLM by Zabbix agent 2 active'
+                        name: 'vLLM [{#INSTANCE}]: TTFT latency'
+                    - type: STRING
+                      name: reference
+                      value: CJQWU
+  graphs:
+    - uuid: e58969696303417989e41a36e6424212
+      name: 'GPU power consumption'
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.power.average
+        - sortorder: '1'
+          color: 2774A4
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.power.instant
+    - uuid: 8d5a86d9b3b549e4ab5c7e1bf9bfdd81
+      name: 'GPU utilization'
+      ymin_type_1: FIXED
+      ymax_type_1: FIXED
+      graph_items:
+        - color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.utilization
+    - uuid: d5460e124c344f2fb58886c058dd5e9a
+      name: 'Graphics clock'
+      ymin_type_1: FIXED
+      graph_items:
+        - drawtype: FILLED_REGION
+          color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.clock.graphics
+        - sortorder: '1'
+          color: F63100
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.clock.max.graphics
+    - uuid: 3e5f05a6cc554da9b7f8eaea19521915
+      name: 'Memory activity'
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.busy.memory
+    - uuid: e9b17c9809bb41509cb3405184702639
+      name: 'SM clock'
+      yaxismax: '0'
+      ymin_type_1: FIXED
+      graph_items:
+        - drawtype: FILLED_REGION
+          color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.clock.sm
+        - sortorder: '1'
+          color: F63100
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.clock.max.sm
+    - uuid: ef23905f2cc247cdb6c14acab0901b69
+      name: Temperature
+      yaxismax: '0'
+      graph_items:
+        - color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.temperature
+    - uuid: 64d4d2c7373648658592b1eb169e6806
+      name: 'Video clock'
+      yaxismax: '0'
+      ymin_type_1: FIXED
+      graph_items:
+        - drawtype: FILLED_REGION
+          color: 199C0D
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.clock.video
+        - sortorder: '1'
+          color: F63100
+          calc_fnc: ALL
+          item:
+            host: 'Nvidia GB10 by Zabbix agent 2 active'
+            key: gb10.clock.max.video
