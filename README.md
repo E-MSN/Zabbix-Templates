@@ -69,8 +69,7 @@ Zabbix templates for server hardware and management controllers.
 | Template | Monitoring method |
 | --- | --- |
 | [Lenovo XCC](Zabbix%20Templates/Lenovo%20XCC%20by%20SNMP) | SNMP |
-| [NVIDIA DGX Spark and vLLM](Zabbix%20Templates/NVIDIA%20DGX%20Spark%20by%20Zabbix%20agent%202%20active) | Zabbix agent 2 active |
-
+| [NVIDIA DGX Spark and vLLM](Zabbix%20Templates/Nvidia%20DGX%20Spark%20by%20Zabbix%20agent%202%20active) | Zabbix agent 2 active |
 ### Virtualization and Hypervisors
 
 Zabbix templates for virtualization platforms, hypervisors, and virtual infrastructure monitoring.
